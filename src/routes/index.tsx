@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, Plus, Heart, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  component: Dashboard,
+  component: Root,
   head: () => ({
     meta: [
       { title: "FastCredit — Dashboard" },
@@ -11,6 +11,91 @@ export const Route = createFileRoute("/")({
     ],
   }),
 });
+
+type Screen = "splash" | "onboarding" | "dashboard";
+
+function Root() {
+  const [screen, setScreen] = useState<Screen>("splash");
+
+  useEffect(() => {
+    if (screen === "splash") {
+      const t = setTimeout(() => setScreen("onboarding"), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [screen]);
+
+  if (screen === "splash") return <Splash />;
+  if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("dashboard")} />;
+  return <Dashboard />;
+}
+
+function Splash() {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#12b5ec]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="text-white text-4xl font-black tracking-tight">FastCredit</div>
+        <div className="flex gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce [animation-delay:-0.3s]" />
+          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce [animation-delay:-0.15s]" />
+          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Onboarding({ onContinue }: { onContinue: () => void }) {
+  return (
+    <div className="min-h-screen w-full bg-white flex flex-col px-6 pt-16 pb-8">
+      <div className="flex flex-col items-center">
+        <div className="text-[#12b5ec] text-3xl font-black">FastCredit</div>
+        <p className="mt-1 text-xs font-semibold text-[#0b1e4d]">Licensed & Secured 🛡️</p>
+      </div>
+
+      <div className="mt-8 rounded-3xl bg-[#12b5ec] aspect-square w-full flex items-center justify-center overflow-hidden">
+        <div className="text-white text-center px-6">
+          <p className="text-2xl font-extrabold">Smart Credit</p>
+          <p className="mt-2 text-sm opacity-90">Loans • Savings • Pools • Pay in 3</p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+        <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+        <span className="h-1.5 w-6 rounded-full bg-[#12b5ec]" />
+      </div>
+
+      <h1 className="mt-6 text-center text-2xl font-extrabold text-[#0b1e4d] leading-snug">
+        Fast and reliable banking<br />at your fingertips
+      </h1>
+
+      <div className="mt-auto pt-6 flex flex-col gap-3">
+        <button
+          onClick={onContinue}
+          className="w-full rounded-2xl bg-[#12b5ec] py-4 text-white font-bold text-base"
+        >
+          New To FastCredit
+        </button>
+        <button
+          onClick={onContinue}
+          className="w-full rounded-2xl border-2 border-[#12b5ec] py-4 text-[#12b5ec] font-bold text-base"
+        >
+          Login
+        </button>
+        <p className="text-center text-sm text-[#0b1e4d]">
+          Already have a FastCredit Account?{" "}
+          <button onClick={onContinue} className="text-[#12b5ec] font-semibold">Continue</button>
+        </p>
+        <p className="text-[#12b5ec] font-bold text-sm">Offline Mode</p>
+        <p className="text-center text-xs text-gray-600">
+          By continuing, you agree to our <span className="text-[#12b5ec] underline">Terms of Service</span> and{" "}
+          <span className="text-[#12b5ec] underline">Privacy Policy</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 
 const CURRENCIES = [
   { code: "NGN", symbol: "₦", rate: 1600 },
