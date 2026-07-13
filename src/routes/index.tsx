@@ -945,6 +945,190 @@ function Dashboard({ userEmail }: { userEmail: string }) {
           </div>
         </div>
       )}
+
+      {openCategory && (
+        <CategoryModal
+          categoryKey={openCategory}
+          onClose={() => setOpenCategory(null)}
+          isDark={isDark}
+          softText={softText}
+          transactions={transactions}
+          downloadReceipt={downloadReceipt}
+          fmt={fmt}
+          balanceUsd={balanceUsd}
+          bonusClaimed={bonusClaimed}
+          userEmail={userEmail}
+          activePlan={activePlan}
+          currentPlan={currentPlan}
+          currencyCode={currency.code}
+        />
+      )}
+    </div>
+  );
+}
+
+type CategoryModalProps = {
+  categoryKey: string;
+  onClose: () => void;
+  isDark: boolean;
+  softText: string;
+  transactions: Txn[];
+  downloadReceipt: (t: Txn) => void;
+  fmt: (usd: number, decimals?: number) => string;
+  balanceUsd: number;
+  bonusClaimed: boolean;
+  userEmail: string;
+  activePlan: { index: number; startedAt: number } | null;
+  currentPlan: typeof PREMIUM_PLANS[number] | null;
+  currencyCode: string;
+};
+
+function CategoryModal(props: CategoryModalProps) {
+  const { categoryKey, onClose, isDark, softText, transactions, downloadReceipt, fmt, balanceUsd, bonusClaimed, userEmail, activePlan, currentPlan, currencyCode } = props;
+  const title =
+    categoryKey === "savings" ? "Savings · Transactions" :
+    categoryKey === "history" ? "History & Receipts" :
+    categoryKey === "rosca" ? "Profile" :
+    categoryKey === "donation" ? "Rewards" :
+    categoryKey === "support" ? "Support" :
+    categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
+
+  const cardBg = isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]";
+  const rowBg = isDark ? "bg-white/5 border-white/10" : "bg-white border-black/5";
+
+  const renderTxn = (t: Txn, showDownload: boolean) => {
+    const badge =
+      t.status === "approved" ? { bg: "bg-emerald-500", label: "Approved", icon: <Check className="h-3 w-3" /> } :
+      t.status === "credited" ? { bg: "bg-sky-500", label: "Credited", icon: <TrendingUp className="h-3 w-3" /> } :
+      { bg: "bg-red-500", label: "Declined", icon: <XCircle className="h-3 w-3" /> };
+    return (
+      <div key={t.id} className={`rounded-2xl border p-3 ${rowBg}`}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-extrabold capitalize truncate">{t.kind}</p>
+              <span className={`inline-flex items-center gap-1 rounded-full ${badge.bg} text-white px-2 py-0.5 text-[10px] font-bold`}>{badge.icon}{badge.label}</span>
+            </div>
+            <p className={`text-[11px] ${softText} truncate`}>{t.method || t.note || "—"}</p>
+            <p className={`text-[10px] ${softText}`}>{new Date(t.at).toLocaleString()}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className={`font-black ${t.status === "declined" ? "text-red-500 line-through" : "text-emerald-600"}`}>{fmt(t.amountUsd, 2)}</p>
+            {showDownload && (
+              <button onClick={() => downloadReceipt(t)} className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#0e6b3f] text-white px-2.5 py-1 text-[10px] font-bold">
+                <Download className="h-3 w-3" /> Receipt
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${cardBg} shadow-2xl`}>
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white rounded-t-3xl">
+          <p className="font-black text-base">{title}</p>
+          <button onClick={onClose} className="h-8 w-8 grid place-items-center rounded-full bg-black/20"><X className="h-4 w-4" /></button>
+        </div>
+
+        <div className="p-5">
+          {categoryKey === "savings" && (
+            <div className="space-y-3">
+              <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white">
+                <p className="text-[11px] uppercase opacity-80">Total balance</p>
+                <p className="text-3xl font-extrabold">{fmt(balanceUsd, 2)}</p>
+              </div>
+              <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>All transactions</p>
+              {transactions.length === 0 && <p className={`text-xs ${softText}`}>No transactions yet.</p>}
+              {transactions.map(t => renderTxn(t, false))}
+            </div>
+          )}
+
+          {categoryKey === "history" && (
+            <div className="space-y-3">
+              <p className={`text-[11px] ${softText}`}>Download receipts for deposits, withdrawals and declined payments.</p>
+              {transactions.length === 0 && <p className={`text-xs ${softText}`}>No history yet.</p>}
+              {transactions.map(t => renderTxn(t, true))}
+            </div>
+          )}
+
+          {categoryKey === "rosca" && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 text-white grid place-items-center">
+                  <UserCircle className="h-9 w-9" />
+                </div>
+                <div>
+                  <p className="font-black text-lg">Ryan Sterling</p>
+                  <p className={`text-[11px] ${softText}`}>FastCredit member</p>
+                </div>
+              </div>
+              <div className={`rounded-2xl border p-4 space-y-3 ${rowBg}`}>
+                <ProfileRow icon={<Mail className="h-4 w-4" />} label="Email" value={userEmail || "user@fastcredit.app"} softText={softText} />
+                <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
+                <ProfileRow icon={<Crown className="h-4 w-4" />} label="Plan" value={activePlan ? `Premium · Plan ${activePlan.index + 1}` : "No active plan"} softText={softText} />
+                <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Preferred currency" value={currencyCode} softText={softText} />
+              </div>
+            </div>
+          )}
+
+          {categoryKey === "donation" && (
+            <div className="space-y-3">
+              <div className="rounded-2xl p-4 bg-gradient-to-br from-amber-400 to-amber-600 text-[#3a2500]">
+                <div className="flex items-center gap-2">
+                  <Award className="h-5 w-5" />
+                  <p className="font-black">Rewards</p>
+                </div>
+                <p className="mt-2 text-3xl font-extrabold">{fmt(2 * (bonusClaimed ? 1 : 0) + transactions.filter(t => t.kind === "mining").reduce((s, t) => s + t.amountUsd, 0), 2)}</p>
+                <p className="text-[11px] font-semibold opacity-80">Total rewards earned</p>
+              </div>
+              <div className={`rounded-2xl border p-4 space-y-3 ${rowBg}`}>
+                <ProfileRow icon={<Sparkles className="h-4 w-4" />} label="Welcome bonus" value={bonusClaimed ? "Claimed · $2" : "Available"} softText={softText} />
+                <ProfileRow icon={<Pickaxe className="h-4 w-4" />} label="Mining claims" value={String(transactions.filter(t => t.kind === "mining").length)} softText={softText} />
+                <ProfileRow icon={<Zap className="h-4 w-4" />} label="Next reward" value={currentPlan ? fmt(currentPlan.mineReward, 2) : "Activate a plan"} softText={softText} />
+                <ProfileRow icon={<Gift className="h-4 w-4" />} label="Referral bonus" value="Invite friends · earn $5 each" softText={softText} />
+              </div>
+            </div>
+          )}
+
+          {(categoryKey === "support" || categoryKey === "wallet" || categoryKey === "payments" || categoryKey === "journey") && (
+            <div className="space-y-3">
+              <div className={`rounded-2xl border p-5 text-center ${rowBg}`}>
+                <div className="mx-auto h-14 w-14 rounded-2xl bg-emerald-500 text-white grid place-items-center">
+                  {categoryKey === "support" ? <LifeBuoy className="h-6 w-6" /> : <Briefcase className="h-6 w-6" />}
+                </div>
+                <p className="mt-3 font-black">
+                  {categoryKey === "support" ? "We're here to help" : `${title} coming soon`}
+                </p>
+                <p className={`mt-1 text-[11px] ${softText}`}>
+                  {categoryKey === "support"
+                    ? "Reach our team any time — we'll get back within 24 hours."
+                    : "This section is being prepared for you."}
+                </p>
+                {categoryKey === "support" && (
+                  <a href="mailto:support@fastcredit.app" className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#0e6b3f] text-white px-4 py-2 text-xs font-bold">
+                    <Mail className="h-3.5 w-3.5" /> support@fastcredit.app
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileRow({ icon, label, value, softText }: { icon: React.ReactNode; label: string; value: string; softText: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-9 w-9 rounded-xl bg-emerald-500/15 text-emerald-600 grid place-items-center shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-[10px] uppercase tracking-wide ${softText}`}>{label}</p>
+        <p className="font-bold text-sm break-all">{value}</p>
+      </div>
     </div>
   );
 }
