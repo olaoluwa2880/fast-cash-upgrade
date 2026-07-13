@@ -33,7 +33,7 @@ function Root() {
   }, [screen]);
   if (screen === "splash") return <Splash />;
   if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("signup")} />;
-  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={() => setScreen("dashboard")} />;
+  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={(email) => { setUserEmail(email); setScreen("processing"); }} />;
   if (screen === "google") return <GoogleAuth onDone={(email) => { setUserEmail(email); setScreen("processing"); }} />;
   if (screen === "processing") return <Processing />;
   if (screen === "otp") return <OtpScreen email={userEmail} onDone={() => setScreen("dashboard")} />;
