@@ -312,6 +312,10 @@ const PREMIUM_PLANS = [
   { invest: 3500, profit: 52.50, total: 367.50, returned: 3867.50 },
 ];
 
+const DAY = 24 * 60 * 60 * 1000;
+const MINE_COOLDOWN = 48 * 60 * 60 * 1000;
+const PLAN_DURATION = 14 * DAY;
+
 function Dashboard() {
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [openCur, setOpenCur] = useState(false);
@@ -319,15 +323,48 @@ function Dashboard() {
   const [openPremium, setOpenPremium] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(0);
   const [bonusClaimed, setBonusClaimed] = useState(false);
-  const [mining, setMining] = useState(false);
-  const [mined, setMined] = useState(0); // in USD
-  const HASH_RATE = 0.00012; // USD per second while mining (~$0.43/hr)
+  const [balanceUsd, setBalanceUsd] = useState(0);
+  const [activePlan, setActivePlan] = useState<{ index: number; startedAt: number } | null>(null);
+  const [lastMineAt, setLastMineAt] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    if (!mining) return;
-    const id = setInterval(() => setMined(m => m + HASH_RATE), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [mining]);
+  }, []);
+
+  const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
+  const planActive = activePlan !== null && now < planExpiresAt;
+  const nextMineAt = lastMineAt ? lastMineAt + MINE_COOLDOWN : 0;
+  const mineReady = planActive && (lastMineAt === null || now >= nextMineAt);
+  const currentPlan = activePlan ? PREMIUM_PLANS[activePlan.index] : null;
+
+  const formatCountdown = (ms: number) => {
+    if (ms <= 0) return "00:00:00";
+    const s = Math.floor(ms / 1000);
+    const h = String(Math.floor(s / 3600)).padStart(2, "0");
+    const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+    const sec = String(s % 60).padStart(2, "0");
+    return `${h}:${m}:${sec}`;
+  };
+
+  const claimBonus = () => {
+    if (bonusClaimed) return;
+    setBalanceUsd(b => b + 2);
+    setBonusClaimed(true);
+  };
+
+  const mine = () => {
+    if (!mineReady || !currentPlan) return;
+    setBalanceUsd(b => b + currentPlan.profit);
+    setLastMineAt(Date.now());
+  };
+
+  const activatePlan = () => {
+    setActivePlan({ index: selectedPlan, startedAt: Date.now() });
+    setLastMineAt(null);
+    setOpenPremium(false);
+  };
 
   const fmtBalance = (usd: number) => {
     const v = usd * currency.rate;
@@ -339,7 +376,7 @@ function Dashboard() {
     return `${currency.symbol}${v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   };
 
-  const bal = fmtBalance(32680.20);
+  const bal = fmtBalance(balanceUsd);
   const isDark = dark;
 
   const bg = isDark ? "bg-[#0a1410]" : "bg-[#e8f5ec]";
