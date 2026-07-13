@@ -345,15 +345,38 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     }
   };
 
-  const submitPayment = () => {
+  const submitPayment = async () => {
     setPaymentStep("processing");
     const amt = PREMIUM_PLANS[selectedPlan].invest;
     const methodLabel = paymentMethod === "crypto" ? "Crypto" : paymentMethod === "ngn" ? "NGN Bank Transfer" : "Card";
-    setTimeout(() => {
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Not signed in");
+      let receiptPath: string | null = null;
+      if (receiptFile) {
+        const ext = receiptFile.name.split(".").pop() || "png";
+        receiptPath = `${u.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("receipts").upload(receiptPath, receiptFile, { contentType: receiptFile.type || "image/png" });
+        if (upErr) throw upErr;
+      }
+      const { error: insErr } = await supabase.from("payments").insert({
+        user_id: u.user.id,
+        amount: amt,
+        currency: "USD",
+        method: methodLabel,
+        receipt_url: receiptPath,
+        plan_index: selectedPlan,
+        status: "pending",
+      });
+      if (insErr) throw insErr;
       setPaymentStep("pending");
       addTxn({ kind: "deposit", amountUsd: amt, method: methodLabel, status: "pending", note: `Premium plan activation · awaiting confirmation` });
-    }, 2500);
+    } catch (e) {
+      setPaymentStep("pending");
+      showToast(`Could not submit: ${(e as Error).message}`);
+    }
   };
+
 
 
   const showToast = (msg: string) => {
