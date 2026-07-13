@@ -286,15 +286,15 @@ const CURRENCIES = [
   { code: "GBP", symbol: "£", rate: 0.79 },
 ];
 
-const CATEGORIES = [
-  { icon: Briefcase, label: "Wallet" },
-  { icon: Receipt, label: "Payments" },
-  { icon: RouteIcon, label: "Journey" },
-  { icon: Users, label: "Rosca" },
-  { icon: FileText, label: "Sanad" },
-  { icon: BookOpen, label: "Tabwa" },
-  { icon: Gift, label: "Donation" },
-  { icon: PiggyBank, label: "Savings" },
+const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
+  { icon: Briefcase, label: "Wallet", key: "wallet" },
+  { icon: Receipt, label: "Payments", key: "payments" },
+  { icon: RouteIcon, label: "Journey", key: "journey" },
+  { icon: Users, label: "Rosca", key: "rosca" },
+  { icon: LifeBuoy, label: "Support", key: "support" },
+  { icon: Clock, label: "History", key: "history" },
+  { icon: Gift, label: "Donation", key: "donation" },
+  { icon: PiggyBank, label: "Savings", key: "savings" },
 ];
 
 // Premium plan returns (48h payout, 14d total). mineReward = per-mine bonus USD ($10-$19)
