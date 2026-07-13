@@ -1347,6 +1347,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           activePlan={activePlan}
           currentPlan={currentPlan}
           currencyCode={currency.code}
+          settings={settings}
+
         />
       )}
 
