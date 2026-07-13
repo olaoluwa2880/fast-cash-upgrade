@@ -552,8 +552,8 @@ function Dashboard({ userEmail }: { userEmail: string }) {
         <section className={`mx-4 mt-4 rounded-3xl ${card} p-5 shadow-sm`}>
           <h2 className="font-bold text-lg">Categories</h2>
           <div className="mt-4 grid grid-cols-4 gap-3">
-            {CATEGORIES.map(({ icon: Icon, label }) => (
-              <button key={label} className="flex flex-col items-center gap-2">
+            {CATEGORIES.map(({ icon: Icon, label, key }) => (
+              <button key={label} onClick={() => setOpenCategory(key)} className="flex flex-col items-center gap-2 active:scale-95 transition">
                 <div className={`h-14 w-14 rounded-2xl ${chipBg} ${isDark ? "" : "shadow-[0_4px_12px_rgba(14,107,63,0.08)]"} grid place-items-center`}>
                   <Icon className="h-5 w-5" />
                 </div>
