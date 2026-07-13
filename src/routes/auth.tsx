@@ -316,7 +316,25 @@ function AuthPage() {
           </form>
         </div>
 
-        <p className="text-[11px] text-center text-gray-400 mt-6">
+            <button type="submit"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition mt-2">
+              Create Account
+            </button>
+          </form>
+        </div>
+
+        <p className="text-sm text-center text-gray-600 mt-5">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => { setError(null); setInfo(null); setStep("login"); }}
+            className="text-emerald-600 hover:text-emerald-700 font-semibold"
+          >
+            Login
+          </button>
+        </p>
+
+        <p className="text-[11px] text-center text-gray-400 mt-3">
           By continuing you agree to our Terms & Privacy Policy.
         </p>
       </div>
