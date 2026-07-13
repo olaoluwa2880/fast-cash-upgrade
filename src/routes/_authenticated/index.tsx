@@ -694,7 +694,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 )}
               </button>
               <p className={`mt-2 text-center text-[10px] ${softText}`}>
-                Mine once every 48 hours · Higher plan = higher reward
+                Mine up to {MAX_DAILY_MINES}× per day · Higher plan = higher reward · {MAX_DAILY_MINES - minesUsedToday} left today
               </p>
             </div>
           </div>
