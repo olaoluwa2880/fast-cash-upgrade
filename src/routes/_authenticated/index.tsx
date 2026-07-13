@@ -305,7 +305,17 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           (payload) => { const n = payload.new as { balance_usd?: number } | null; if (n?.balance_usd != null) setBalanceUsd(Number(n.balance_usd)); })
         .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${uid}` }, loadUserState)
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` },
-          (payload) => { const n = payload.new as { title?: string; body?: string } | null; if (n?.title) { const msg = `${n.title}${n.body ? ": " + n.body : ""}`; setToast(msg); setTimeout(() => setToast((t) => t === msg ? null : t), 4500); } })
+          (payload) => {
+            const n = payload.new as { title?: string; body?: string; kind?: string } | null;
+            if (!n?.title) return;
+            const isApproval = /approved/i.test(n.title) || n.title.includes("🎉");
+            if (isApproval) {
+              setCongrats({ title: n.title, body: n.body || "Your payment has been approved successfully." });
+            } else {
+              const msg = `${n.title}${n.body ? ": " + n.body : ""}`;
+              setToast(msg); setTimeout(() => setToast((t) => t === msg ? null : t), 4500);
+            }
+          })
         .subscribe();
       return () => { supabase.removeChannel(ch); };
     }
