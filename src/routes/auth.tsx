@@ -141,8 +141,11 @@ function AuthPage() {
       country: form.country,
     }, { onConflict: "id" });
 
+    setStep("verifying");
+    await new Promise((r) => setTimeout(r, 1800));
     navigate({ to: "/" });
   }
+
 
   async function resend() {
     if (cooldown > 0) return;
@@ -165,7 +168,17 @@ function AuthPage() {
     setCooldown(60);
   }
 
+  if (step === "verifying") {
+    return (
+      <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-5">
+        <h1 className="text-4xl font-extrabold text-white tracking-tight">FastCredit</h1>
+        <Loader2 className="w-10 h-10 text-white/90 animate-spin mt-8" />
+      </div>
+    );
+  }
+
   if (step === "otp") {
+
     return (
       <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
         <div className="w-full max-w-sm">
