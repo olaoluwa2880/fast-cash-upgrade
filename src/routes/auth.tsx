@@ -143,6 +143,7 @@ function AuthPage() {
       country: form.country,
     }, { onConflict: "id" });
 
+    await new Promise((r) => setTimeout(r, 1800));
     navigate({ to: "/" });
   }
 
@@ -167,19 +168,31 @@ function AuthPage() {
     setCooldown(60);
   }
 
-  if (step === "creating" || step === "verifying") {
-    const title = step === "creating" ? "Creating your account…" : "Verifying your account…";
-    const sub = step === "creating"
-      ? "Please wait while we prepare your account."
-      : "Setting up your dashboard…";
+  if (step === "creating") {
     return (
       <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-6">
         <div className="text-center max-w-sm">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-6">
             <Loader2 className="w-8 h-8 animate-spin" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-          <p className="text-sm text-gray-500 mt-2">{sub}</p>
+          <h1 className="text-xl font-bold text-gray-900">Creating your account…</h1>
+          <p className="text-sm text-gray-500 mt-2">Please wait while we prepare your account.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "verifying") {
+    return (
+      <div className="min-h-[100dvh] bg-white flex flex-col items-center justify-center px-6">
+        <div className="text-center">
+          <h1 className="text-5xl font-extrabold text-emerald-700 tracking-tight">FastCredit</h1>
+          <p className="text-sm font-semibold text-gray-800 mt-2">Licensed &amp; Secured 🛡️</p>
+        </div>
+        <div className="mt-16 flex flex-col items-center">
+          <Loader2 className="w-12 h-12 animate-spin text-emerald-700" />
+          <p className="mt-6 text-base font-semibold text-gray-900">Processing…</p>
+          <p className="mt-1 text-sm text-gray-500">Setting up your dashboard</p>
         </div>
       </div>
     );
