@@ -83,21 +83,24 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
   { icon: PiggyBank, label: "Savings", key: "savings" },
 ];
 
-// Premium plan returns (48h payout, 14d total). mineReward = per-mine bonus USD ($10-$19)
-const PREMIUM_PLANS = [
-  { invest: 10, profit: 0.25, total: 1.75, returned: 11.75, mineReward: 10 },
-  { invest: 25, profit: 0.63, total: 4.38, returned: 29.38, mineReward: 10.75 },
-  { invest: 50, profit: 1.25, total: 8.75, returned: 58.75, mineReward: 11.5 },
-  { invest: 100, profit: 2.50, total: 17.50, returned: 117.50, mineReward: 12.25 },
-  { invest: 250, profit: 6.25, total: 43.75, returned: 293.75, mineReward: 13 },
-  { invest: 500, profit: 12.50, total: 87.50, returned: 587.50, mineReward: 13.75 },
-  { invest: 1000, profit: 25, total: 175, returned: 1175, mineReward: 14.5 },
-  { invest: 1500, profit: 37.50, total: 262.50, returned: 1762.50, mineReward: 15.25 },
-  { invest: 2000, profit: 50, total: 350, returned: 2350, mineReward: 16 },
-  { invest: 2500, profit: 62.50, total: 437.50, returned: 2937.50, mineReward: 17 },
-  { invest: 3000, profit: 75, total: 525, returned: 3525, mineReward: 18 },
-  { invest: 3500, profit: 87.50, total: 612.50, returned: 4112.50, mineReward: 19 },
-];
+// Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day).
+const PREMIUM_PLANS = (() => {
+  const base = [
+    { name: "Starter", invest: 12,   mineReward: 17 },
+    { name: "Plan 2",  invest: 25,   mineReward: 35 },
+    { name: "Plan 3",  invest: 50,   mineReward: 70 },
+    { name: "Plan 4",  invest: 100,  mineReward: 150 },
+    { name: "Plan 5",  invest: 250,  mineReward: 380 },
+    { name: "Plan 6",  invest: 500,  mineReward: 800 },
+    { name: "Plan 7",  invest: 600,  mineReward: 1200 },
+    { name: "Plan 8",  invest: 1500, mineReward: 1760 },
+  ];
+  // 2 taps/day × 14 days = 28 total taps
+  return base.map(p => {
+    const total = p.mineReward * 28;
+    return { ...p, profit: p.mineReward * 2, total, returned: p.invest + total };
+  });
+})();
 
 const PAYMENT_METHODS = [
   { id: "crypto", label: "Pay with Crypto", desc: "BTC, USDT, ETH — instant confirm", emoji: "₿" },
