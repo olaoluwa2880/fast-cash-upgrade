@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
   Moon, Sun, Bell, ChevronDown, ArrowDownLeft, ArrowUpRight, Crown,
   Briefcase, Receipt, Route as RouteIcon, Users, FileText, BookOpen,
-  Gift, PiggyBank, Heart, Home, Search, Wallet, User,
+  Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -295,10 +295,27 @@ const CATEGORIES = [
   { icon: PiggyBank, label: "Savings" },
 ];
 
+const PREMIUM_PLANS = [
+  { invest: 10, profit: 2, total: 14, returned: 24 },
+  { invest: 25, profit: 6, total: 42, returned: 67 },
+  { invest: 50, profit: 13, total: 91, returned: 141 },
+  { invest: 100, profit: 30, total: 210, returned: 310 },
+  { invest: 250, profit: 85, total: 595, returned: 845 },
+  { invest: 500, profit: 190, total: 1330, returned: 1830 },
+  { invest: 1000, profit: 420, total: 2940, returned: 3940 },
+  { invest: 1500, profit: 660, total: 4620, returned: 6120 },
+  { invest: 2000, profit: 920, total: 6440, returned: 8440 },
+  { invest: 2500, profit: 1200, total: 8400, returned: 10900 },
+  { invest: 3000, profit: 1500, total: 10500, returned: 13500 },
+  { invest: 3500, profit: 1850, total: 12950, returned: 16450 },
+];
+
 function Dashboard() {
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [openCur, setOpenCur] = useState(false);
   const [dark, setDark] = useState(false);
+  const [openPremium, setOpenPremium] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(0);
 
   const fmtBalance = (usd: number) => {
     const v = usd * currency.rate;
@@ -380,7 +397,7 @@ function Dashboard() {
               <Crown className="h-4 w-4" />
             </button>
           </div>
-          <button className="mt-2 w-full rounded-full bg-amber-400 text-[#3a2500] py-2.5 text-xs font-bold flex items-center justify-center gap-1.5">
+          <button onClick={() => setOpenPremium(true)} className="mt-2 w-full rounded-full bg-amber-400 text-[#3a2500] py-2.5 text-xs font-bold flex items-center justify-center gap-1.5">
             <Crown className="h-3.5 w-3.5" /> Upgrade to Premium
           </button>
         </div>
@@ -466,6 +483,87 @@ function Dashboard() {
           <button className="h-11 w-11 grid place-items-center text-white/80"><User className="h-5 w-5" /></button>
         </div>
       </nav>
+
+      {openPremium && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setOpenPremium(false)}>
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]"} shadow-2xl`}>
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] rounded-t-3xl">
+              <div className="flex items-center gap-2">
+                <Crown className="h-5 w-5" />
+                <div>
+                  <p className="font-black text-base leading-tight">Premium Upgrade</p>
+                  <p className="text-[10px] font-semibold opacity-80">14 days · Payouts every 48h</p>
+                </div>
+              </div>
+              <button onClick={() => setOpenPremium(false)} className="h-8 w-8 grid place-items-center rounded-full bg-black/10">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-5">
+              <div className={`rounded-2xl p-4 ${isDark ? "bg-white/5" : "bg-amber-50"} border ${isDark ? "border-white/10" : "border-amber-200"}`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Starting investment</p>
+                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(10, currency.code === "USD" || currency.code === "EUR" || currency.code === "GBP" ? 2 : 0)}</p>
+                <p className={`mt-1 text-[11px] ${softText}`}>≈ $10 USD · Shown in {currency.code}</p>
+              </div>
+
+              <p className={`mt-5 text-xs font-bold uppercase tracking-wide ${softText}`}>Choose a plan</p>
+              <div className="mt-3 space-y-2">
+                {PREMIUM_PLANS.map((p, i) => {
+                  const dec = ["USD", "EUR", "GBP"].includes(currency.code) ? 2 : 0;
+                  const active = selectedPlan === i;
+                  return (
+                    <button
+                      key={p.invest}
+                      onClick={() => setSelectedPlan(i)}
+                      className={`w-full text-left rounded-2xl p-4 border transition ${active ? "border-amber-500 bg-amber-50 text-[#0b1e1a] shadow-md" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-8 w-8 rounded-full grid place-items-center ${active ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"}`}>
+                            {active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <p className="font-extrabold">{fmt(p.invest, dec)}</p>
+                            <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>Investment</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-extrabold text-emerald-600">{fmt(p.returned, dec)}</p>
+                          <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>at expiry</p>
+                        </div>
+                      </div>
+                      <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active ? "text-[#0b1e1a]/80" : softText}`}>
+                        <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
+                          <p className="opacity-70">Every 48h</p>
+                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, dec)}</p>
+                        </div>
+                        <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
+                          <p className="opacity-70">Total 14d</p>
+                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, dec)}</p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className={`mt-4 rounded-2xl p-3 text-[11px] ${isDark ? "bg-white/5 text-white/70" : "bg-[#f6f8f7] text-[#0b1e1a]/70"}`}>
+                <p className="font-bold mb-1">How it works</p>
+                <ul className="space-y-0.5 list-disc pl-4">
+                  <li>Profits credited every 48 hours (7 payouts).</li>
+                  <li>Each plan runs for 14 days, then expires automatically.</li>
+                  <li>Purchase a new plan after the current one ends.</li>
+                </ul>
+              </div>
+
+              <button className="mt-4 w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2">
+                <Crown className="h-4 w-4" /> Activate for {fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
