@@ -725,6 +725,74 @@ function Dashboard() {
           </div>
         </div>
       )}
+
+      {openPayment && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={closePayment}>
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]"} shadow-2xl`}>
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-t-3xl">
+              <div>
+                <p className="font-black text-base leading-tight">Select your method</p>
+                <p className="text-[10px] font-semibold opacity-90">Deposit {fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)} to activate</p>
+              </div>
+              <button onClick={closePayment} className="h-8 w-8 grid place-items-center rounded-full bg-black/15">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-5">
+              {paymentStep === "choose" && (
+                <>
+                  <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Payment options</p>
+                  <div className="mt-3 space-y-2">
+                    {PAYMENT_METHODS.map(m => (
+                      <button
+                        key={m.id}
+                        onClick={() => confirmPayment(m.id)}
+                        className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left active:scale-[.98] transition ${isDark ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-black/5 bg-white hover:bg-emerald-50"}`}
+                      >
+                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center text-xl font-black shrink-0">
+                          {m.emoji}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-extrabold">{m.label}</p>
+                          <p className={`text-[11px] ${softText}`}>{m.desc}</p>
+                        </div>
+                        <ArrowUpRight className="h-4 w-4 opacity-60" />
+                      </button>
+                    ))}
+                  </div>
+                  <p className={`mt-4 text-center text-[11px] ${softText}`}>Secured payments · Encrypted end-to-end</p>
+                </>
+              )}
+
+              {paymentStep === "processing" && (
+                <div className="flex flex-col items-center py-10 gap-4">
+                  <div className="h-14 w-14 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                  <p className="font-bold">Processing payment…</p>
+                  <p className={`text-[11px] ${softText}`}>
+                    {paymentMethod === "crypto" && "Waiting for blockchain confirmation"}
+                    {paymentMethod === "ngn" && "Confirming your NGN transfer"}
+                    {paymentMethod === "card" && "Verifying your card details"}
+                  </p>
+                </div>
+              )}
+
+              {paymentStep === "success" && (
+                <div className="flex flex-col items-center py-8 gap-3 text-center">
+                  <div className="h-16 w-16 rounded-full bg-emerald-500 grid place-items-center text-white">
+                    <Check className="h-8 w-8" />
+                  </div>
+                  <p className="font-black text-lg">Plan activated!</p>
+                  <p className={`text-xs ${softText}`}>You can mine your first reward now. Payouts every 48h for 14 days.</p>
+                  <button onClick={closePayment} className="mt-3 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
+                    Go to Dashboard
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
