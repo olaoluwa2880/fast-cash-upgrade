@@ -119,6 +119,30 @@ export type Database = {
         }
         Relationships: []
       }
+      mining_claims: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          id: string
+          plan_index: number | null
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          id?: string
+          plan_index?: number | null
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          plan_index?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
