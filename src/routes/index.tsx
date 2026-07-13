@@ -323,7 +323,17 @@ const DAY = 24 * 60 * 60 * 1000;
 const MINE_COOLDOWN = 48 * 60 * 60 * 1000;
 const PLAN_DURATION = 14 * DAY;
 
-function Dashboard() {
+type Txn = {
+  id: string;
+  kind: "deposit" | "withdraw" | "declined" | "bonus" | "mining";
+  amountUsd: number;
+  method?: string;
+  status: "approved" | "declined" | "credited";
+  at: number;
+  note?: string;
+};
+
+function Dashboard({ userEmail }: { userEmail: string }) {
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [openCur, setOpenCur] = useState(false);
   const [dark, setDark] = useState(false);
@@ -339,6 +349,17 @@ function Dashboard() {
   const [paymentStep, setPaymentStep] = useState<"choose" | "instructions" | "processing" | "success">("choose");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Txn[]>(() => {
+    const t = Date.now();
+    return [
+      { id: "seed-1", kind: "declined", amountUsd: 50, method: "Card", status: "declined", at: t - 4 * 24 * 3600 * 1000, note: "Card verification failed" },
+      { id: "seed-2", kind: "withdraw", amountUsd: 15, method: "USDT · TRC20", status: "approved", at: t - 2 * 24 * 3600 * 1000, note: "Withdrawal to wallet" },
+    ];
+  });
+
+  const addTxn = (t: Omit<Txn, "id" | "at">) =>
+    setTransactions(prev => [{ ...t, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now() }, ...prev]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
