@@ -433,37 +433,74 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
   const downloadReceipt = (t: Txn) => {
     try {
-      const lines = [
-        "===== FASTCREDIT RECEIPT =====",
-        `Receipt ID: ${t.id}`,
-        `Type: ${t.kind.toUpperCase()}`,
-        `Status: ${t.status.toUpperCase()}`,
-        `Amount: ${fmt(t.amountUsd, 2)} (≈ $${t.amountUsd.toFixed(2)} USD)`,
-        t.method ? `Method: ${t.method}` : "",
-        t.note ? `Note: ${t.note}` : "",
-        `Date: ${new Date(t.at).toLocaleString()}`,
-        `Account: ${userEmail || "user@fastcredit.app"}`,
-        "==============================",
-        "Thank you for using FastCredit.",
-      ].filter(Boolean).join("\n");
-      const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+      const receiptNo = `FC-${t.id.slice(0, 8).toUpperCase()}`;
+      const typeLabel = t.kind === "deposit" ? "Deposit" : t.kind === "withdraw" ? "Withdrawal" : t.kind === "mining" ? "Mining Reward" : t.kind === "bonus" ? "Bonus" : "Declined";
+      const statusColor = t.status === "approved" || t.status === "credited" ? "#0e6b3f" : t.status === "pending" ? "#d97706" : "#dc2626";
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Receipt ${receiptNo}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f2f5f3;color:#0b1e1a;padding:24px}
+  .receipt{max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 32px rgba(14,107,63,.12)}
+  .head{background:linear-gradient(135deg,#0f7a47,#0a5a34);color:#fff;padding:28px;text-align:center;position:relative}
+  .brand{font-size:28px;font-weight:900;letter-spacing:-.5px}
+  .tag{font-size:11px;opacity:.85;margin-top:4px;letter-spacing:2px;text-transform:uppercase}
+  .stamp{position:absolute;top:20px;right:20px;transform:rotate(-8deg);border:3px solid #fff;color:#fff;padding:6px 12px;border-radius:6px;font-weight:900;font-size:11px;letter-spacing:2px;opacity:.9}
+  .amt{padding:24px;text-align:center;border-bottom:1px dashed #e5e7eb}
+  .amt small{color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  .amt h1{font-size:40px;font-weight:900;margin-top:6px;color:${statusColor}}
+  .badge{display:inline-block;margin-top:8px;padding:6px 14px;border-radius:999px;background:${statusColor}15;color:${statusColor};font-weight:800;font-size:12px}
+  table{width:100%;border-collapse:collapse;padding:12px}
+  td{padding:12px 24px;font-size:13px;border-bottom:1px solid #f1f5f9}
+  td:first-child{color:#64748b;font-weight:600}
+  td:last-child{text-align:right;font-weight:700;word-break:break-all}
+  .foot{padding:20px 24px;text-align:center;background:#f8fafc;font-size:11px;color:#64748b}
+  .foot b{color:#0e6b3f}
+  .actions{padding:16px;text-align:center;background:#fff;border-top:1px solid #f1f5f9}
+  .btn{display:inline-block;padding:10px 20px;background:#0e6b3f;color:#fff;border-radius:999px;font-weight:800;border:none;cursor:pointer;margin:0 4px;font-size:13px}
+  @media print{body{background:#fff;padding:0}.receipt{box-shadow:none}.actions{display:none}}
+</style></head><body>
+<div class="receipt">
+  <div class="head">
+    <div class="brand">FastCredit</div>
+    <div class="tag">Official Receipt</div>
+    ${t.status === "approved" || t.status === "credited" ? '<div class="stamp">APPROVED</div>' : ''}
+  </div>
+  <div class="amt">
+    <small>Amount</small>
+    <h1>$${t.amountUsd.toFixed(2)}</h1>
+    <div class="badge">● ${t.status.toUpperCase()}</div>
+  </div>
+  <table>
+    <tr><td>Receipt No.</td><td>${receiptNo}</td></tr>
+    <tr><td>Transaction ID</td><td>${t.id}</td></tr>
+    <tr><td>Type</td><td>${typeLabel}</td></tr>
+    <tr><td>Date &amp; Time</td><td>${new Date(t.at).toLocaleString()}</td></tr>
+    ${t.method ? `<tr><td>Payment Method</td><td>${t.method}</td></tr>` : ''}
+    <tr><td>Account</td><td>${userEmail || "user@fastcredit.app"}</td></tr>
+    ${t.note ? `<tr><td>Note</td><td>${t.note}</td></tr>` : ''}
+  </table>
+  <div class="foot">
+    Verified by <b>FastCredit</b> · This is an electronically generated receipt.<br/>
+    Support: support@fastcreditglobal.com
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="window.print()">Download / Print PDF</button>
+  </div>
+</div>
+</body></html>`;
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      const filename = `fastcredit-${t.kind}-${t.id}.txt`;
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.rel = "noopener";
-      a.target = "_self";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // iOS Safari fallback: open in a new tab so the user can save it.
-      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
-      if (isIOS) window.open(url, "_blank");
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-      showToast(`Receipt downloaded · ${filename}`);
+      const win = window.open(url, "_blank");
+      if (!win) {
+        // Fallback: download the HTML
+        const a = document.createElement("a");
+        a.href = url; a.download = `fastcredit-receipt-${receiptNo}.html`;
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      showToast(`Receipt ${receiptNo} opened · use Print to save as PDF`);
     } catch {
-      showToast("Could not download receipt");
+      showToast("Could not generate receipt");
     }
   };
 
