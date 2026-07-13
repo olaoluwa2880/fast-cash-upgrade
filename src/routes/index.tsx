@@ -295,10 +295,27 @@ const CATEGORIES = [
   { icon: PiggyBank, label: "Savings" },
 ];
 
+const PREMIUM_PLANS = [
+  { invest: 10, profit: 2, total: 14, returned: 24 },
+  { invest: 25, profit: 6, total: 42, returned: 67 },
+  { invest: 50, profit: 13, total: 91, returned: 141 },
+  { invest: 100, profit: 30, total: 210, returned: 310 },
+  { invest: 250, profit: 85, total: 595, returned: 845 },
+  { invest: 500, profit: 190, total: 1330, returned: 1830 },
+  { invest: 1000, profit: 420, total: 2940, returned: 3940 },
+  { invest: 1500, profit: 660, total: 4620, returned: 6120 },
+  { invest: 2000, profit: 920, total: 6440, returned: 8440 },
+  { invest: 2500, profit: 1200, total: 8400, returned: 10900 },
+  { invest: 3000, profit: 1500, total: 10500, returned: 13500 },
+  { invest: 3500, profit: 1850, total: 12950, returned: 16450 },
+];
+
 function Dashboard() {
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [openCur, setOpenCur] = useState(false);
   const [dark, setDark] = useState(false);
+  const [openPremium, setOpenPremium] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(0);
 
   const fmtBalance = (usd: number) => {
     const v = usd * currency.rate;
