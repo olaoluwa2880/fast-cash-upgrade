@@ -278,7 +278,23 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           at: new Date(p.created_at).getTime(),
           note: p.rejection_reason || (p.status === "approved" ? "Deposit approved" : p.status === "pending" ? "Awaiting confirmation" : undefined),
         })));
+        // Determine active mining plan from most recent approved payment with a plan_index
+        const planPay = pays.find((p) => p.status === "approved" && p.plan_index != null);
+        if (planPay) {
+          const startedAt = new Date(planPay.created_at).getTime();
+          if (Date.now() - startedAt < PLAN_DURATION) {
+            setActivePlan({ index: planPay.plan_index as number, startedAt });
+          } else {
+            setActivePlan(null);
+          }
+        } else {
+          setActivePlan(null);
+        }
       }
+      // Load mining claims from last 24h
+      const since = new Date(Date.now() - DAY).toISOString();
+      const { data: claims } = await supabase.from("mining_claims").select("created_at").eq("user_id", uid).gte("created_at", since);
+      if (!cancelled) setRecentMines((claims ?? []).map((c) => new Date(c.created_at).getTime()));
       // Subscribe: balance + notifications for toast
       const ch = supabase.channel(`user-${uid}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "wallet_balances", filter: `user_id=eq.${uid}` },
