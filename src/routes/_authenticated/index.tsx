@@ -232,7 +232,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [bonusClaimed, setBonusClaimed] = useState(false);
   const [balanceUsd, setBalanceUsd] = useState(0);
   const [activePlan, setActivePlan] = useState<{ index: number; startedAt: number } | null>(null);
-  const [lastMineAt, setLastMineAt] = useState<number | null>(null);
+  const [recentMines, setRecentMines] = useState<number[]>([]); // timestamps of claims in last 24h
   const [now, setNow] = useState(Date.now());
   const [openPayment, setOpenPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
