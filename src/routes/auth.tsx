@@ -201,8 +201,17 @@ function AuthPage() {
       }
       return setError(error?.message || "Login failed.");
     }
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: data.user.id,
+      _role: "admin",
+    });
+    if (isAdmin) {
+      navigate({ to: "/admin/dashboard" });
+      return;
+    }
     navigate({ to: "/" });
   }
+
 
   if (step === "verifying") {
     return (
