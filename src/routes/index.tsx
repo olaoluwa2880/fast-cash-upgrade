@@ -356,7 +356,7 @@ function Dashboard() {
 
   const mine = () => {
     if (!mineReady || !currentPlan) return;
-    setBalanceUsd(b => b + currentPlan.profit);
+    setBalanceUsd(b => b + currentPlan.mineReward);
     setLastMineAt(Date.now());
   };
 
@@ -507,13 +507,13 @@ function Dashboard() {
                 <div className="text-right">
                   <p className="text-[10px] opacity-70 uppercase">Reward</p>
                   <p className="text-sm font-bold flex items-center gap-1 justify-end">
-                    <Zap className="h-3 w-3" /> {currentPlan ? fmt(currentPlan.profit, 2) : "—"}
+                    <Zap className="h-3 w-3" /> {currentPlan ? fmt(currentPlan.mineReward, 2) : "—"}
                   </p>
                 </div>
               </div>
               <p className="mt-4 text-[11px] opacity-80 relative">Next mine reward</p>
               <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">
-                {currentPlan ? fmt(currentPlan.profit, 2) : fmt(0, 2)}
+                {currentPlan ? fmt(currentPlan.mineReward, 2) : fmt(0, 2)}
               </p>
               <p className="text-[10px] opacity-70 relative">
                 {planActive
@@ -538,7 +538,7 @@ function Dashboard() {
                 {!planActive ? (
                   <><Crown className="h-4 w-4" /> Activate Premium to Mine</>
                 ) : mineReady ? (
-                  <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.profit, 2) : ""}</>
+                  <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.mineReward, 2) : ""}</>
                 ) : (
                   <><Pause className="h-4 w-4" /> Cooldown {formatCountdown(nextMineAt - now)}</>
                 )}
