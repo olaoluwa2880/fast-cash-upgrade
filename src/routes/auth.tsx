@@ -141,7 +141,6 @@ function AuthPage() {
       country: form.country,
     }, { onConflict: "id" });
 
-    await new Promise((r) => setTimeout(r, 1800));
     navigate({ to: "/" });
   }
 
