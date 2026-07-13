@@ -33,7 +33,7 @@ function Root() {
   }, [screen]);
   if (screen === "splash") return <Splash />;
   if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("signup")} />;
-  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={() => setScreen("dashboard")} />;
+  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={(email) => { setUserEmail(email); setScreen("processing"); }} />;
   if (screen === "google") return <GoogleAuth onDone={(email) => { setUserEmail(email); setScreen("processing"); }} />;
   if (screen === "processing") return <Processing />;
   if (screen === "otp") return <OtpScreen email={userEmail} onDone={() => setScreen("dashboard")} />;
@@ -200,11 +200,13 @@ function Onboarding({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-function Signup({ onContinue, onGoogle }: { onContinue: () => void; onGoogle: () => void }) {
+function Signup({ onContinue, onGoogle }: { onContinue: (email: string) => void; onGoogle: () => void }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const canSubmit = fullName.trim() && email.trim() && phone.trim();
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const canSubmit = fullName.trim() && email.trim() && phone.trim() && password.length >= 6;
   return (
     <div className="min-h-screen w-full bg-black flex flex-col px-6 pt-14 pb-8 text-white">
       <div className="flex flex-col items-center">
@@ -247,9 +249,20 @@ function Signup({ onContinue, onGoogle }: { onContinue: () => void; onGoogle: ()
           <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000"
             className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
         </div>
+        <div>
+          <label className="text-xs text-white/60">Password</label>
+          <div className="mt-1 relative">
+            <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters"
+              className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 pr-16 text-sm outline-none focus:border-emerald-400" />
+            <button type="button" onClick={() => setShowPw(s => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-300 font-semibold">
+              {showPw ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <button onClick={onContinue} disabled={!canSubmit}
+      <button onClick={() => onContinue(email)} disabled={!canSubmit}
         className="mt-6 w-full rounded-2xl bg-[#0e6b3f] py-4 font-bold disabled:opacity-50">
         Create Account
       </button>
