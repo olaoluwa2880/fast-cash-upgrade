@@ -139,10 +139,16 @@ function Dashboard() {
     const reason = window.prompt("Reason for rejection (optional)") ?? "";
     setBusy(r.id);
     const { data: u } = await supabase.auth.getUser();
-    const patch: Record<string, unknown> = { status: "rejected", reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() };
-    if (table === "payments") patch.rejection_reason = reason || null;
-    await supabase.from(table).update(patch).eq("id", r.id);
+    const reviewed = { status: "rejected" as const, reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() };
+    if (table === "payments") {
+      await supabase.from("payments").update({ ...reviewed, rejection_reason: reason || null }).eq("id", r.id);
+    } else if (table === "withdrawals") {
+      await supabase.from("withdrawals").update(reviewed).eq("id", r.id);
+    } else {
+      await supabase.from("upgrades").update(reviewed).eq("id", r.id);
+    }
     await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
+
     setBusy(null);
     await Promise.all([load(), refresh()]);
   }
