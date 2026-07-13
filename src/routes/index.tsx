@@ -397,7 +397,7 @@ function Dashboard() {
               <Crown className="h-4 w-4" />
             </button>
           </div>
-          <button className="mt-2 w-full rounded-full bg-amber-400 text-[#3a2500] py-2.5 text-xs font-bold flex items-center justify-center gap-1.5">
+          <button onClick={() => setOpenPremium(true)} className="mt-2 w-full rounded-full bg-amber-400 text-[#3a2500] py-2.5 text-xs font-bold flex items-center justify-center gap-1.5">
             <Crown className="h-3.5 w-3.5" /> Upgrade to Premium
           </button>
         </div>
