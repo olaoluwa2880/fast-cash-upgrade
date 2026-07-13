@@ -429,6 +429,73 @@ function Dashboard() {
           </div>
         </section>
 
+        {/* Welcome Bonus */}
+        <section className="mx-4 mt-4">
+          <div className={`rounded-3xl p-4 flex items-center gap-3 shadow-sm ${isDark ? "bg-gradient-to-r from-emerald-900/60 to-emerald-800/40 border border-emerald-500/20" : "bg-gradient-to-r from-emerald-50 to-lime-50 border border-emerald-200"}`}>
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center text-white shadow-lg shrink-0">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Welcome bonus</p>
+              <p className={`font-extrabold text-lg leading-tight ${isDark ? "text-white" : "text-[#0b1e1a]"}`}>{fmt(2, 2)} <span className="text-[11px] font-medium opacity-70">≈ $2 USD</span></p>
+            </div>
+            <button
+              onClick={() => setBonusClaimed(true)}
+              disabled={bonusClaimed}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${bonusClaimed ? "bg-emerald-600/20 text-emerald-500" : "bg-emerald-500 text-white shadow-md active:scale-95"}`}
+            >
+              {bonusClaimed ? "Claimed" : "Claim"}
+            </button>
+          </div>
+        </section>
+
+        {/* Mining */}
+        <section className="mx-4 mt-4">
+          <div className={`rounded-3xl overflow-hidden shadow-sm ${card}`}>
+            <div className="p-5 bg-gradient-to-br from-[#0e6b3f] to-[#0a4a2c] text-white relative">
+              <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/5" />
+              <div className="flex items-center justify-between relative">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-xl bg-white/15 grid place-items-center">
+                    <Pickaxe className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold leading-tight">FastCredit Mining</p>
+                    <p className="text-[11px] opacity-80 flex items-center gap-1">
+                      <span className={`h-1.5 w-1.5 rounded-full ${mining ? "bg-emerald-300 animate-pulse" : "bg-white/40"}`} />
+                      {mining ? "Mining active" : "Idle"}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] opacity-70 uppercase">Hash rate</p>
+                  <p className="text-sm font-bold flex items-center gap-1 justify-end"><Zap className="h-3 w-3" /> 12.4 MH/s</p>
+                </div>
+              </div>
+              <p className="mt-4 text-[11px] opacity-80 relative">Mined earnings</p>
+              <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">{fmt(mined, 4)}</p>
+              <p className="text-[10px] opacity-70 relative">≈ ${mined.toFixed(4)} USD</p>
+            </div>
+            <div className="p-4 flex items-center gap-2">
+              <button
+                onClick={() => setMining(m => !m)}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-full py-3 text-sm font-bold shadow-md ${mining ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"}`}
+              >
+                {mining ? <><Pause className="h-4 w-4" /> Stop mining</> : <><Play className="h-4 w-4" /> Start mining</>}
+              </button>
+              <button
+                onClick={() => setMined(0)}
+                disabled={mined === 0}
+                className={`rounded-full px-4 py-3 text-xs font-bold border ${isDark ? "border-white/10 text-white/80" : "border-black/10 text-[#0b1e1a]/70"} disabled:opacity-40`}
+              >
+                Collect
+              </button>
+            </div>
+          </div>
+        </section>
+
+
+
         {/* Great Deals */}
         <section className="mt-5 pl-4">
           <h2 className={`font-bold text-lg ${isDark ? "text-white" : "text-[#0b1e1a]"}`}>Great Deals</h2>
