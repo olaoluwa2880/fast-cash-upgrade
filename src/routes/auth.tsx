@@ -168,19 +168,6 @@ function AuthPage() {
     setCooldown(60);
   }
 
-  if (step === "creating") {
-    return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-6">
-        <div className="text-center max-w-sm">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-6">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-          <h1 className="text-xl font-bold text-gray-900">Creating your account…</h1>
-          <p className="text-sm text-gray-500 mt-2">Please wait while we prepare your account.</p>
-        </div>
-      </div>
-    );
-  }
 
   if (step === "verifying") {
     return (
