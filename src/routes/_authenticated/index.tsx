@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/")({
   }),
 });
 
-type Screen = "splash" | "onboarding" | "signup" | "google" | "processing" | "otp" | "dashboard";
+type Screen = "splash" | "dashboard";
 
 type UserProfile = {
   name: string;
@@ -32,147 +32,15 @@ const DEFAULT_PROFILE: UserProfile = { name: "", email: "", phone: "", country: 
 
 function Root() {
   const [screen, setScreen] = useState<Screen>("splash");
-  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [userProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   useEffect(() => {
     if (screen === "splash") {
-      const t = setTimeout(() => setScreen("onboarding"), 5000);
-      return () => clearTimeout(t);
-    }
-    if (screen === "processing") {
-      const t = setTimeout(() => setScreen("otp"), 5000);
+      const t = setTimeout(() => setScreen("dashboard"), 2000);
       return () => clearTimeout(t);
     }
   }, [screen]);
   if (screen === "splash") return <Splash />;
-  if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("signup")} />;
-  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={(profile) => { setUserProfile(profile); setScreen("processing"); }} />;
-  if (screen === "google") return <GoogleAuth onDone={(profile) => { setUserProfile(profile); setScreen("processing"); }} />;
-  if (screen === "processing") return <Processing />;
-  if (screen === "otp") return <OtpScreen email={userProfile.email} onDone={() => setScreen("dashboard")} />;
   return <Dashboard userProfile={userProfile} />;
-}
-
-function GoogleAuth({ onDone }: { onDone: (profile: UserProfile) => void }) {
-  const [step, setStep] = useState<"email" | "password">("email");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [country, setCountry] = useState(DEFAULT_PROFILE.country);
-  const countries = ["Nigeria", "United States", "United Kingdom", "Ghana", "South Africa", "Kenya", "Cameroon", "India", "Canada", "Germany", "France", "Other"];
-  return (
-    <div className="min-h-screen w-full bg-white flex flex-col px-6 pt-10 pb-8">
-      <div className="flex items-center gap-2">
-        <svg className="h-8 w-8" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.3-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 19 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z"/><path fill="#4CAF50" d="M24 43.5c5.2 0 9.8-1.9 13.3-5.1l-6.2-5.1c-2 1.5-4.5 2.4-7.1 2.4-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39 16.2 43.5 24 43.5z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.2 5.4l6.2 5.1c-.4.4 6.7-4.9 6.7-14.5 0-1.2-.1-2.4-.3-3.5z"/></svg>
-        <span className="text-xl text-[#5f6368]">Google</span>
-      </div>
-
-      {step === "email" ? (
-        <>
-          <h1 className="mt-8 text-2xl text-[#202124]">Sign in</h1>
-          <p className="mt-2 text-sm text-[#202124]">Use your Google Account to continue to FastCredit</p>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Full name"
-            className="mt-6 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8]" />
-          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email or phone"
-            className="mt-3 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8]" />
-          <select value={country} onChange={e => setCountry(e.target.value)}
-            className="mt-3 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8] bg-white">
-            {countries.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <p className="mt-3 text-[13px] text-[#1a73e8] font-medium">Forgot email?</p>
-          <p className="mt-6 text-xs text-[#5f6368]">Not your computer? Use Guest mode to sign in privately.</p>
-          <div className="mt-auto flex items-center justify-between pt-8">
-            <button className="text-[#1a73e8] text-sm font-medium">Create account</button>
-            <button disabled={!name.trim() || !email.trim()} onClick={() => setStep("password")}
-              className="rounded-md bg-[#1a73e8] px-6 py-2.5 text-white text-sm font-medium disabled:opacity-50">Next</button>
-          </div>
-        </>
-      ) : (
-        <>
-          <h1 className="mt-8 text-2xl text-[#202124]">Welcome</h1>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#dadce0] px-3 py-1.5 self-start">
-            <div className="h-6 w-6 rounded-full bg-[#1a73e8] text-white grid place-items-center text-xs font-bold">{email[0]?.toUpperCase()}</div>
-            <span className="text-sm text-[#202124]">{email}</span>
-          </div>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password"
-            className="mt-6 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8]" />
-          <label className="mt-4 flex items-center gap-2 text-sm text-[#202124]">
-            <input type="checkbox" /> Show password
-          </label>
-          <div className="mt-auto flex items-center justify-between pt-8">
-            <button className="text-[#1a73e8] text-sm font-medium">Forgot password?</button>
-            <button disabled={!password} onClick={() => onDone({ name: name.trim() || email.split("@")[0], email, phone: "", country })}
-              className="rounded-md bg-[#1a73e8] px-6 py-2.5 text-white text-sm font-medium disabled:opacity-50">Next</button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Processing() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-5">
-        <div className="h-14 w-14 rounded-full border-4 border-[#0e6b3f]/20 border-t-[#0e6b3f] animate-spin" />
-        <p className="text-[#0b1e1a] font-semibold">Verifying your account…</p>
-        <p className="text-xs text-[#0b1e1a]/60">Sending SMS code to your email</p>
-      </div>
-    </div>
-  );
-}
-
-function OtpScreen({ email, onDone }: { email: string; onDone: () => void }) {
-  const [seconds, setSeconds] = useState(24);
-  const [code, setCode] = useState(["", "", "", "", "", ""]);
-  useEffect(() => {
-    if (seconds <= 0) return;
-    const t = setTimeout(() => setSeconds(s => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [seconds]);
-  const filled = code.every(c => c);
-  return (
-    <div className="min-h-screen w-full bg-white flex flex-col px-6 pt-14 pb-8">
-      <h1 className="text-2xl font-extrabold text-[#0b1e4d]">Verify SMS Code</h1>
-      <p className="mt-2 text-sm text-[#0b1e4d]/70">
-        We sent a 6-digit SMS code to <span className="font-semibold">{email || "your email"}</span>. Enter it below to create your FastCredit account.
-      </p>
-
-      <div className="mt-8 flex justify-between gap-2">
-        {code.map((c, i) => (
-          <input key={i} value={c} maxLength={1} inputMode="numeric"
-            onChange={e => {
-              const v = e.target.value.replace(/\D/g, "");
-              const next = [...code]; next[i] = v; setCode(next);
-              if (v && i < 5) (document.getElementById(`otp-${i+1}`) as HTMLInputElement)?.focus();
-            }}
-            id={`otp-${i}`}
-            className="h-14 w-12 text-center text-xl font-bold rounded-xl border-2 border-[#0e6b3f]/20 focus:border-[#0e6b3f] outline-none" />
-        ))}
-      </div>
-
-      <div className="mt-6 text-center">
-        {seconds > 0 ? (
-          <p className="text-sm text-[#0b1e4d]/70">
-            Code expires in <span className="font-bold text-[#0e6b3f]">{seconds}s</span>
-          </p>
-        ) : (
-          <button onClick={() => setSeconds(24)} className="text-sm font-semibold text-[#0e6b3f]">Resend code</button>
-        )}
-      </div>
-
-      <div className="mt-6 rounded-2xl bg-[#eefaf2] border border-[#0e6b3f]/15 p-4">
-        <p className="text-xs font-bold text-[#0e6b3f]">📧 Check your email inbox</p>
-        <p className="mt-1 text-xs text-[#0b1e1a]/70">
-          The SMS verification code has been sent to your Gmail. Open your inbox to find it.
-        </p>
-      </div>
-
-      <button onClick={onDone} disabled={!filled || seconds <= 0}
-        className="mt-auto w-full rounded-2xl bg-[#0e6b3f] py-4 text-white font-bold disabled:opacity-50">
-        Verify & Create Account
-      </button>
-    </div>
-  );
 }
 
 function Splash() {
@@ -186,116 +54,6 @@ function Splash() {
           <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce" />
         </div>
       </div>
-    </div>
-  );
-}
-
-function Onboarding({ onContinue }: { onContinue: () => void }) {
-  return (
-    <div className="min-h-screen w-full bg-white flex flex-col px-6 pt-16 pb-8">
-      <div className="flex flex-col items-center">
-        <div className="text-[#0e6b3f] text-3xl font-black">FastCredit</div>
-        <p className="mt-1 text-xs font-semibold text-[#0b1e4d]">Licensed & Secured 🛡️</p>
-      </div>
-      <div className="mt-8 rounded-3xl bg-[#0e6b3f] aspect-square w-full flex items-center justify-center">
-        <div className="text-white text-center px-6">
-          <p className="text-2xl font-extrabold">Smart Credit</p>
-          <p className="mt-2 text-sm opacity-90">FastCredit • Savings • Pools • Pay in 3</p>
-        </div>
-      </div>
-      <h1 className="mt-6 text-center text-2xl font-extrabold text-[#0b1e4d]">
-        Using fasting trading app
-      </h1>
-      <div className="mt-auto pt-6 flex flex-col gap-3">
-        <button onClick={onContinue} className="w-full rounded-2xl bg-[#0e6b3f] py-4 text-white font-bold">New To FastCredit</button>
-        <button onClick={onContinue} className="w-full rounded-2xl border-2 border-[#0e6b3f] py-4 text-[#0e6b3f] font-bold">Login</button>
-        <p className="text-center text-sm text-[#0b1e4d]">
-          Already have a FastCredit Account?{" "}
-          <button onClick={onContinue} className="text-[#0e6b3f] font-semibold">Continue</button>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function Signup({ onContinue, onGoogle }: { onContinue: (profile: UserProfile) => void; onGoogle: () => void }) {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [country, setCountry] = useState(DEFAULT_PROFILE.country);
-  const [showPw, setShowPw] = useState(false);
-  const countries = ["Nigeria", "United States", "United Kingdom", "Ghana", "South Africa", "Kenya", "Cameroon", "India", "Canada", "Germany", "France", "Other"];
-  const canSubmit = fullName.trim() && email.trim() && phone.trim() && password.length >= 6;
-  return (
-    <div className="min-h-screen w-full bg-black flex flex-col px-6 pt-14 pb-8 text-white">
-      <div className="flex flex-col items-center">
-        <div className="text-white text-3xl font-black">FastCredit</div>
-        <p className="mt-1 text-xs font-semibold text-white/70">Create your account</p>
-      </div>
-
-      <button
-        onClick={onGoogle}
-        className="mt-8 w-full rounded-2xl bg-white text-black py-4 font-bold flex items-center justify-center gap-3 shadow-lg"
-      >
-        <svg className="h-5 w-5" viewBox="0 0 48 48" aria-hidden="true">
-          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.3-3.5z"/>
-          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 19 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z"/>
-          <path fill="#4CAF50" d="M24 43.5c5.2 0 9.8-1.9 13.3-5.1l-6.2-5.1c-2 1.5-4.5 2.4-7.1 2.4-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39 16.2 43.5 24 43.5z"/>
-          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.2 5.4l6.2 5.1c-.4.4 6.7-4.9 6.7-14.5 0-1.2-.1-2.4-.3-3.5z"/>
-        </svg>
-        Continue with Google
-      </button>
-
-      <div className="my-6 flex items-center gap-3 text-white/40 text-xs">
-        <div className="flex-1 h-px bg-white/15" />
-        <span>or fill in your details</span>
-        <div className="flex-1 h-px bg-white/15" />
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <label className="text-xs text-white/60">Full Name</label>
-          <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Ryan Sterling"
-            className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
-        </div>
-        <div>
-          <label className="text-xs text-white/60">Gmail Address</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@gmail.com"
-            className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
-        </div>
-        <div>
-          <label className="text-xs text-white/60">Phone Number</label>
-          <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000"
-            className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
-        </div>
-        <div>
-          <label className="text-xs text-white/60">Country</label>
-          <select value={country} onChange={e => setCountry(e.target.value)}
-            className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400 text-white appearance-none">
-            {countries.map(c => <option key={c} value={c} className="bg-black text-white">{c}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-white/60">Password</label>
-          <div className="mt-1 relative">
-            <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters"
-              className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 pr-16 text-sm outline-none focus:border-emerald-400" />
-            <button type="button" onClick={() => setShowPw(s => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-300 font-semibold">
-              {showPw ? "Hide" : "Show"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <button onClick={() => onContinue({ name: fullName.trim(), email: email.trim(), phone: phone.trim(), country })} disabled={!canSubmit}
-        className="mt-6 w-full rounded-2xl bg-[#0e6b3f] py-4 font-bold disabled:opacity-50">
-        Create Account
-      </button>
-      <p className="mt-4 text-center text-xs text-white/60">
-        By continuing you agree to FastCredit's Terms & Privacy Policy.
-      </p>
     </div>
   );
 }
