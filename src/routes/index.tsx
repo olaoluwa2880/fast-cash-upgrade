@@ -296,19 +296,20 @@ const CATEGORIES = [
   { icon: PiggyBank, label: "Savings" },
 ];
 
+// Realistic returns: ~1.5% every 48h (7 payouts) → ~10.5% total over 14 days
 const PREMIUM_PLANS = [
-  { invest: 10, profit: 2, total: 14, returned: 24 },
-  { invest: 25, profit: 6, total: 42, returned: 67 },
-  { invest: 50, profit: 13, total: 91, returned: 141 },
-  { invest: 100, profit: 30, total: 210, returned: 310 },
-  { invest: 250, profit: 85, total: 595, returned: 845 },
-  { invest: 500, profit: 190, total: 1330, returned: 1830 },
-  { invest: 1000, profit: 420, total: 2940, returned: 3940 },
-  { invest: 1500, profit: 660, total: 4620, returned: 6120 },
-  { invest: 2000, profit: 920, total: 6440, returned: 8440 },
-  { invest: 2500, profit: 1200, total: 8400, returned: 10900 },
-  { invest: 3000, profit: 1500, total: 10500, returned: 13500 },
-  { invest: 3500, profit: 1850, total: 12950, returned: 16450 },
+  { invest: 10, profit: 0.15, total: 1.05, returned: 11.05 },
+  { invest: 25, profit: 0.38, total: 2.63, returned: 27.63 },
+  { invest: 50, profit: 0.75, total: 5.25, returned: 55.25 },
+  { invest: 100, profit: 1.50, total: 10.50, returned: 110.50 },
+  { invest: 250, profit: 3.75, total: 26.25, returned: 276.25 },
+  { invest: 500, profit: 7.50, total: 52.50, returned: 552.50 },
+  { invest: 1000, profit: 15, total: 105, returned: 1105 },
+  { invest: 1500, profit: 22.50, total: 157.50, returned: 1657.50 },
+  { invest: 2000, profit: 30, total: 210, returned: 2210 },
+  { invest: 2500, profit: 37.50, total: 262.50, returned: 2762.50 },
+  { invest: 3000, profit: 45, total: 315, returned: 3315 },
+  { invest: 3500, profit: 52.50, total: 367.50, returned: 3867.50 },
 ];
 
 function Dashboard() {
