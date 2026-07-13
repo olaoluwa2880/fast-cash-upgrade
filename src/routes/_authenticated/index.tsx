@@ -467,6 +467,15 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const openWithdrawFlow = () => {
+    if (!planActive) {
+      showToast("You must upgrade your mining plan before you can withdraw your earnings.");
+      setOpenPremium(true);
+      return;
+    }
+    if (balanceUsd < MIN_WITHDRAW_USD) {
+      showToast(`Minimum withdrawal amount is $${MIN_WITHDRAW_USD}. Please continue mining until you reach the minimum withdrawal limit.`);
+      return;
+    }
     const preselect = BANKS_BY_CURRENCY[currency.code] ? currency.code : "NGN";
     setWdMethod(null);
     setWdCurrencyKey(preselect);
