@@ -896,3 +896,33 @@ function Dashboard() {
     </div>
   );
 }
+
+function ReceiptUpload({ receiptFile, setReceiptFile, isDark, softText }: { receiptFile: File | null; setReceiptFile: (f: File | null) => void; isDark: boolean; softText: string; }) {
+  return (
+    <div>
+      <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Upload payment receipt</p>
+      <label className={`mt-2 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-5 cursor-pointer ${isDark ? "border-white/15 bg-white/5" : "border-emerald-400/50 bg-emerald-50/40"}`}>
+        <div className="h-10 w-10 rounded-full bg-emerald-500 text-white grid place-items-center">
+          <Upload className="h-4 w-4" />
+        </div>
+        {receiptFile ? (
+          <>
+            <p className="text-xs font-bold text-emerald-600 break-all text-center">{receiptFile.name}</p>
+            <p className={`text-[10px] ${softText}`}>Tap to replace</p>
+          </>
+        ) : (
+          <>
+            <p className="text-xs font-bold">Tap to upload receipt</p>
+            <p className={`text-[10px] ${softText}`}>PNG, JPG or PDF · max 5MB</p>
+          </>
+        )}
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          className="hidden"
+          onChange={e => setReceiptFile(e.target.files?.[0] ?? null)}
+        />
+      </label>
+    </div>
+  );
+}
