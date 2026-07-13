@@ -1420,17 +1420,19 @@ type CategoryModalProps = {
   activePlan: { index: number; startedAt: number } | null;
   currentPlan: typeof PREMIUM_PLANS[number] | null;
   currencyCode: string;
+  settings: import("@/lib/site-settings").SiteSettings;
 };
 
 function CategoryModal(props: CategoryModalProps) {
-  const { categoryKey, onClose, isDark, softText, transactions, downloadReceipt, fmt, balanceUsd, bonusClaimed, userEmail, activePlan, currentPlan, currencyCode } = props;
+  const { categoryKey, onClose, isDark, softText, transactions, downloadReceipt, fmt, balanceUsd, bonusClaimed, userEmail, activePlan, currentPlan, currencyCode, settings } = props;
   const title =
     categoryKey === "savings" ? "Savings · Transactions" :
     categoryKey === "history" ? "History & Receipts" :
-    categoryKey === "rosca" ? "Profile" :
+    categoryKey === "community" ? "Community" :
     categoryKey === "donation" ? "Rewards" :
     categoryKey === "support" ? "Support" :
     categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
+
 
   const cardBg = isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]";
   const rowBg = isDark ? "bg-white/5 border-white/10" : "bg-white border-black/5";
