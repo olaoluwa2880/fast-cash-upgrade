@@ -200,7 +200,7 @@ function Onboarding({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-function Signup({ onContinue }: { onContinue: () => void }) {
+function Signup({ onContinue, onGoogle }: { onContinue: () => void; onGoogle: () => void }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
