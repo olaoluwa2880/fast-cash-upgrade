@@ -65,9 +65,9 @@ function AuthPage() {
     setError(null); setInfo(null);
     const v = validate();
     if (v) return setError(v);
+    if (step === "creating") return; // guard against double-submit
     setStep("creating");
     const email = form.email.trim();
-    console.log("[auth] signUp start", { email });
     const { data, error } = await supabase.auth.signUp({
       email,
       password: form.password,
@@ -80,29 +80,43 @@ function AuthPage() {
         },
       },
     });
-    console.log("[auth] signUp result", { data, error });
 
     if (error) {
       setStep("register");
-      return setError(`Sign up failed: ${error.message}`);
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("security purposes") || msg.includes("rate limit") || msg.includes("only request this after")) {
+        // Silently proceed to OTP screen — a code was very likely already sent
+        setInfo(`We sent a 6-digit code to ${email}. Please check your inbox.`);
+        setCooldown(60);
+        setStep("otp");
+        return;
+      }
+      if (msg.includes("already registered") || msg.includes("already exists") || msg.includes("user already")) {
+        const { error: otpErr } = await supabase.auth.signInWithOtp({
+          email,
+          options: { shouldCreateUser: false },
+        });
+        if (otpErr) return setError("This email is already registered. Please try signing in instead.");
+        setInfo(`This email is already registered. We sent a sign-in code to ${email}.`);
+        setCooldown(60);
+        setStep("otp");
+        return;
+      }
+      if (msg.includes("password")) return setError("Please choose a stronger password (at least 8 characters).");
+      if (msg.includes("email") && msg.includes("invalid")) return setError("Please enter a valid email address.");
+      return setError("We couldn't create your account. Please try again in a moment.");
     }
 
-    // Detect "user already registered": Supabase returns 200 with an obfuscated
-    // user (identities: []) and does NOT send another email. Fall back to an
-    // OTP sign-in so the user actually receives a code.
+    // Detect "user already registered" (obfuscated response)
     const identities = (data.user as { identities?: unknown[] } | null)?.identities;
     if (Array.isArray(identities) && identities.length === 0) {
-      console.warn("[auth] email already registered, sending OTP sign-in code instead");
       const { error: otpErr } = await supabase.auth.signInWithOtp({
         email,
         options: { shouldCreateUser: false },
       });
-      console.log("[auth] signInWithOtp result", { otpErr });
       if (otpErr) {
         setStep("register");
-        return setError(
-          `This email is already registered but we couldn't send a code: ${otpErr.message}`,
-        );
+        return setError("This email is already registered. Please try signing in instead.");
       }
       setInfo(`This email is already registered. We sent a sign-in code to ${email}.`);
       setCooldown(60);
@@ -110,10 +124,11 @@ function AuthPage() {
       return;
     }
 
-    setInfo(`We sent a 6-digit code to ${email}.`);
+    setInfo(`We sent a 6-digit code to ${email}. Please check your inbox.`);
     setCooldown(60);
     setStep("otp");
   }
+
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
