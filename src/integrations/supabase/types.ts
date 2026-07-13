@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_details: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          currency: string
+          enabled: boolean
+          id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          currency?: string
+          enabled?: boolean
+          id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          currency?: string
+          enabled?: boolean
+          id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_links: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          platform: string
+          sort_order: number
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          platform?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          platform?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      crypto_wallets: {
+        Row: {
+          address: string
+          created_at: string
+          enabled: boolean
+          id: string
+          label: string | null
+          network: string
+          sort_order: number
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string | null
+          network: string
+          sort_order?: number
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string | null
+          network?: string
+          sort_order?: number
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -86,6 +191,39 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      support_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          kind: string
+          label: string
+          sort_order: number
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }
