@@ -344,6 +344,78 @@ const PAYMENT_METHODS = [
   { id: "card", label: "Add your Card", desc: "Visa, Mastercard, Verve", emoji: "💳" },
 ];
 
+// Country → bank lists for Withdraw flow. Keyed by currency code so the currency
+// switcher and profile country selectors line up automatically.
+const BANKS_BY_CURRENCY: Record<string, { country: string; flag: string; banks: string[] }> = {
+  NGN: {
+    country: "Nigeria", flag: "🇳🇬",
+    banks: [
+      "Access Bank", "Citibank Nigeria", "Ecobank Nigeria", "Fidelity Bank",
+      "First Bank of Nigeria", "First City Monument Bank (FCMB)", "Globus Bank",
+      "Guaranty Trust Bank (GTBank)", "Heritage Bank", "Jaiz Bank", "Keystone Bank",
+      "Kuda Bank", "Lotus Bank", "Opay", "Palmpay", "Parallex Bank", "Polaris Bank",
+      "Premium Trust Bank", "Providus Bank", "Rand Merchant Bank", "Signature Bank",
+      "Stanbic IBTC Bank", "Standard Chartered Nigeria", "Sterling Bank",
+      "SunTrust Bank", "TAJ Bank", "Titan Trust Bank", "Union Bank of Nigeria",
+      "United Bank for Africa (UBA)", "Unity Bank", "VFD Bank", "Wema Bank",
+      "Zenith Bank", "Coronation Merchant Bank", "Nova Merchant Bank",
+    ],
+  },
+  CFA: {
+    country: "Cameroon", flag: "🇨🇲",
+    banks: [
+      "Afriland First Bank", "BICEC", "Commercial Bank of Cameroon (CBC)",
+      "Ecobank Cameroun", "Standard Chartered Bank Cameroon",
+      "Société Générale Cameroun (SGC)", "UBA Cameroun", "BGFI Bank Cameroun",
+      "Citibank Cameroon", "Access Bank Cameroon", "Attijariwafa Bank (SCB)",
+      "CCA Bank", "La Régionale", "Union Bank of Cameroon",
+      "National Financial Credit Bank (NFC)",
+    ],
+  },
+  ZAR: {
+    country: "South Africa", flag: "🇿🇦",
+    banks: [
+      "Standard Bank", "ABSA Bank", "First National Bank (FNB)", "Nedbank",
+      "Capitec Bank", "Investec", "African Bank", "Discovery Bank",
+      "TymeBank", "Bidvest Bank",
+    ],
+  },
+  GHS: {
+    country: "Ghana", flag: "🇬🇭",
+    banks: [
+      "Ghana Commercial Bank (GCB)", "Ecobank Ghana", "Absa Bank Ghana",
+      "Standard Chartered Ghana", "Zenith Bank Ghana", "Fidelity Bank Ghana",
+      "CalBank", "Access Bank Ghana", "Stanbic Bank Ghana",
+      "Republic Bank Ghana", "UBA Ghana", "Consolidated Bank Ghana",
+      "ADB Bank", "Prudential Bank",
+    ],
+  },
+  USD: {
+    country: "United States", flag: "🇺🇸",
+    banks: [
+      "JPMorgan Chase", "Bank of America", "Wells Fargo", "Citibank",
+      "U.S. Bank", "PNC Bank", "Truist Bank", "Goldman Sachs Bank",
+      "Capital One", "TD Bank",
+    ],
+  },
+  GBP: {
+    country: "United Kingdom", flag: "🇬🇧",
+    banks: [
+      "Barclays", "HSBC UK", "Lloyds Bank", "NatWest", "Santander UK",
+      "Standard Chartered UK", "Nationwide", "Metro Bank", "Monzo",
+      "Starling Bank", "Revolut",
+    ],
+  },
+  EUR: {
+    country: "Eurozone", flag: "🇪🇺",
+    banks: [
+      "Deutsche Bank", "BNP Paribas", "Société Générale", "ING Bank",
+      "Santander", "UniCredit", "Rabobank", "Commerzbank", "KBC Bank",
+      "Intesa Sanpaolo", "Crédit Agricole", "ABN AMRO",
+    ],
+  },
+};
+
 const DAY = 24 * 60 * 60 * 1000;
 const MINE_COOLDOWN = 48 * 60 * 60 * 1000;
 const PLAN_DURATION = 14 * DAY;
@@ -377,6 +449,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [openProfile, setOpenProfile] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [openWithdraw, setOpenWithdraw] = useState(false);
+  const [wdStep, setWdStep] = useState<"country" | "bank" | "details" | "processing" | "success">("country");
+  const [wdCurrencyKey, setWdCurrencyKey] = useState<string>("NGN");
+  const [wdBank, setWdBank] = useState<string>("");
+  const [wdAccountNumber, setWdAccountNumber] = useState("");
+  const [wdAccountName, setWdAccountName] = useState("");
+  const [wdAmount, setWdAmount] = useState("");
   const [transactions, setTransactions] = useState<Txn[]>(() => {
     const t = Date.now();
     return [
@@ -452,29 +532,45 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     }, 2500);
   };
 
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(t => (t === msg ? null : t)), 2200);
+  };
+
   const downloadReceipt = (t: Txn) => {
-    const lines = [
-      "===== FASTCREDIT RECEIPT =====",
-      `Receipt ID: ${t.id}`,
-      `Type: ${t.kind.toUpperCase()}`,
-      `Status: ${t.status.toUpperCase()}`,
-      `Amount: ${fmt(t.amountUsd, 2)} (≈ $${t.amountUsd.toFixed(2)} USD)`,
-      t.method ? `Method: ${t.method}` : "",
-      t.note ? `Note: ${t.note}` : "",
-      `Date: ${new Date(t.at).toLocaleString()}`,
-      `Account: ${userEmail || "user@fastcredit.app"}`,
-      "==============================",
-      "Thank you for using FastCredit.",
-    ].filter(Boolean).join("\n");
-    const blob = new Blob([lines], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `fastcredit-${t.kind}-${t.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    try {
+      const lines = [
+        "===== FASTCREDIT RECEIPT =====",
+        `Receipt ID: ${t.id}`,
+        `Type: ${t.kind.toUpperCase()}`,
+        `Status: ${t.status.toUpperCase()}`,
+        `Amount: ${fmt(t.amountUsd, 2)} (≈ $${t.amountUsd.toFixed(2)} USD)`,
+        t.method ? `Method: ${t.method}` : "",
+        t.note ? `Note: ${t.note}` : "",
+        `Date: ${new Date(t.at).toLocaleString()}`,
+        `Account: ${userEmail || "user@fastcredit.app"}`,
+        "==============================",
+        "Thank you for using FastCredit.",
+      ].filter(Boolean).join("\n");
+      const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const filename = `fastcredit-${t.kind}-${t.id}.txt`;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.rel = "noopener";
+      a.target = "_self";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // iOS Safari fallback: open in a new tab so the user can save it.
+      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+      if (isIOS) window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      showToast(`Receipt downloaded · ${filename}`);
+    } catch {
+      showToast("Could not download receipt");
+    }
   };
 
   const copyText = (text: string, key: string) => {
@@ -489,6 +585,44 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setPaymentMethod(null);
     setReceiptFile(null);
   };
+
+  const openWithdrawFlow = () => {
+    const preselect = BANKS_BY_CURRENCY[currency.code] ? currency.code : "NGN";
+    setWdCurrencyKey(preselect);
+    setWdBank("");
+    setWdAccountNumber("");
+    setWdAccountName("");
+    setWdAmount("");
+    setWdStep("country");
+    setOpenWithdraw(true);
+  };
+  const closeWithdraw = () => {
+    setOpenWithdraw(false);
+    setWdStep("country");
+  };
+  const submitWithdraw = () => {
+    setWdStep("processing");
+    const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (currency.rate || 1);
+    const bankInfo = BANKS_BY_CURRENCY[wdCurrencyKey];
+    setTimeout(() => {
+      if (balanceUsd >= amtUsd && amtUsd > 0) {
+        setBalanceUsd(b => b - amtUsd);
+        addTxn({
+          kind: "withdraw", amountUsd: amtUsd, status: "approved",
+          method: `${bankInfo?.country} · ${wdBank}`,
+          note: `To ${wdAccountName || "account"} · ${wdAccountNumber}`,
+        });
+      } else {
+        addTxn({
+          kind: "declined", amountUsd: amtUsd, status: "declined",
+          method: `${bankInfo?.country} · ${wdBank}`,
+          note: "Insufficient balance for withdrawal",
+        });
+      }
+      setWdStep("success");
+    }, 2200);
+  };
+
 
   const fmtBalance = (usd: number) => {
     const v = usd * currency.rate;
@@ -563,8 +697,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             <button className="flex-1 flex items-center justify-center gap-2 rounded-full bg-white/10 border border-white/15 py-3 text-sm font-semibold">
               <ArrowDownLeft className="h-4 w-4" /> Request
             </button>
-            <button className="flex-1 flex items-center justify-center gap-2 rounded-full bg-white text-[#0e6b3f] py-3 text-sm font-bold shadow-lg">
-              <ArrowUpRight className="h-4 w-4" /> Transfer
+            <button onClick={openWithdrawFlow} className="flex-1 flex items-center justify-center gap-2 rounded-full bg-white text-[#0e6b3f] py-3 text-sm font-bold shadow-lg active:scale-95">
+              <ArrowUpRight className="h-4 w-4" /> Withdraw
             </button>
             <button className="flex items-center justify-center gap-1 rounded-full bg-white/10 border border-white/15 py-3 px-3 text-xs font-semibold">
               <Crown className="h-4 w-4" />
@@ -972,6 +1106,164 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           </div>
         </div>
       )}
+
+      {openWithdraw && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={closeWithdraw}>
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${card} shadow-2xl`}>
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white rounded-t-3xl">
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="h-4 w-4" />
+                <p className="font-black text-base">
+                  Withdraw
+                  {wdStep !== "country" && BANKS_BY_CURRENCY[wdCurrencyKey] && (
+                    <span className="ml-2 text-xs opacity-80">· {BANKS_BY_CURRENCY[wdCurrencyKey].flag} {BANKS_BY_CURRENCY[wdCurrencyKey].country}</span>
+                  )}
+                </p>
+              </div>
+              <button onClick={closeWithdraw} className="h-8 w-8 grid place-items-center rounded-full bg-black/20"><X className="h-4 w-4" /></button>
+            </div>
+
+            <div className="p-5">
+              {/* Step indicator */}
+              {wdStep !== "processing" && wdStep !== "success" && (
+                <div className="flex items-center gap-1 mb-4 text-[10px] font-bold uppercase tracking-wide">
+                  {["country", "bank", "details"].map((s, i) => {
+                    const active = wdStep === s;
+                    const done = ["country", "bank", "details"].indexOf(wdStep) > i;
+                    return (
+                      <div key={s} className={`flex-1 h-1.5 rounded-full ${active ? "bg-[#0e6b3f]" : done ? "bg-emerald-400" : "bg-black/10"}`} />
+                    );
+                  })}
+                </div>
+              )}
+
+              {wdStep === "country" && (
+                <div className="space-y-2">
+                  <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your country</p>
+                  <p className={`text-[11px] ${softText}`}>We'll show the banks supported in your country for withdrawal.</p>
+                  <div className="mt-3 space-y-2">
+                    {Object.entries(BANKS_BY_CURRENCY).map(([key, info]) => {
+                      const isActive = wdCurrencyKey === key;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => { setWdCurrencyKey(key); setWdBank(""); setWdStep("bank"); }}
+                          className={`w-full flex items-center justify-between rounded-2xl border p-3 text-left active:scale-[0.98] transition ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{info.flag}</span>
+                            <div>
+                              <p className="font-bold text-sm">{info.country}</p>
+                              <p className={`text-[11px] ${softText}`}>{info.banks.length} banks · {key}</p>
+                            </div>
+                          </div>
+                          <ArrowUpRight className="h-4 w-4 opacity-60" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {wdStep === "bank" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your bank</p>
+                    <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
+                  </div>
+                  <div className="mt-2 space-y-1.5 max-h-[52vh] overflow-y-auto pr-1">
+                    {BANKS_BY_CURRENCY[wdCurrencyKey]?.banks.map(b => {
+                      const isActive = wdBank === b;
+                      return (
+                        <button
+                          key={b}
+                          onClick={() => { setWdBank(b); setWdStep("details"); }}
+                          className={`w-full flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                        >
+                          <span className="font-semibold text-sm">{b}</span>
+                          <ChevronDown className="h-4 w-4 -rotate-90 opacity-50" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {wdStep === "details" && (
+                <div className="space-y-3">
+                  <div className={`rounded-2xl p-3 ${isDark ? "bg-white/5" : "bg-emerald-50"} flex items-center justify-between`}>
+                    <div>
+                      <p className={`text-[10px] uppercase font-bold ${softText}`}>Selected bank</p>
+                      <p className="font-black text-sm">{wdBank}</p>
+                      <p className={`text-[10px] ${softText}`}>{BANKS_BY_CURRENCY[wdCurrencyKey]?.flag} {BANKS_BY_CURRENCY[wdCurrencyKey]?.country}</p>
+                    </div>
+                    <button onClick={() => setWdStep("bank")} className="text-[11px] font-bold text-[#0e6b3f]">Change</button>
+                  </div>
+
+                  <label className="block">
+                    <span className={`text-[11px] font-bold ${softText}`}>Account number</span>
+                    <input value={wdAccountNumber} onChange={e => setWdAccountNumber(e.target.value.replace(/[^0-9]/g, ""))}
+                      inputMode="numeric" placeholder="10-digit account number"
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                  </label>
+
+                  <label className="block">
+                    <span className={`text-[11px] font-bold ${softText}`}>Account name</span>
+                    <input value={wdAccountName} onChange={e => setWdAccountName(e.target.value)}
+                      placeholder="Full name on account"
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                  </label>
+
+                  <label className="block">
+                    <span className={`text-[11px] font-bold ${softText}`}>Amount ({currency.code})</span>
+                    <input value={wdAmount} onChange={e => setWdAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                      inputMode="decimal" placeholder={`0.00 ${currency.code}`}
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                    <span className={`mt-1 block text-[10px] ${softText}`}>Available: {fmt(balanceUsd, 2)}</span>
+                  </label>
+
+                  <button
+                    onClick={submitWithdraw}
+                    disabled={!wdAccountNumber || !wdAccountName || !wdAmount || parseFloat(wdAmount) <= 0}
+                    className="mt-2 w-full rounded-full bg-[#0e6b3f] disabled:bg-[#0e6b3f]/40 text-white py-3.5 font-black text-sm active:scale-95"
+                  >
+                    Continue withdrawal
+                  </button>
+                </div>
+              )}
+
+              {wdStep === "processing" && (
+                <div className="flex flex-col items-center py-10 gap-3 text-center">
+                  <div className="h-14 w-14 rounded-full border-4 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+                  <p className="font-black">Processing withdrawal…</p>
+                  <p className={`text-xs ${softText}`}>Sending to {wdBank}</p>
+                </div>
+              )}
+
+              {wdStep === "success" && (
+                <div className="flex flex-col items-center py-8 gap-3 text-center">
+                  <div className="h-16 w-16 rounded-full bg-emerald-500 grid place-items-center text-white">
+                    <Check className="h-8 w-8" />
+                  </div>
+                  <p className="font-black text-lg">Withdrawal submitted!</p>
+                  <p className={`text-xs ${softText}`}>{wdBank} · {wdAccountNumber}</p>
+                  <p className={`text-xs ${softText}`}>You can download a receipt from History.</p>
+                  <button onClick={closeWithdraw} className="mt-3 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
+                    Done
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] rounded-full bg-black/85 text-white text-xs font-semibold px-4 py-2 shadow-2xl backdrop-blur">
+          {toast}
+        </div>
+      )}
+
 
       {openCategory && (
         <CategoryModal
