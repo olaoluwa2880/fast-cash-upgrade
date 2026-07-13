@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/")({
   }),
 });
 
-type Screen = "splash" | "onboarding" | "signup" | "google" | "processing" | "otp" | "dashboard";
+type Screen = "splash" | "dashboard";
 
 type UserProfile = {
   name: string;
@@ -32,23 +32,14 @@ const DEFAULT_PROFILE: UserProfile = { name: "", email: "", phone: "", country: 
 
 function Root() {
   const [screen, setScreen] = useState<Screen>("splash");
-  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [userProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   useEffect(() => {
     if (screen === "splash") {
-      const t = setTimeout(() => setScreen("onboarding"), 5000);
-      return () => clearTimeout(t);
-    }
-    if (screen === "processing") {
-      const t = setTimeout(() => setScreen("otp"), 5000);
+      const t = setTimeout(() => setScreen("dashboard"), 2000);
       return () => clearTimeout(t);
     }
   }, [screen]);
   if (screen === "splash") return <Splash />;
-  if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("signup")} />;
-  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={(profile) => { setUserProfile(profile); setScreen("processing"); }} />;
-  if (screen === "google") return <GoogleAuth onDone={(profile) => { setUserProfile(profile); setScreen("processing"); }} />;
-  if (screen === "processing") return <Processing />;
-  if (screen === "otp") return <OtpScreen email={userProfile.email} onDone={() => setScreen("dashboard")} />;
   return <Dashboard userProfile={userProfile} />;
 }
 
