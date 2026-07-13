@@ -333,6 +333,9 @@ function Dashboard() {
   const [activePlan, setActivePlan] = useState<{ index: number; startedAt: number } | null>(null);
   const [lastMineAt, setLastMineAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [openPayment, setOpenPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const [paymentStep, setPaymentStep] = useState<"choose" | "processing" | "success">("choose");
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
