@@ -296,20 +296,20 @@ const CATEGORIES = [
   { icon: PiggyBank, label: "Savings" },
 ];
 
-// Realistic returns: ~1.5% every 48h (7 payouts) → ~10.5% total over 14 days
+// Premium plan returns (48h payout, 14d total). mineReward = per-mine bonus USD ($10-$19)
 const PREMIUM_PLANS = [
-  { invest: 10, profit: 0.15, total: 1.05, returned: 11.05 },
-  { invest: 25, profit: 0.38, total: 2.63, returned: 27.63 },
-  { invest: 50, profit: 0.75, total: 5.25, returned: 55.25 },
-  { invest: 100, profit: 1.50, total: 10.50, returned: 110.50 },
-  { invest: 250, profit: 3.75, total: 26.25, returned: 276.25 },
-  { invest: 500, profit: 7.50, total: 52.50, returned: 552.50 },
-  { invest: 1000, profit: 15, total: 105, returned: 1105 },
-  { invest: 1500, profit: 22.50, total: 157.50, returned: 1657.50 },
-  { invest: 2000, profit: 30, total: 210, returned: 2210 },
-  { invest: 2500, profit: 37.50, total: 262.50, returned: 2762.50 },
-  { invest: 3000, profit: 45, total: 315, returned: 3315 },
-  { invest: 3500, profit: 52.50, total: 367.50, returned: 3867.50 },
+  { invest: 10, profit: 0.15, total: 1.05, returned: 11.05, mineReward: 10 },
+  { invest: 25, profit: 0.38, total: 2.63, returned: 27.63, mineReward: 10.75 },
+  { invest: 50, profit: 0.75, total: 5.25, returned: 55.25, mineReward: 11.5 },
+  { invest: 100, profit: 1.50, total: 10.50, returned: 110.50, mineReward: 12.25 },
+  { invest: 250, profit: 3.75, total: 26.25, returned: 276.25, mineReward: 13 },
+  { invest: 500, profit: 7.50, total: 52.50, returned: 552.50, mineReward: 13.75 },
+  { invest: 1000, profit: 15, total: 105, returned: 1105, mineReward: 14.5 },
+  { invest: 1500, profit: 22.50, total: 157.50, returned: 1657.50, mineReward: 15.25 },
+  { invest: 2000, profit: 30, total: 210, returned: 2210, mineReward: 16 },
+  { invest: 2500, profit: 37.50, total: 262.50, returned: 2762.50, mineReward: 17 },
+  { invest: 3000, profit: 45, total: 315, returned: 3315, mineReward: 18 },
+  { invest: 3500, profit: 52.50, total: 367.50, returned: 3867.50, mineReward: 19 },
 ];
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -356,7 +356,7 @@ function Dashboard() {
 
   const mine = () => {
     if (!mineReady || !currentPlan) return;
-    setBalanceUsd(b => b + currentPlan.profit);
+    setBalanceUsd(b => b + currentPlan.mineReward);
     setLastMineAt(Date.now());
   };
 
@@ -507,13 +507,13 @@ function Dashboard() {
                 <div className="text-right">
                   <p className="text-[10px] opacity-70 uppercase">Reward</p>
                   <p className="text-sm font-bold flex items-center gap-1 justify-end">
-                    <Zap className="h-3 w-3" /> {currentPlan ? fmt(currentPlan.profit, 2) : "—"}
+                    <Zap className="h-3 w-3" /> {currentPlan ? fmt(currentPlan.mineReward, 2) : "—"}
                   </p>
                 </div>
               </div>
               <p className="mt-4 text-[11px] opacity-80 relative">Next mine reward</p>
               <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">
-                {currentPlan ? fmt(currentPlan.profit, 2) : fmt(0, 2)}
+                {currentPlan ? fmt(currentPlan.mineReward, 2) : fmt(0, 2)}
               </p>
               <p className="text-[10px] opacity-70 relative">
                 {planActive
@@ -538,7 +538,7 @@ function Dashboard() {
                 {!planActive ? (
                   <><Crown className="h-4 w-4" /> Activate Premium to Mine</>
                 ) : mineReady ? (
-                  <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.profit, 2) : ""}</>
+                  <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.mineReward, 2) : ""}</>
                 ) : (
                   <><Pause className="h-4 w-4" /> Cooldown {formatCountdown(nextMineAt - now)}</>
                 )}
