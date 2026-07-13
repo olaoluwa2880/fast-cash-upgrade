@@ -766,7 +766,7 @@ function Dashboard() {
                     {PAYMENT_METHODS.map(m => (
                       <button
                         key={m.id}
-                        onClick={() => confirmPayment(m.id)}
+                        onClick={() => selectMethod(m.id)}
                         className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left active:scale-[.98] transition ${isDark ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-black/5 bg-white hover:bg-emerald-50"}`}
                       >
                         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center text-xl font-black shrink-0">
@@ -782,6 +782,87 @@ function Dashboard() {
                   </div>
                   <p className={`mt-4 text-center text-[11px] ${softText}`}>Secured payments · Encrypted end-to-end</p>
                 </>
+              )}
+
+              {paymentStep === "instructions" && paymentMethod === "crypto" && (
+                <div className="space-y-4">
+                  <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Send exactly {fmt(PREMIUM_PLANS[selectedPlan].invest, 2)} worth</p>
+
+                  <div className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
+                    <div className="flex items-center justify-between">
+                      <p className="font-black text-sm">USDT · TRC20</p>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">Recommended</span>
+                    </div>
+                    <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Wallet Address</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="font-mono text-[11px] break-all flex-1">TK5oZgp79NMGutV3Xsy3S2XtZJBDtE4opo</p>
+                      <button onClick={() => copyText("TK5oZgp79NMGutV3Xsy3S2XtZJBDtE4opo", "usdt")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                        {copied === "usdt" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}>
+                    <p className="font-black text-sm">Bitcoin · BTC</p>
+                    <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Deposit Address</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="font-mono text-[11px] break-all flex-1">3PiLsgLFrin8Gk5C6XP7vTe2pTnRM54RnA</p>
+                      <button onClick={() => copyText("3PiLsgLFrin8Gk5C6XP7vTe2pTnRM54RnA", "btc")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                        {copied === "btc" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <ReceiptUpload receiptFile={receiptFile} setReceiptFile={setReceiptFile} isDark={isDark} softText={softText} />
+
+                  <button
+                    disabled={!receiptFile}
+                    onClick={submitPayment}
+                    className={`w-full rounded-full py-3.5 font-black text-sm ${receiptFile ? "bg-[#0e6b3f] text-white" : "bg-black/10 text-black/40"}`}
+                  >
+                    Submit payment
+                  </button>
+                </div>
+              )}
+
+              {paymentStep === "instructions" && paymentMethod === "ngn" && (
+                <div className="space-y-4">
+                  <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Bank transfer · Naira</p>
+
+                  <div className={`rounded-2xl border p-4 space-y-3 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
+                    <div>
+                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Bank</p>
+                      <p className="font-black">VFD Bank</p>
+                    </div>
+                    <div>
+                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Name</p>
+                      <p className="font-black">SATURDAY ARUWAYO</p>
+                    </div>
+                    <div>
+                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Number</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-mono font-black text-lg flex-1">1047499461</p>
+                        <button onClick={() => copyText("1047499461", "ngn")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                          {copied === "ngn" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Amount</p>
+                      <p className="font-black">{fmt(PREMIUM_PLANS[selectedPlan].invest, 2)}</p>
+                    </div>
+                  </div>
+
+                  <ReceiptUpload receiptFile={receiptFile} setReceiptFile={setReceiptFile} isDark={isDark} softText={softText} />
+
+                  <button
+                    disabled={!receiptFile}
+                    onClick={submitPayment}
+                    className={`w-full rounded-full py-3.5 font-black text-sm ${receiptFile ? "bg-[#0e6b3f] text-white" : "bg-black/10 text-black/40"}`}
+                  >
+                    Submit payment
+                  </button>
+                </div>
               )}
 
               {paymentStep === "processing" && (
