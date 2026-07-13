@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Screen = "splash" | "onboarding" | "dashboard";
+type Screen = "splash" | "onboarding" | "signup" | "dashboard";
 
 function Root() {
   const [screen, setScreen] = useState<Screen>("splash");
@@ -27,7 +27,8 @@ function Root() {
     }
   }, [screen]);
   if (screen === "splash") return <Splash />;
-  if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("dashboard")} />;
+  if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("signup")} />;
+  if (screen === "signup") return <Signup onContinue={() => setScreen("dashboard")} />;
   return <Dashboard />;
 }
 
