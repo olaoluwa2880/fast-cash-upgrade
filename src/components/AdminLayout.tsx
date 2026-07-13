@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { LogOut, RefreshCw, Shield } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { LogOut, RefreshCw, Shield, LayoutDashboard, Users, Landmark, Bitcoin, LifeBuoy, MessagesSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
 
 type Stats = {
   totalUsers: number;
@@ -88,8 +89,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="min-w-0">
               <h1 className="text-2xl font-extrabold leading-tight truncate">Admin Panel</h1>
-              <p className="text-xs text-slate-500 truncate">USDC NOVA control center</p>
+              <p className="text-xs text-slate-500 truncate">FastCredit control center</p>
             </div>
+
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -107,7 +109,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
+        <AdminNav />
         <main className="px-5 pb-10">{children}</main>
+
       </div>
     </AdminCtx.Provider>
   );
