@@ -76,7 +76,7 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
   { icon: Briefcase, label: "Wallet", key: "wallet" },
   { icon: Receipt, label: "Payments", key: "payments" },
   { icon: RouteIcon, label: "Journey", key: "journey" },
-  { icon: Users, label: "Rosca", key: "rosca" },
+  { icon: Users, label: "Community", key: "community" },
   { icon: LifeBuoy, label: "Support", key: "support" },
   { icon: Clock, label: "History", key: "history" },
   { icon: Gift, label: "Donation", key: "donation" },
