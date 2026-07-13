@@ -385,12 +385,14 @@ function Dashboard({ userEmail }: { userEmail: string }) {
     if (bonusClaimed) return;
     setBalanceUsd(b => b + 2);
     setBonusClaimed(true);
+    addTxn({ kind: "bonus", amountUsd: 2, status: "credited", note: "Welcome bonus" });
   };
 
   const mine = () => {
     if (!mineReady || !currentPlan) return;
     setBalanceUsd(b => b + currentPlan.mineReward);
     setLastMineAt(Date.now());
+    addTxn({ kind: "mining", amountUsd: currentPlan.mineReward, status: "credited", note: `Mining reward · Plan ${activePlan!.index + 1}` });
   };
 
   const activatePlan = () => {
@@ -413,11 +415,39 @@ function Dashboard({ userEmail }: { userEmail: string }) {
 
   const submitPayment = () => {
     setPaymentStep("processing");
+    const amt = PREMIUM_PLANS[selectedPlan].invest;
+    const methodLabel = paymentMethod === "crypto" ? "Crypto" : paymentMethod === "ngn" ? "NGN Bank Transfer" : "Card";
     setTimeout(() => {
       setActivePlan({ index: selectedPlan, startedAt: Date.now() });
       setLastMineAt(null);
       setPaymentStep("success");
+      addTxn({ kind: "deposit", amountUsd: amt, method: methodLabel, status: "approved", note: `Premium plan activation` });
     }, 2500);
+  };
+
+  const downloadReceipt = (t: Txn) => {
+    const lines = [
+      "===== FASTCREDIT RECEIPT =====",
+      `Receipt ID: ${t.id}`,
+      `Type: ${t.kind.toUpperCase()}`,
+      `Status: ${t.status.toUpperCase()}`,
+      `Amount: ${fmt(t.amountUsd, 2)} (≈ $${t.amountUsd.toFixed(2)} USD)`,
+      t.method ? `Method: ${t.method}` : "",
+      t.note ? `Note: ${t.note}` : "",
+      `Date: ${new Date(t.at).toLocaleString()}`,
+      `Account: ${userEmail || "user@fastcredit.app"}`,
+      "==============================",
+      "Thank you for using FastCredit.",
+    ].filter(Boolean).join("\n");
+    const blob = new Blob([lines], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fastcredit-${t.kind}-${t.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   const copyText = (text: string, key: string) => {
