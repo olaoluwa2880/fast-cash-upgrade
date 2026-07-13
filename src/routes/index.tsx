@@ -4,7 +4,7 @@ import {
   Moon, Sun, Bell, ChevronDown, ArrowDownLeft, ArrowUpRight, Crown,
   Briefcase, Receipt, Route as RouteIcon, Users, FileText, BookOpen,
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
-  Sparkles, Pickaxe, Zap, Pause, Play,
+  Sparkles, Pickaxe, Zap, Pause,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -312,6 +312,10 @@ const PREMIUM_PLANS = [
   { invest: 3500, profit: 52.50, total: 367.50, returned: 3867.50 },
 ];
 
+const DAY = 24 * 60 * 60 * 1000;
+const MINE_COOLDOWN = 48 * 60 * 60 * 1000;
+const PLAN_DURATION = 14 * DAY;
+
 function Dashboard() {
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [openCur, setOpenCur] = useState(false);
@@ -319,15 +323,48 @@ function Dashboard() {
   const [openPremium, setOpenPremium] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(0);
   const [bonusClaimed, setBonusClaimed] = useState(false);
-  const [mining, setMining] = useState(false);
-  const [mined, setMined] = useState(0); // in USD
-  const HASH_RATE = 0.00012; // USD per second while mining (~$0.43/hr)
+  const [balanceUsd, setBalanceUsd] = useState(0);
+  const [activePlan, setActivePlan] = useState<{ index: number; startedAt: number } | null>(null);
+  const [lastMineAt, setLastMineAt] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    if (!mining) return;
-    const id = setInterval(() => setMined(m => m + HASH_RATE), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [mining]);
+  }, []);
+
+  const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
+  const planActive = activePlan !== null && now < planExpiresAt;
+  const nextMineAt = lastMineAt ? lastMineAt + MINE_COOLDOWN : 0;
+  const mineReady = planActive && (lastMineAt === null || now >= nextMineAt);
+  const currentPlan = activePlan ? PREMIUM_PLANS[activePlan.index] : null;
+
+  const formatCountdown = (ms: number) => {
+    if (ms <= 0) return "00:00:00";
+    const s = Math.floor(ms / 1000);
+    const h = String(Math.floor(s / 3600)).padStart(2, "0");
+    const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+    const sec = String(s % 60).padStart(2, "0");
+    return `${h}:${m}:${sec}`;
+  };
+
+  const claimBonus = () => {
+    if (bonusClaimed) return;
+    setBalanceUsd(b => b + 2);
+    setBonusClaimed(true);
+  };
+
+  const mine = () => {
+    if (!mineReady || !currentPlan) return;
+    setBalanceUsd(b => b + currentPlan.profit);
+    setLastMineAt(Date.now());
+  };
+
+  const activatePlan = () => {
+    setActivePlan({ index: selectedPlan, startedAt: Date.now() });
+    setLastMineAt(null);
+    setOpenPremium(false);
+  };
 
   const fmtBalance = (usd: number) => {
     const v = usd * currency.rate;
@@ -339,7 +376,7 @@ function Dashboard() {
     return `${currency.symbol}${v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
   };
 
-  const bal = fmtBalance(32680.20);
+  const bal = fmtBalance(balanceUsd);
   const isDark = dark;
 
   const bg = isDark ? "bg-[#0a1410]" : "bg-[#e8f5ec]";
@@ -440,7 +477,7 @@ function Dashboard() {
               <p className={`font-extrabold text-lg leading-tight ${isDark ? "text-white" : "text-[#0b1e1a]"}`}>{fmt(2, 2)} <span className="text-[11px] font-medium opacity-70">≈ $2 USD</span></p>
             </div>
             <button
-              onClick={() => setBonusClaimed(true)}
+              onClick={claimBonus}
               disabled={bonusClaimed}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${bonusClaimed ? "bg-emerald-600/20 text-emerald-500" : "bg-emerald-500 text-white shadow-md active:scale-95"}`}
             >
@@ -460,36 +497,55 @@ function Dashboard() {
                     <Pickaxe className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="font-bold leading-tight">FastCredit Mining</p>
+                    <p className="font-bold leading-tight">Premium Mining</p>
                     <p className="text-[11px] opacity-80 flex items-center gap-1">
-                      <span className={`h-1.5 w-1.5 rounded-full ${mining ? "bg-emerald-300 animate-pulse" : "bg-white/40"}`} />
-                      {mining ? "Mining active" : "Idle"}
+                      <span className={`h-1.5 w-1.5 rounded-full ${planActive ? "bg-emerald-300 animate-pulse" : "bg-white/40"}`} />
+                      {planActive ? `Plan active · ${formatCountdown(planExpiresAt - now)} left` : "No active plan"}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] opacity-70 uppercase">Hash rate</p>
-                  <p className="text-sm font-bold flex items-center gap-1 justify-end"><Zap className="h-3 w-3" /> 12.4 MH/s</p>
+                  <p className="text-[10px] opacity-70 uppercase">Reward</p>
+                  <p className="text-sm font-bold flex items-center gap-1 justify-end">
+                    <Zap className="h-3 w-3" /> {currentPlan ? fmt(currentPlan.profit, 2) : "—"}
+                  </p>
                 </div>
               </div>
-              <p className="mt-4 text-[11px] opacity-80 relative">Mined earnings</p>
-              <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">{fmt(mined, 4)}</p>
-              <p className="text-[10px] opacity-70 relative">≈ ${mined.toFixed(4)} USD</p>
+              <p className="mt-4 text-[11px] opacity-80 relative">Next mine reward</p>
+              <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">
+                {currentPlan ? fmt(currentPlan.profit, 2) : fmt(0, 2)}
+              </p>
+              <p className="text-[10px] opacity-70 relative">
+                {planActive
+                  ? mineReady
+                    ? "Ready to mine now"
+                    : `Next mine in ${formatCountdown(nextMineAt - now)}`
+                  : "Activate a Premium plan to start mining"}
+              </p>
             </div>
-            <div className="p-4 flex items-center gap-2">
+            <div className="p-4">
               <button
-                onClick={() => setMining(m => !m)}
-                className={`flex-1 flex items-center justify-center gap-2 rounded-full py-3 text-sm font-bold shadow-md ${mining ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"}`}
+                onClick={planActive ? mine : () => setOpenPremium(true)}
+                disabled={planActive && !mineReady}
+                className={`w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold shadow-md ${
+                  !planActive
+                    ? "bg-amber-500 text-[#3a2500]"
+                    : mineReady
+                    ? "bg-emerald-500 text-white active:scale-95"
+                    : "bg-black/10 text-[#0b1e1a]/50"
+                }`}
               >
-                {mining ? <><Pause className="h-4 w-4" /> Stop mining</> : <><Play className="h-4 w-4" /> Start mining</>}
+                {!planActive ? (
+                  <><Crown className="h-4 w-4" /> Activate Premium to Mine</>
+                ) : mineReady ? (
+                  <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.profit, 2) : ""}</>
+                ) : (
+                  <><Pause className="h-4 w-4" /> Cooldown {formatCountdown(nextMineAt - now)}</>
+                )}
               </button>
-              <button
-                onClick={() => setMined(0)}
-                disabled={mined === 0}
-                className={`rounded-full px-4 py-3 text-xs font-bold border ${isDark ? "border-white/10 text-white/80" : "border-black/10 text-[#0b1e1a]/70"} disabled:opacity-40`}
-              >
-                Collect
-              </button>
+              <p className={`mt-2 text-center text-[10px] ${softText}`}>
+                Mine once every 48 hours · Higher plan = higher reward
+              </p>
             </div>
           </div>
         </section>
@@ -636,7 +692,7 @@ function Dashboard() {
                 </ul>
               </div>
 
-              <button className="mt-4 w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2">
+              <button onClick={activatePlan} className="mt-4 w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95">
                 <Crown className="h-4 w-4" /> Activate for {fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}
               </button>
             </div>
