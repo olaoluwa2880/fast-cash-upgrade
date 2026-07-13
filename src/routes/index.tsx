@@ -697,8 +697,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             <button className="flex-1 flex items-center justify-center gap-2 rounded-full bg-white/10 border border-white/15 py-3 text-sm font-semibold">
               <ArrowDownLeft className="h-4 w-4" /> Request
             </button>
-            <button className="flex-1 flex items-center justify-center gap-2 rounded-full bg-white text-[#0e6b3f] py-3 text-sm font-bold shadow-lg">
-              <ArrowUpRight className="h-4 w-4" /> Transfer
+            <button onClick={openWithdrawFlow} className="flex-1 flex items-center justify-center gap-2 rounded-full bg-white text-[#0e6b3f] py-3 text-sm font-bold shadow-lg active:scale-95">
+              <ArrowUpRight className="h-4 w-4" /> Withdraw
             </button>
             <button className="flex items-center justify-center gap-1 rounded-full bg-white/10 border border-white/15 py-3 px-3 text-xs font-semibold">
               <Crown className="h-4 w-4" />
