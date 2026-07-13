@@ -72,7 +72,15 @@ function Dashboard() {
       data = await attach((d ?? []) as Row[]);
     } else if (tab === "payments") {
       const { data: d } = await supabase.from("payments").select("*").order("created_at", { ascending: false });
-      data = await attach((d ?? []) as Row[]);
+      const withProfiles = await attach((d ?? []) as Row[]);
+      // sign receipt URLs
+      const paths = withProfiles.map((r) => r.receipt_url).filter((p): p is string => !!p);
+      const signedMap = new Map<string, string>();
+      if (paths.length) {
+        const { data: signed } = await supabase.storage.from("receipts").createSignedUrls(paths, 60 * 60);
+        (signed ?? []).forEach((s) => { if (s.path && s.signedUrl) signedMap.set(s.path, s.signedUrl); });
+      }
+      data = withProfiles.map((r) => ({ ...r, receipt_url: r.receipt_url ? signedMap.get(r.receipt_url) ?? r.receipt_url : r.receipt_url }));
     } else {
       const { data: d } = await supabase.from("profiles").select("id,email,full_name,created_at").order("created_at", { ascending: false });
       data = (d ?? []).map((p) => ({
@@ -95,13 +103,50 @@ function Dashboard() {
     });
   }, [rows, q, status, tab]);
 
-  async function updateStatus(table: "payments" | "withdrawals" | "upgrades", id: string, next: "approved" | "rejected") {
-    setBusy(id);
+  async function notify(userId: string, title: string, body: string, kind: string) {
+    await supabase.from("notifications").insert({ user_id: userId, title, body, kind });
+  }
+
+  async function creditBalance(userId: string, amount: number) {
+    const { data: existing } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", userId).maybeSingle();
+    const current = Number(existing?.balance_usd ?? 0);
+    const next = current + amount;
+    if (existing) {
+      await supabase.from("wallet_balances").update({ balance_usd: next }).eq("user_id", userId);
+    } else {
+      await supabase.from("wallet_balances").insert({ user_id: userId, balance_usd: next });
+    }
+  }
+
+  async function approve(table: "payments" | "withdrawals" | "upgrades", r: Row) {
+    setBusy(r.id);
     const { data: u } = await supabase.auth.getUser();
-    await supabase.from(table).update({ status: next, reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() }).eq("id", id);
+    await supabase.from(table).update({ status: "approved", reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() }).eq("id", r.id);
+    if (table === "payments" && !r.credited && r.amount != null) {
+      await creditBalance(r.user_id, Number(r.amount));
+      await supabase.from("payments").update({ credited: true }).eq("id", r.id);
+      await notify(r.user_id, "Payment approved", `Your deposit of ${Number(r.amount).toFixed(2)} ${r.currency ?? "USD"} has been approved and credited to your wallet.`, "success");
+    } else if (table === "withdrawals") {
+      await notify(r.user_id, "Withdrawal approved", `Your withdrawal of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved.`, "success");
+    } else if (table === "upgrades") {
+      await notify(r.user_id, "Upgrade approved", `Your plan upgrade has been approved.`, "success");
+    }
     setBusy(null);
     await Promise.all([load(), refresh()]);
   }
+
+  async function reject(table: "payments" | "withdrawals" | "upgrades", r: Row) {
+    const reason = window.prompt("Reason for rejection (optional)") ?? "";
+    setBusy(r.id);
+    const { data: u } = await supabase.auth.getUser();
+    const patch: Record<string, unknown> = { status: "rejected", reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() };
+    if (table === "payments") patch.rejection_reason = reason || null;
+    await supabase.from(table).update(patch).eq("id", r.id);
+    await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
+    setBusy(null);
+    await Promise.all([load(), refresh()]);
+  }
+
   async function banUser(userId: string) {
     setBusy(userId);
     const { data: u } = await supabase.auth.getUser();
@@ -109,6 +154,7 @@ function Dashboard() {
     setBusy(null);
     await Promise.all([load(), refresh()]);
   }
+
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "withdrawals", label: "Withdrawals" },
