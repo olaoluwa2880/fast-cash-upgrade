@@ -812,18 +812,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                             {active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
                           </div>
                           <div>
-                            <p className="font-extrabold">{fmt(p.invest, dec)}</p>
-                            <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>Investment</p>
+                            <p className="font-extrabold">{p.name} · {fmt(p.invest, dec)}</p>
+                            <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>Deposit</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-extrabold text-emerald-600">{fmt(p.returned, dec)}</p>
-                          <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>at expiry</p>
+                          <p className="font-extrabold text-emerald-600">{fmt(p.mineReward, 2)}</p>
+                          <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>per mining tap</p>
                         </div>
                       </div>
                       <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active ? "text-[#0b1e1a]/80" : softText}`}>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
-                          <p className="opacity-70">Every 48h</p>
+                          <p className="opacity-70">Per day (2 taps)</p>
                           <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
