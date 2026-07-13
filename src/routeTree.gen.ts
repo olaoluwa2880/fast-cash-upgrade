@@ -14,8 +14,12 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminSupportSettingsRouteImport } from './routes/admin.support-settings'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminCryptoWalletsRouteImport } from './routes/admin.crypto-wallets'
+import { Route as AdminCommunityRouteImport } from './routes/admin.community'
+import { Route as AdminBankDetailsRouteImport } from './routes/admin.bank-details'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 
@@ -43,6 +47,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSupportSettingsRoute = AdminSupportSettingsRouteImport.update({
+  id: '/admin/support-settings',
+  path: '/admin/support-settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
@@ -51,6 +60,21 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/admin/dashboard',
   path: '/admin/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCryptoWalletsRoute = AdminCryptoWalletsRouteImport.update({
+  id: '/admin/crypto-wallets',
+  path: '/admin/crypto-wallets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCommunityRoute = AdminCommunityRouteImport.update({
+  id: '/admin/community',
+  path: '/admin/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminBankDetailsRoute = AdminBankDetailsRouteImport.update({
+  id: '/admin/bank-details',
+  path: '/admin/bank-details',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
@@ -67,8 +91,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/admin/bank-details': typeof AdminBankDetailsRoute
+  '/admin/community': typeof AdminCommunityRoute
+  '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -76,8 +104,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/admin/bank-details': typeof AdminBankDetailsRoute
+  '/admin/community': typeof AdminCommunityRoute
+  '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin': typeof AdminIndexRoute
@@ -88,8 +120,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/admin/bank-details': typeof AdminBankDetailsRoute
+  '/admin/community': typeof AdminCommunityRoute
+  '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -101,8 +137,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/admin/bank-details'
+    | '/admin/community'
+    | '/admin/crypto-wallets'
     | '/admin/dashboard'
     | '/admin/login'
+    | '/admin/support-settings'
     | '/admin/users'
     | '/admin/'
     | '/lovable/email/auth/preview'
@@ -110,8 +150,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/admin/bank-details'
+    | '/admin/community'
+    | '/admin/crypto-wallets'
     | '/admin/dashboard'
     | '/admin/login'
+    | '/admin/support-settings'
     | '/admin/users'
     | '/'
     | '/admin'
@@ -121,8 +165,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/admin/bank-details'
+    | '/admin/community'
+    | '/admin/crypto-wallets'
     | '/admin/dashboard'
     | '/admin/login'
+    | '/admin/support-settings'
     | '/admin/users'
     | '/_authenticated/'
     | '/admin/'
@@ -133,8 +181,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  AdminBankDetailsRoute: typeof AdminBankDetailsRoute
+  AdminCommunityRoute: typeof AdminCommunityRoute
+  AdminCryptoWalletsRoute: typeof AdminCryptoWalletsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminSupportSettingsRoute: typeof AdminSupportSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -178,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/support-settings': {
+      id: '/admin/support-settings'
+      path: '/admin/support-settings'
+      fullPath: '/admin/support-settings'
+      preLoaderRoute: typeof AdminSupportSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/login': {
       id: '/admin/login'
       path: '/admin/login'
@@ -190,6 +249,27 @@ declare module '@tanstack/react-router' {
       path: '/admin/dashboard'
       fullPath: '/admin/dashboard'
       preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/crypto-wallets': {
+      id: '/admin/crypto-wallets'
+      path: '/admin/crypto-wallets'
+      fullPath: '/admin/crypto-wallets'
+      preLoaderRoute: typeof AdminCryptoWalletsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/community': {
+      id: '/admin/community'
+      path: '/admin/community'
+      fullPath: '/admin/community'
+      preLoaderRoute: typeof AdminCommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/bank-details': {
+      id: '/admin/bank-details'
+      path: '/admin/bank-details'
+      fullPath: '/admin/bank-details'
+      preLoaderRoute: typeof AdminBankDetailsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/auth/webhook': {
@@ -223,8 +303,12 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  AdminBankDetailsRoute: AdminBankDetailsRoute,
+  AdminCommunityRoute: AdminCommunityRoute,
+  AdminCryptoWalletsRoute: AdminCryptoWalletsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminSupportSettingsRoute: AdminSupportSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
