@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
   Moon, Sun, Bell, ChevronDown, ArrowDownLeft, ArrowUpRight, Crown,
-  Briefcase, Receipt, Route as RouteIcon, Users, FileText, BookOpen,
+  Briefcase, Receipt, Route as RouteIcon, Users,
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
-  Sparkles, Pickaxe, Zap, Pause, Copy, Upload,
+  Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
+  Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
