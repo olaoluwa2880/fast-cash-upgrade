@@ -1420,6 +1420,54 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         </div>
       )}
 
+      {congrats && (
+        <div className="fixed inset-0 z-[80] bg-gradient-to-br from-[#0e6b3f]/95 to-[#0a4a2c]/95 backdrop-blur-md flex items-center justify-center p-6 overflow-hidden">
+          {/* Confetti */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            {Array.from({ length: 60 }).map((_, i) => {
+              const colors = ["#fbbf24", "#34d399", "#60a5fa", "#f472b6", "#a78bfa", "#fb7185"];
+              const left = Math.random() * 100;
+              const delay = Math.random() * 0.8;
+              const duration = 2.2 + Math.random() * 2;
+              const size = 6 + Math.random() * 8;
+              const bg = colors[i % colors.length];
+              const rot = Math.random() * 360;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left: `${left}%`,
+                    top: "-20px",
+                    width: size,
+                    height: size * 0.4,
+                    background: bg,
+                    transform: `rotate(${rot}deg)`,
+                    animation: `fc-fall ${duration}s ${delay}s linear infinite`,
+                    borderRadius: 2,
+                  }}
+                />
+              );
+            })}
+          </div>
+          <style>{`@keyframes fc-fall{to{transform:translateY(110vh) rotate(720deg);opacity:.4}}@keyframes fc-pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}`}</style>
+
+          <div className="relative w-full max-w-[380px] bg-white rounded-3xl p-7 text-center shadow-2xl" style={{ animation: "fc-pop .5s ease-out both" }}>
+            <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center text-white shadow-lg">
+              <Check className="h-10 w-10" strokeWidth={3} />
+            </div>
+            <p className="mt-5 text-2xl font-black text-[#0b1e1a]">🎉 Congratulations!</p>
+            <p className="mt-2 text-sm text-[#0b1e1a]/70">{congrats.body}</p>
+            <button
+              onClick={() => { setCongrats(null); setOpenCategory(null); setOpenPayment(false); setOpenPremium(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className="mt-6 w-full rounded-full bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white py-3.5 font-black text-sm shadow-lg active:scale-95"
+            >
+              Continue to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {toast && (
         <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] rounded-full bg-black/85 text-white text-xs font-semibold px-4 py-2 shadow-2xl backdrop-blur">
