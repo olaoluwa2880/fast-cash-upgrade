@@ -24,8 +24,14 @@ type Row = {
   plan?: string | null;
   status?: "pending" | "approved" | "rejected";
   created_at: string;
+  method?: string | null;
+  receipt_url?: string | null;
+  rejection_reason?: string | null;
+  plan_index?: number | null;
+  credited?: boolean;
   profile?: { email: string | null; full_name: string | null } | null;
 };
+
 
 function StatCard({
   icon: Icon, label, value, iconBg, iconColor,
