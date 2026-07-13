@@ -66,10 +66,13 @@ function AuthPage() {
     const v = validate();
     if (v) return setError(v);
     setStep("creating");
-    const { error } = await supabase.auth.signUp({
-      email: form.email.trim(),
+    const email = form.email.trim();
+    console.log("[auth] signUp start", { email });
+    const { data, error } = await supabase.auth.signUp({
+      email,
       password: form.password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth`,
         data: {
           full_name: form.fullName.trim(),
           phone: form.phone.trim(),
@@ -77,11 +80,37 @@ function AuthPage() {
         },
       },
     });
+    console.log("[auth] signUp result", { data, error });
+
     if (error) {
       setStep("register");
-      return setError(error.message);
+      return setError(`Sign up failed: ${error.message}`);
     }
-    setInfo(`We sent a 6-digit code to ${form.email.trim()}.`);
+
+    // Detect "user already registered": Supabase returns 200 with an obfuscated
+    // user (identities: []) and does NOT send another email. Fall back to an
+    // OTP sign-in so the user actually receives a code.
+    const identities = (data.user as { identities?: unknown[] } | null)?.identities;
+    if (Array.isArray(identities) && identities.length === 0) {
+      console.warn("[auth] email already registered, sending OTP sign-in code instead");
+      const { error: otpErr } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      console.log("[auth] signInWithOtp result", { otpErr });
+      if (otpErr) {
+        setStep("register");
+        return setError(
+          `This email is already registered but we couldn't send a code: ${otpErr.message}`,
+        );
+      }
+      setInfo(`This email is already registered. We sent a sign-in code to ${email}.`);
+      setCooldown(60);
+      setStep("otp");
+      return;
+    }
+
+    setInfo(`We sent a 6-digit code to ${email}.`);
     setCooldown(60);
     setStep("otp");
   }
@@ -91,16 +120,19 @@ function AuthPage() {
     setError(null);
     if (token.trim().length < 6) return setError("Enter the 6-digit code.");
     setStep("verifying");
+    console.log("[auth] verifyOtp start", { email: form.email.trim() });
     const { data, error } = await supabase.auth.verifyOtp({
       email: form.email.trim(),
       token: token.trim(),
       type: "email",
     });
+    console.log("[auth] verifyOtp result", { data, error });
     if (error || !data.user) {
       setStep("otp");
       const msg = (error?.message || "").toLowerCase();
       if (msg.includes("expired")) return setError("Your verification code has expired. Please request a new code.");
-      return setError("The verification code is incorrect. Please try again.");
+      if (msg.includes("invalid")) return setError("The verification code is incorrect. Please try again.");
+      return setError(error?.message || "Verification failed. Please try again.");
     }
     // Persist profile details
     await supabase.from("profiles").upsert({
@@ -117,11 +149,20 @@ function AuthPage() {
   async function resend() {
     if (cooldown > 0) return;
     setError(null); setInfo(null);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: form.email.trim(),
-    });
-    if (error) return setError(error.message);
+    const email = form.email.trim();
+    console.log("[auth] resend start", { email });
+    // Try resending the signup confirmation. If the user is already confirmed
+    // or resend is rate-limited, fall back to signInWithOtp.
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    console.log("[auth] resend result", { error });
+    if (error) {
+      const { error: otpErr } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      console.log("[auth] resend->signInWithOtp result", { otpErr });
+      if (otpErr) return setError(`Couldn't resend code: ${otpErr.message}`);
+    }
     setInfo("A new code was sent.");
     setCooldown(60);
   }
