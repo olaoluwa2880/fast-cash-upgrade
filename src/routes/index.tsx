@@ -318,6 +318,16 @@ function Dashboard() {
   const [dark, setDark] = useState(false);
   const [openPremium, setOpenPremium] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(0);
+  const [bonusClaimed, setBonusClaimed] = useState(false);
+  const [mining, setMining] = useState(false);
+  const [mined, setMined] = useState(0); // in USD
+  const HASH_RATE = 0.00012; // USD per second while mining (~$0.43/hr)
+
+  useEffect(() => {
+    if (!mining) return;
+    const id = setInterval(() => setMined(m => m + HASH_RATE), 1000);
+    return () => clearInterval(id);
+  }, [mining]);
 
   const fmtBalance = (usd: number) => {
     const v = usd * currency.rate;
