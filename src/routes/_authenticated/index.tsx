@@ -791,8 +791,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             <div className="p-5">
               <div className={`rounded-2xl p-4 ${isDark ? "bg-white/5" : "bg-amber-50"} border ${isDark ? "border-white/10" : "border-amber-200"}`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Starting investment</p>
-                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(10, currency.code === "USD" || currency.code === "EUR" || currency.code === "GBP" ? 2 : 0)}</p>
-                <p className={`mt-1 text-[11px] ${softText}`}>≈ $10 USD · Shown in {currency.code}</p>
+                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(12, currency.code === "USD" || currency.code === "EUR" || currency.code === "GBP" ? 2 : 0)}</p>
+                <p className={`mt-1 text-[11px] ${softText}`}>≈ $12 USD · Shown in {currency.code}</p>
               </div>
 
               <p className={`mt-5 text-xs font-bold uppercase tracking-wide ${softText}`}>Choose a plan</p>
