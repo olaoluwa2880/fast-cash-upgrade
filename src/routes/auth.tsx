@@ -149,11 +149,20 @@ function AuthPage() {
   async function resend() {
     if (cooldown > 0) return;
     setError(null); setInfo(null);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: form.email.trim(),
-    });
-    if (error) return setError(error.message);
+    const email = form.email.trim();
+    console.log("[auth] resend start", { email });
+    // Try resending the signup confirmation. If the user is already confirmed
+    // or resend is rate-limited, fall back to signInWithOtp.
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    console.log("[auth] resend result", { error });
+    if (error) {
+      const { error: otpErr } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      console.log("[auth] resend->signInWithOtp result", { otpErr });
+      if (otpErr) return setError(`Couldn't resend code: ${otpErr.message}`);
+    }
     setInfo("A new code was sent.");
     setCooldown(60);
   }
