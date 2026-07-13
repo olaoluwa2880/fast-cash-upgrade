@@ -343,7 +343,6 @@ function Dashboard() {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-...
   const activatePlan = () => {
     setPaymentStep("choose");
     setPaymentMethod(null);
