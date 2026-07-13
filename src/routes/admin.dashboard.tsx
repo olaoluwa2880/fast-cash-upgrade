@@ -241,8 +241,11 @@ function Dashboard() {
                   <div className="text-xs text-slate-500 mt-1 font-mono truncate">{r.wallet_address}</div>
                 )}
                 {r.plan && <div className="text-xs text-slate-600 mt-1">Plan: <span className="font-medium">{r.plan}</span></div>}
+                {r.method && <div className="text-xs text-slate-600 mt-1">Method: <span className="font-medium">{r.method}</span></div>}
                 {r.reference && <div className="text-xs text-slate-500 mt-1">Ref: {r.reference}</div>}
+                <div className="text-[10px] text-slate-400 mt-1 font-mono truncate">UID: {r.user_id.slice(0, 8)}…</div>
                 <div className="text-[11px] text-slate-400 mt-1">{new Date(r.created_at).toLocaleString()}</div>
+                {r.rejection_reason && <div className="text-xs text-red-600 mt-1">Reason: {r.rejection_reason}</div>}
               </div>
               <div className="text-right shrink-0">
                 {r.amount != null && (
@@ -257,8 +260,18 @@ function Dashboard() {
                       : "bg-red-100 text-red-600"
                   }`}>{r.status}</span>
                 )}
+                {tab === "payments" && r.credited && (
+                  <div className="text-[10px] text-emerald-600 font-semibold mt-1">Credited</div>
+                )}
               </div>
             </div>
+
+            {tab === "payments" && r.receipt_url && (
+              <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-3">
+                <img src={r.receipt_url} alt="receipt" className="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-50" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                <div className="text-[11px] text-blue-600 mt-1 text-center">Open receipt ↗</div>
+              </a>
+            )}
 
             <div className="flex gap-2 mt-3">
               {tab === "users" ? (
@@ -273,14 +286,14 @@ function Dashboard() {
                 <>
                   <button
                     disabled={busy === r.id}
-                    onClick={() => updateStatus(tab, r.id, "approved")}
+                    onClick={() => approve(tab, r)}
                     className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-blue-600 text-white text-sm font-semibold disabled:opacity-50"
                   >
                     <Check className="h-4 w-4" /> Approve
                   </button>
                   <button
                     disabled={busy === r.id}
-                    onClick={() => updateStatus(tab, r.id, "rejected")}
+                    onClick={() => reject(tab, r)}
                     className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-white border border-red-200 text-red-600 text-sm font-semibold disabled:opacity-50"
                   >
                     <X className="h-4 w-4" /> Reject
@@ -288,6 +301,7 @@ function Dashboard() {
                 </>
               ) : null}
             </div>
+
           </div>
         ))}
       </div>
