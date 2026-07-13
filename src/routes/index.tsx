@@ -615,11 +615,11 @@ function Dashboard() {
                       <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active ? "text-[#0b1e1a]/80" : softText}`}>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Every 48h</p>
-                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, dec)}</p>
+                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Total 14d</p>
-                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, dec)}</p>
+                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
                         </div>
                       </div>
                     </button>
