@@ -183,6 +183,27 @@ function AuthPage() {
     setCooldown(60);
   }
 
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setInfo(null);
+    const email = form.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Enter a valid email address.");
+    if (!form.password) return setError("Enter your password.");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: form.password });
+    if (error || !data.session) {
+      const msg = (error?.message || "").toLowerCase();
+      if (msg.includes("invalid")) return setError("Invalid email or password.");
+      if (msg.includes("not confirmed") || msg.includes("confirm")) {
+        setInfo(`Please verify your email. We can send a new code to ${email}.`);
+        const { error: otpErr } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+        if (!otpErr) { setStep("otp"); setCooldown(60); }
+        return;
+      }
+      return setError(error?.message || "Login failed.");
+    }
+    navigate({ to: "/" });
+  }
+
   if (step === "verifying") {
     return (
       <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-5">
