@@ -1,113 +1,114 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Users, LayoutDashboard, LogOut } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { LogOut, RefreshCw, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-type AdminCtx = { totalUsers: number; refresh: () => Promise<void> };
-const Ctx = createContext<AdminCtx>({ totalUsers: 0, refresh: async () => {} });
-export const useAdmin = () => useContext(Ctx);
+type Stats = {
+  totalUsers: number;
+  active7d: number;
+  pending: number;
+  paidUsdc: number;
+  approved: number;
+  rejected: number;
+  banned: number;
+  upgrades: number;
+};
+
+type Ctx = { stats: Stats; refresh: () => Promise<void>; loading: boolean };
+const AdminCtx = createContext<Ctx>({
+  stats: { totalUsers: 0, active7d: 0, pending: 0, paidUsdc: 0, approved: 0, rejected: 0, banned: 0, upgrades: 0 },
+  refresh: async () => {},
+  loading: false,
+});
+export const useAdmin = () => useContext(AdminCtx);
 
 export function AdminLayout({ children }: { children: ReactNode }) {
-  const [totalUsers, setTotalUsers] = useState(0);
   const [checking, setChecking] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<Stats>({
+    totalUsers: 0, active7d: 0, pending: 0, paidUsdc: 0, approved: 0, rejected: 0, banned: 0, upgrades: 0,
+  });
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const refresh = async () => {
-    const { count } = await supabase.from("profiles").select("*", { count: "exact", head: true });
-    if (typeof count === "number") setTotalUsers(count);
-  };
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const since7d = new Date(Date.now() - 7 * 864e5).toISOString();
+    const [users, active, pendingP, pendingW, pendingU, paid, approved, rejected, banned, upgradesAll] = await Promise.all([
+      supabase.from("profiles").select("*", { count: "exact", head: true }),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).gte("updated_at", since7d),
+      supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("withdrawals").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("upgrades").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("payments").select("amount").eq("status", "approved"),
+      supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "approved"),
+      supabase.from("payments").select("*", { count: "exact", head: true }).eq("status", "rejected"),
+      supabase.from("user_bans").select("*", { count: "exact", head: true }),
+      supabase.from("upgrades").select("*", { count: "exact", head: true }),
+    ]);
+    const paidSum = (paid.data ?? []).reduce((s, r: { amount: number | string }) => s + Number(r.amount || 0), 0);
+    setStats({
+      totalUsers: users.count ?? 0,
+      active7d: active.count ?? 0,
+      pending: (pendingP.count ?? 0) + (pendingW.count ?? 0) + (pendingU.count ?? 0),
+      paidUsdc: paidSum,
+      approved: approved.count ?? 0,
+      rejected: rejected.count ?? 0,
+      banned: banned.count ?? 0,
+      upgrades: upgradesAll.count ?? 0,
+    });
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     (async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        navigate({ to: "/admin/login" });
-        return;
-      }
-      const { data: isAdmin } = await supabase.rpc("has_role", {
-        _user_id: userData.user.id,
-        _role: "admin",
-      });
-      if (!isAdmin) {
-        navigate({ to: "/admin/login" });
-        return;
-      }
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return navigate({ to: "/admin/login" });
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: u.user.id, _role: "admin" });
+      if (!isAdmin) return navigate({ to: "/admin/login" });
       setChecking(false);
       await refresh();
     })();
-  }, [navigate]);
-
-  useEffect(() => {
-    if (checking) return;
-    const id = setInterval(refresh, 60000);
-    return () => clearInterval(id);
-  }, [checking]);
+  }, [navigate, refresh]);
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-gray-400">
+      <div className="min-h-screen flex items-center justify-center text-slate-600 bg-gradient-to-b from-sky-100 to-sky-200">
         Checking admin access…
       </div>
     );
   }
 
-  const nav = [
-    { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/admin/users", label: "Users", icon: Users },
-  ];
-
   return (
-    <Ctx.Provider value={{ totalUsers, refresh }}>
-      <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
-        <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 sticky top-0 z-50 flex items-center justify-between">
-          <div className="text-xl font-bold">Admin Panel</div>
-          <div className="flex items-center gap-2 bg-gray-800/60 px-3 py-1.5 rounded-lg">
-            <Users className="h-4 w-4 text-blue-400" />
-            <span className="text-sm text-gray-300">Total Users:</span>
-            <span className="text-sm font-bold text-white">{totalUsers}</span>
+    <AdminCtx.Provider value={{ stats, refresh, loading }}>
+      <div className="min-h-screen bg-gradient-to-b from-sky-100 via-sky-100 to-sky-200 text-slate-900">
+        <header className="px-5 pt-6 pb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
+              <Shield className="h-6 w-6 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-extrabold leading-tight truncate">Admin Panel</h1>
+              <p className="text-xs text-slate-500 truncate">USDC NOVA control center</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={refresh}
+              className="h-10 w-10 rounded-full bg-white/70 backdrop-blur border border-white flex items-center justify-center shadow-sm hover:bg-white"
+              aria-label="Refresh"
+            >
+              <RefreshCw className={`h-4 w-4 text-slate-600 ${loading ? "animate-spin" : ""}`} />
+            </button>
+            <button
+              onClick={async () => { await supabase.auth.signOut(); navigate({ to: "/admin/login" }); }}
+              className="h-10 px-4 rounded-full bg-white/70 backdrop-blur border border-white flex items-center gap-2 shadow-sm text-sm font-medium text-slate-700 hover:bg-white"
+            >
+              <LogOut className="h-4 w-4" /> Sign out
+            </button>
           </div>
         </header>
-        <div className="flex flex-1">
-          <aside className="w-64 bg-gray-900 border-r border-gray-800 p-4 flex flex-col gap-4">
-            <div className="bg-blue-600 rounded-xl p-4">
-              <div className="flex items-center gap-2 text-blue-100">
-                <Users className="h-5 w-5" />
-                <span className="text-xs uppercase tracking-wide">Total Users</span>
-              </div>
-              <div className="mt-2 text-4xl font-black text-white">{totalUsers}</div>
-            </div>
-            <nav className="flex flex-col gap-1">
-              {nav.map((n) => {
-                const active = pathname === n.to;
-                return (
-                  <Link
-                    key={n.to}
-                    to={n.to}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                      active ? "bg-gray-800 text-white" : "text-gray-400 hover:bg-gray-800/50"
-                    }`}
-                  >
-                    <n.icon className="h-4 w-4" />
-                    {n.label}
-                  </Link>
-                );
-              })}
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate({ to: "/admin/login" });
-                }}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800/50 mt-4"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </button>
-            </nav>
-          </aside>
-          <main className="flex-1 p-6 overflow-auto">{children}</main>
-        </div>
+        <main className="px-5 pb-10">{children}</main>
       </div>
-    </Ctx.Provider>
+    </AdminCtx.Provider>
   );
 }
