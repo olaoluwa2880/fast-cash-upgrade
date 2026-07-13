@@ -335,49 +335,34 @@ function Dashboard() {
   const [now, setNow] = useState(Date.now());
   const [openPayment, setOpenPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
-  const [paymentStep, setPaymentStep] = useState<"choose" | "processing" | "success">("choose");
+  const [paymentStep, setPaymentStep] = useState<"choose" | "instructions" | "processing" | "success">("choose");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
-  const planActive = activePlan !== null && now < planExpiresAt;
-  const nextMineAt = lastMineAt ? lastMineAt + MINE_COOLDOWN : 0;
-  const mineReady = planActive && (lastMineAt === null || now >= nextMineAt);
-  const currentPlan = activePlan ? PREMIUM_PLANS[activePlan.index] : null;
-
-  const formatCountdown = (ms: number) => {
-    if (ms <= 0) return "00:00:00";
-    const s = Math.floor(ms / 1000);
-    const h = String(Math.floor(s / 3600)).padStart(2, "0");
-    const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
-    const sec = String(s % 60).padStart(2, "0");
-    return `${h}:${m}:${sec}`;
-  };
-
-  const claimBonus = () => {
-    if (bonusClaimed) return;
-    setBalanceUsd(b => b + 2);
-    setBonusClaimed(true);
-  };
-
-  const mine = () => {
-    if (!mineReady || !currentPlan) return;
-    setBalanceUsd(b => b + currentPlan.mineReward);
-    setLastMineAt(Date.now());
-  };
-
+...
   const activatePlan = () => {
     setPaymentStep("choose");
     setPaymentMethod(null);
+    setReceiptFile(null);
     setOpenPremium(false);
     setOpenPayment(true);
   };
 
-  const confirmPayment = (methodId: string) => {
+  const selectMethod = (methodId: string) => {
     setPaymentMethod(methodId);
+    setReceiptFile(null);
+    if (methodId === "card") {
+      submitPayment();
+    } else {
+      setPaymentStep("instructions");
+    }
+  };
+
+  const submitPayment = () => {
     setPaymentStep("processing");
     setTimeout(() => {
       setActivePlan({ index: selectedPlan, startedAt: Date.now() });
@@ -386,10 +371,17 @@ function Dashboard() {
     }, 2500);
   };
 
+  const copyText = (text: string, key: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(c => (c === key ? null : c)), 1500);
+  };
+
   const closePayment = () => {
     setOpenPayment(false);
     setPaymentStep("choose");
     setPaymentMethod(null);
+    setReceiptFile(null);
   };
 
   const fmtBalance = (usd: number) => {
