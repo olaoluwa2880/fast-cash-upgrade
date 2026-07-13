@@ -120,16 +120,19 @@ function AuthPage() {
     setError(null);
     if (token.trim().length < 6) return setError("Enter the 6-digit code.");
     setStep("verifying");
+    console.log("[auth] verifyOtp start", { email: form.email.trim() });
     const { data, error } = await supabase.auth.verifyOtp({
       email: form.email.trim(),
       token: token.trim(),
       type: "email",
     });
+    console.log("[auth] verifyOtp result", { data, error });
     if (error || !data.user) {
       setStep("otp");
       const msg = (error?.message || "").toLowerCase();
       if (msg.includes("expired")) return setError("Your verification code has expired. Please request a new code.");
-      return setError("The verification code is incorrect. Please try again.");
+      if (msg.includes("invalid")) return setError("The verification code is incorrect. Please try again.");
+      return setError(error?.message || "Verification failed. Please try again.");
     }
     // Persist profile details
     await supabase.from("profiles").upsert({
