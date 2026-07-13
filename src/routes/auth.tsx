@@ -20,7 +20,7 @@ const COUNTRIES = [
   "United Arab Emirates", "Saudi Arabia", "India", "China", "Brazil", "Other",
 ];
 
-type Step = "register" | "creating" | "otp" | "verifying";
+type Step = "register" | "creating" | "otp" | "verifying" | "login";
 
 function AuthPage() {
   const navigate = useNavigate();
