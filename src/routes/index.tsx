@@ -200,11 +200,13 @@ function Onboarding({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-function Signup({ onContinue, onGoogle }: { onContinue: () => void; onGoogle: () => void }) {
+function Signup({ onContinue, onGoogle }: { onContinue: (email: string) => void; onGoogle: () => void }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const canSubmit = fullName.trim() && email.trim() && phone.trim();
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const canSubmit = fullName.trim() && email.trim() && phone.trim() && password.length >= 6;
   return (
     <div className="min-h-screen w-full bg-black flex flex-col px-6 pt-14 pb-8 text-white">
       <div className="flex flex-col items-center">
