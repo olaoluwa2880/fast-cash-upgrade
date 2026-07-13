@@ -370,9 +370,26 @@ function Dashboard() {
   };
 
   const activatePlan = () => {
-    setActivePlan({ index: selectedPlan, startedAt: Date.now() });
-    setLastMineAt(null);
+    setPaymentStep("choose");
+    setPaymentMethod(null);
     setOpenPremium(false);
+    setOpenPayment(true);
+  };
+
+  const confirmPayment = (methodId: string) => {
+    setPaymentMethod(methodId);
+    setPaymentStep("processing");
+    setTimeout(() => {
+      setActivePlan({ index: selectedPlan, startedAt: Date.now() });
+      setLastMineAt(null);
+      setPaymentStep("success");
+    }, 2500);
+  };
+
+  const closePayment = () => {
+    setOpenPayment(false);
+    setPaymentStep("choose");
+    setPaymentMethod(null);
   };
 
   const fmtBalance = (usd: number) => {
