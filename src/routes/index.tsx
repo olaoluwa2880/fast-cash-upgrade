@@ -532,29 +532,45 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     }, 2500);
   };
 
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(t => (t === msg ? null : t)), 2200);
+  };
+
   const downloadReceipt = (t: Txn) => {
-    const lines = [
-      "===== FASTCREDIT RECEIPT =====",
-      `Receipt ID: ${t.id}`,
-      `Type: ${t.kind.toUpperCase()}`,
-      `Status: ${t.status.toUpperCase()}`,
-      `Amount: ${fmt(t.amountUsd, 2)} (≈ $${t.amountUsd.toFixed(2)} USD)`,
-      t.method ? `Method: ${t.method}` : "",
-      t.note ? `Note: ${t.note}` : "",
-      `Date: ${new Date(t.at).toLocaleString()}`,
-      `Account: ${userEmail || "user@fastcredit.app"}`,
-      "==============================",
-      "Thank you for using FastCredit.",
-    ].filter(Boolean).join("\n");
-    const blob = new Blob([lines], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `fastcredit-${t.kind}-${t.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    try {
+      const lines = [
+        "===== FASTCREDIT RECEIPT =====",
+        `Receipt ID: ${t.id}`,
+        `Type: ${t.kind.toUpperCase()}`,
+        `Status: ${t.status.toUpperCase()}`,
+        `Amount: ${fmt(t.amountUsd, 2)} (≈ $${t.amountUsd.toFixed(2)} USD)`,
+        t.method ? `Method: ${t.method}` : "",
+        t.note ? `Note: ${t.note}` : "",
+        `Date: ${new Date(t.at).toLocaleString()}`,
+        `Account: ${userEmail || "user@fastcredit.app"}`,
+        "==============================",
+        "Thank you for using FastCredit.",
+      ].filter(Boolean).join("\n");
+      const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const filename = `fastcredit-${t.kind}-${t.id}.txt`;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.rel = "noopener";
+      a.target = "_self";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // iOS Safari fallback: open in a new tab so the user can save it.
+      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+      if (isIOS) window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      showToast(`Receipt downloaded · ${filename}`);
+    } catch {
+      showToast("Could not download receipt");
+    }
   };
 
   const copyText = (text: string, key: string) => {
@@ -569,6 +585,44 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setPaymentMethod(null);
     setReceiptFile(null);
   };
+
+  const openWithdrawFlow = () => {
+    const preselect = BANKS_BY_CURRENCY[currency.code] ? currency.code : "NGN";
+    setWdCurrencyKey(preselect);
+    setWdBank("");
+    setWdAccountNumber("");
+    setWdAccountName("");
+    setWdAmount("");
+    setWdStep("country");
+    setOpenWithdraw(true);
+  };
+  const closeWithdraw = () => {
+    setOpenWithdraw(false);
+    setWdStep("country");
+  };
+  const submitWithdraw = () => {
+    setWdStep("processing");
+    const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (currency.rate || 1);
+    const bankInfo = BANKS_BY_CURRENCY[wdCurrencyKey];
+    setTimeout(() => {
+      if (balanceUsd >= amtUsd && amtUsd > 0) {
+        setBalanceUsd(b => b - amtUsd);
+        addTxn({
+          kind: "withdraw", amountUsd: amtUsd, status: "approved",
+          method: `${bankInfo?.country} · ${wdBank}`,
+          note: `To ${wdAccountName || "account"} · ${wdAccountNumber}`,
+        });
+      } else {
+        addTxn({
+          kind: "declined", amountUsd: amtUsd, status: "declined",
+          method: `${bankInfo?.country} · ${wdBank}`,
+          note: "Insufficient balance for withdrawal",
+        });
+      }
+      setWdStep("success");
+    }, 2200);
+  };
+
 
   const fmtBalance = (usd: number) => {
     const v = usd * currency.rate;
