@@ -16,20 +16,145 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Screen = "splash" | "onboarding" | "signup" | "dashboard";
+type Screen = "splash" | "onboarding" | "signup" | "google" | "processing" | "otp" | "dashboard";
 
 function Root() {
   const [screen, setScreen] = useState<Screen>("splash");
+  const [userEmail, setUserEmail] = useState("");
   useEffect(() => {
     if (screen === "splash") {
       const t = setTimeout(() => setScreen("onboarding"), 5000);
       return () => clearTimeout(t);
     }
+    if (screen === "processing") {
+      const t = setTimeout(() => setScreen("otp"), 5000);
+      return () => clearTimeout(t);
+    }
   }, [screen]);
   if (screen === "splash") return <Splash />;
   if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("signup")} />;
-  if (screen === "signup") return <Signup onContinue={() => setScreen("dashboard")} />;
+  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={() => setScreen("dashboard")} />;
+  if (screen === "google") return <GoogleAuth onDone={(email) => { setUserEmail(email); setScreen("processing"); }} />;
+  if (screen === "processing") return <Processing />;
+  if (screen === "otp") return <OtpScreen email={userEmail} onDone={() => setScreen("dashboard")} />;
   return <Dashboard />;
+}
+
+function GoogleAuth({ onDone }: { onDone: (email: string) => void }) {
+  const [step, setStep] = useState<"email" | "password">("email");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  return (
+    <div className="min-h-screen w-full bg-white flex flex-col px-6 pt-10 pb-8">
+      <div className="flex items-center gap-2">
+        <svg className="h-8 w-8" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.3-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 19 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z"/><path fill="#4CAF50" d="M24 43.5c5.2 0 9.8-1.9 13.3-5.1l-6.2-5.1c-2 1.5-4.5 2.4-7.1 2.4-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39 16.2 43.5 24 43.5z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.2 5.4l6.2 5.1c-.4.4 6.7-4.9 6.7-14.5 0-1.2-.1-2.4-.3-3.5z"/></svg>
+        <span className="text-xl text-[#5f6368]">Google</span>
+      </div>
+
+      {step === "email" ? (
+        <>
+          <h1 className="mt-8 text-2xl text-[#202124]">Sign in</h1>
+          <p className="mt-2 text-sm text-[#202124]">Use your Google Account to continue to FastCredit</p>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Full name"
+            className="mt-6 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8]" />
+          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email or phone"
+            className="mt-3 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8]" />
+          <p className="mt-3 text-[13px] text-[#1a73e8] font-medium">Forgot email?</p>
+          <p className="mt-6 text-xs text-[#5f6368]">Not your computer? Use Guest mode to sign in privately.</p>
+          <div className="mt-auto flex items-center justify-between pt-8">
+            <button className="text-[#1a73e8] text-sm font-medium">Create account</button>
+            <button disabled={!name.trim() || !email.trim()} onClick={() => setStep("password")}
+              className="rounded-md bg-[#1a73e8] px-6 py-2.5 text-white text-sm font-medium disabled:opacity-50">Next</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <h1 className="mt-8 text-2xl text-[#202124]">Welcome</h1>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#dadce0] px-3 py-1.5 self-start">
+            <div className="h-6 w-6 rounded-full bg-[#1a73e8] text-white grid place-items-center text-xs font-bold">{email[0]?.toUpperCase()}</div>
+            <span className="text-sm text-[#202124]">{email}</span>
+          </div>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password"
+            className="mt-6 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8]" />
+          <label className="mt-4 flex items-center gap-2 text-sm text-[#202124]">
+            <input type="checkbox" /> Show password
+          </label>
+          <div className="mt-auto flex items-center justify-between pt-8">
+            <button className="text-[#1a73e8] text-sm font-medium">Forgot password?</button>
+            <button disabled={!password} onClick={() => onDone(email)}
+              className="rounded-md bg-[#1a73e8] px-6 py-2.5 text-white text-sm font-medium disabled:opacity-50">Next</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Processing() {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-5">
+        <div className="h-14 w-14 rounded-full border-4 border-[#0e6b3f]/20 border-t-[#0e6b3f] animate-spin" />
+        <p className="text-[#0b1e1a] font-semibold">Verifying your account…</p>
+        <p className="text-xs text-[#0b1e1a]/60">Sending SMS code to your email</p>
+      </div>
+    </div>
+  );
+}
+
+function OtpScreen({ email, onDone }: { email: string; onDone: () => void }) {
+  const [seconds, setSeconds] = useState(24);
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
+  useEffect(() => {
+    if (seconds <= 0) return;
+    const t = setTimeout(() => setSeconds(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [seconds]);
+  const filled = code.every(c => c);
+  return (
+    <div className="min-h-screen w-full bg-white flex flex-col px-6 pt-14 pb-8">
+      <h1 className="text-2xl font-extrabold text-[#0b1e4d]">Verify SMS Code</h1>
+      <p className="mt-2 text-sm text-[#0b1e4d]/70">
+        We sent a 6-digit SMS code to <span className="font-semibold">{email || "your email"}</span>. Enter it below to create your FastCredit account.
+      </p>
+
+      <div className="mt-8 flex justify-between gap-2">
+        {code.map((c, i) => (
+          <input key={i} value={c} maxLength={1} inputMode="numeric"
+            onChange={e => {
+              const v = e.target.value.replace(/\D/g, "");
+              const next = [...code]; next[i] = v; setCode(next);
+              if (v && i < 5) (document.getElementById(`otp-${i+1}`) as HTMLInputElement)?.focus();
+            }}
+            id={`otp-${i}`}
+            className="h-14 w-12 text-center text-xl font-bold rounded-xl border-2 border-[#0e6b3f]/20 focus:border-[#0e6b3f] outline-none" />
+        ))}
+      </div>
+
+      <div className="mt-6 text-center">
+        {seconds > 0 ? (
+          <p className="text-sm text-[#0b1e4d]/70">
+            Code expires in <span className="font-bold text-[#0e6b3f]">{seconds}s</span>
+          </p>
+        ) : (
+          <button onClick={() => setSeconds(24)} className="text-sm font-semibold text-[#0e6b3f]">Resend code</button>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-2xl bg-[#eefaf2] border border-[#0e6b3f]/15 p-4">
+        <p className="text-xs font-bold text-[#0e6b3f]">📧 Check your email inbox</p>
+        <p className="mt-1 text-xs text-[#0b1e1a]/70">
+          The SMS verification code has been sent to your Gmail. Open your inbox to find it.
+        </p>
+      </div>
+
+      <button onClick={onDone} disabled={!filled || seconds <= 0}
+        className="mt-auto w-full rounded-2xl bg-[#0e6b3f] py-4 text-white font-bold disabled:opacity-50">
+        Verify & Create Account
+      </button>
+    </div>
+  );
 }
 
 function Splash() {
