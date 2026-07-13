@@ -165,20 +165,6 @@ function AuthPage() {
     setCooldown(60);
   }
 
-
-  if (step === "verifying") {
-    return (
-      <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-6">
-        <h1 className="text-5xl font-extrabold text-white tracking-tight">FastCredit</h1>
-        <div className="mt-4 flex gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce [animation-delay:-0.3s]" />
-          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce [animation-delay:-0.15s]" />
-          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce" />
-        </div>
-      </div>
-    );
-  }
-
   if (step === "otp") {
     return (
       <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
