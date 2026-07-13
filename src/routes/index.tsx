@@ -6,7 +6,7 @@ import {
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
-  Globe, Smartphone,
+  Globe, Smartphone, CreditCard,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
