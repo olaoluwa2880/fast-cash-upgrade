@@ -206,8 +206,9 @@ const CRYPTOCURRENCIES: { symbol: string; name: string; network: string; emoji: 
 ];
 
 const DAY = 24 * 60 * 60 * 1000;
-const MINE_COOLDOWN = 48 * 60 * 60 * 1000;
+const MAX_DAILY_MINES = 2;
 const PLAN_DURATION = 14 * DAY;
+const MIN_WITHDRAW_USD = 100;
 
 type Txn = {
   id: string;
@@ -231,7 +232,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [bonusClaimed, setBonusClaimed] = useState(false);
   const [balanceUsd, setBalanceUsd] = useState(0);
   const [activePlan, setActivePlan] = useState<{ index: number; startedAt: number } | null>(null);
-  const [lastMineAt, setLastMineAt] = useState<number | null>(null);
+  const [recentMines, setRecentMines] = useState<number[]>([]); // timestamps of claims in last 24h
   const [now, setNow] = useState(Date.now());
   const [openPayment, setOpenPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
@@ -277,7 +278,23 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           at: new Date(p.created_at).getTime(),
           note: p.rejection_reason || (p.status === "approved" ? "Deposit approved" : p.status === "pending" ? "Awaiting confirmation" : undefined),
         })));
+        // Determine active mining plan from most recent approved payment with a plan_index
+        const planPay = pays.find((p) => p.status === "approved" && p.plan_index != null);
+        if (planPay) {
+          const startedAt = new Date(planPay.created_at).getTime();
+          if (Date.now() - startedAt < PLAN_DURATION) {
+            setActivePlan({ index: planPay.plan_index as number, startedAt });
+          } else {
+            setActivePlan(null);
+          }
+        } else {
+          setActivePlan(null);
+        }
       }
+      // Load mining claims from last 24h
+      const since = new Date(Date.now() - DAY).toISOString();
+      const { data: claims } = await supabase.from("mining_claims").select("created_at").eq("user_id", uid).gte("created_at", since);
+      if (!cancelled) setRecentMines((claims ?? []).map((c) => new Date(c.created_at).getTime()));
       // Subscribe: balance + notifications for toast
       const ch = supabase.channel(`user-${uid}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "wallet_balances", filter: `user_id=eq.${uid}` },
@@ -300,8 +317,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
   const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
   const planActive = activePlan !== null && now < planExpiresAt;
-  const nextMineAt = lastMineAt ? lastMineAt + MINE_COOLDOWN : 0;
-  const mineReady = planActive && (lastMineAt === null || now >= nextMineAt);
+  const minesInWindow = recentMines.filter(t => now - t < DAY);
+  const minesUsedToday = minesInWindow.length;
+  const nextMineAt = minesUsedToday >= MAX_DAILY_MINES && minesInWindow.length ? Math.min(...minesInWindow) + DAY : 0;
+  const mineReady = planActive && minesUsedToday < MAX_DAILY_MINES;
   const currentPlan = activePlan ? PREMIUM_PLANS[activePlan.index] : null;
 
   const formatCountdown = (ms: number) => {
@@ -320,11 +339,25 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     addTxn({ kind: "bonus", amountUsd: 2, status: "credited", note: "Welcome bonus" });
   };
 
-  const mine = () => {
-    if (!mineReady || !currentPlan) return;
-    setBalanceUsd(b => b + currentPlan.mineReward);
-    setLastMineAt(Date.now());
-    addTxn({ kind: "mining", amountUsd: currentPlan.mineReward, status: "credited", note: `Mining reward · Plan ${activePlan!.index + 1}` });
+  const mine = async () => {
+    if (!mineReady || !currentPlan || !activePlan) return;
+    const reward = currentPlan.mineReward;
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const uid = u.user.id;
+    // Insert claim
+    const { error: cErr } = await supabase.from("mining_claims").insert({
+      user_id: uid, amount_usd: reward, plan_index: activePlan.index,
+    });
+    if (cErr) { showToast("Could not record mining claim"); return; }
+    // Update wallet_balances
+    const { data: existing } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
+    const next = Number(existing?.balance_usd ?? 0) + reward;
+    if (existing) await supabase.from("wallet_balances").update({ balance_usd: next }).eq("user_id", uid);
+    else await supabase.from("wallet_balances").insert({ user_id: uid, balance_usd: next });
+    setBalanceUsd(next);
+    setRecentMines(prev => [...prev, Date.now()]);
+    addTxn({ kind: "mining", amountUsd: reward, status: "credited", note: `Mining reward · Plan ${activePlan.index + 1}` });
   };
 
   const activatePlan = () => {
@@ -434,6 +467,15 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const openWithdrawFlow = () => {
+    if (!planActive) {
+      showToast("You must upgrade your mining plan before you can withdraw your earnings.");
+      setOpenPremium(true);
+      return;
+    }
+    if (balanceUsd < MIN_WITHDRAW_USD) {
+      showToast(`Minimum withdrawal amount is $${MIN_WITHDRAW_USD}. Please continue mining until you reach the minimum withdrawal limit.`);
+      return;
+    }
     const preselect = BANKS_BY_CURRENCY[currency.code] ? currency.code : "NGN";
     setWdMethod(null);
     setWdCurrencyKey(preselect);
@@ -652,7 +694,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 )}
               </button>
               <p className={`mt-2 text-center text-[10px] ${softText}`}>
-                Mine once every 48 hours · Higher plan = higher reward
+                Mine up to {MAX_DAILY_MINES}× per day · Higher plan = higher reward · {MAX_DAILY_MINES - minesUsedToday} left today
               </p>
             </div>
           </div>

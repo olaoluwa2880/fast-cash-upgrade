@@ -123,9 +123,15 @@ function Dashboard() {
     const { data: u } = await supabase.auth.getUser();
     await supabase.from(table).update({ status: "approved", reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() }).eq("id", r.id);
     if (table === "payments" && !r.credited && r.amount != null) {
-      await creditBalance(r.user_id, Number(r.amount));
-      await supabase.from("payments").update({ credited: true }).eq("id", r.id);
-      await notify(r.user_id, "Payment approved", `Your deposit of ${Number(r.amount).toFixed(2)} ${r.currency ?? "USD"} has been approved and credited to your wallet.`, "success");
+      if (r.plan_index != null) {
+        // Mining plan upgrade — activate plan, do NOT credit balance
+        await supabase.from("payments").update({ credited: true }).eq("id", r.id);
+        await notify(r.user_id, "🎉 Mining plan upgrade approved", "Congratulations! Your mining plan upgrade has been approved successfully. You can now start mining.", "success");
+      } else {
+        await creditBalance(r.user_id, Number(r.amount));
+        await supabase.from("payments").update({ credited: true }).eq("id", r.id);
+        await notify(r.user_id, "Payment approved", `Your deposit of ${Number(r.amount).toFixed(2)} ${r.currency ?? "USD"} has been approved and credited to your wallet.`, "success");
+      }
     } else if (table === "withdrawals") {
       await notify(r.user_id, "Withdrawal approved", `Your withdrawal of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved.`, "success");
     } else if (table === "upgrades") {
