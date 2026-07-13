@@ -116,3 +116,37 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     </AdminCtx.Provider>
   );
 }
+
+function AdminNav() {
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const items = [
+    { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/admin/users", label: "Users", icon: Users },
+    { to: "/admin/bank-details", label: "Banks", icon: Landmark },
+    { to: "/admin/crypto-wallets", label: "Wallets", icon: Bitcoin },
+    { to: "/admin/support-settings", label: "Support", icon: LifeBuoy },
+    { to: "/admin/community", label: "Community", icon: MessagesSquare },
+  ] as const;
+  return (
+    <nav className="px-5 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
+      {items.map((it) => {
+        const active = path === it.to;
+        const Icon = it.icon;
+        return (
+          <Link
+            key={it.to}
+            to={it.to}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+              active
+                ? "bg-blue-600 text-white border-blue-600 shadow"
+                : "bg-white/70 backdrop-blur border-white text-slate-600 hover:bg-white"
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5" /> {it.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
