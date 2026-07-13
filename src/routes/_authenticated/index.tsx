@@ -206,8 +206,9 @@ const CRYPTOCURRENCIES: { symbol: string; name: string; network: string; emoji: 
 ];
 
 const DAY = 24 * 60 * 60 * 1000;
-const MINE_COOLDOWN = 48 * 60 * 60 * 1000;
+const MAX_DAILY_MINES = 2;
 const PLAN_DURATION = 14 * DAY;
+const MIN_WITHDRAW_USD = 100;
 
 type Txn = {
   id: string;
