@@ -298,18 +298,24 @@ const CATEGORIES = [
 
 // Premium plan returns (48h payout, 14d total). mineReward = per-mine bonus USD ($10-$19)
 const PREMIUM_PLANS = [
-  { invest: 10, profit: 0.15, total: 1.05, returned: 11.05, mineReward: 10 },
-  { invest: 25, profit: 0.38, total: 2.63, returned: 27.63, mineReward: 10.75 },
-  { invest: 50, profit: 0.75, total: 5.25, returned: 55.25, mineReward: 11.5 },
-  { invest: 100, profit: 1.50, total: 10.50, returned: 110.50, mineReward: 12.25 },
-  { invest: 250, profit: 3.75, total: 26.25, returned: 276.25, mineReward: 13 },
-  { invest: 500, profit: 7.50, total: 52.50, returned: 552.50, mineReward: 13.75 },
-  { invest: 1000, profit: 15, total: 105, returned: 1105, mineReward: 14.5 },
-  { invest: 1500, profit: 22.50, total: 157.50, returned: 1657.50, mineReward: 15.25 },
-  { invest: 2000, profit: 30, total: 210, returned: 2210, mineReward: 16 },
-  { invest: 2500, profit: 37.50, total: 262.50, returned: 2762.50, mineReward: 17 },
-  { invest: 3000, profit: 45, total: 315, returned: 3315, mineReward: 18 },
-  { invest: 3500, profit: 52.50, total: 367.50, returned: 3867.50, mineReward: 19 },
+  { invest: 10, profit: 0.25, total: 1.75, returned: 11.75, mineReward: 10 },
+  { invest: 25, profit: 0.63, total: 4.38, returned: 29.38, mineReward: 10.75 },
+  { invest: 50, profit: 1.25, total: 8.75, returned: 58.75, mineReward: 11.5 },
+  { invest: 100, profit: 2.50, total: 17.50, returned: 117.50, mineReward: 12.25 },
+  { invest: 250, profit: 6.25, total: 43.75, returned: 293.75, mineReward: 13 },
+  { invest: 500, profit: 12.50, total: 87.50, returned: 587.50, mineReward: 13.75 },
+  { invest: 1000, profit: 25, total: 175, returned: 1175, mineReward: 14.5 },
+  { invest: 1500, profit: 37.50, total: 262.50, returned: 1762.50, mineReward: 15.25 },
+  { invest: 2000, profit: 50, total: 350, returned: 2350, mineReward: 16 },
+  { invest: 2500, profit: 62.50, total: 437.50, returned: 2937.50, mineReward: 17 },
+  { invest: 3000, profit: 75, total: 525, returned: 3525, mineReward: 18 },
+  { invest: 3500, profit: 87.50, total: 612.50, returned: 4112.50, mineReward: 19 },
+];
+
+const PAYMENT_METHODS = [
+  { id: "crypto", label: "Pay with Crypto", desc: "BTC, USDT, ETH — instant confirm", emoji: "₿" },
+  { id: "ngn", label: "Pay with NGN", desc: "Bank transfer · Naira", emoji: "🇳🇬" },
+  { id: "card", label: "Add your Card", desc: "Visa, Mastercard, Verve", emoji: "💳" },
 ];
 
 const DAY = 24 * 60 * 60 * 1000;
