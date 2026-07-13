@@ -6,8 +6,11 @@ import {
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
-  Globe, Smartphone, CreditCard,
+  Globe, Smartphone, CreditCard, MessageCircle, Send, Phone, ExternalLink,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useSiteSettings, supportHref } from "@/lib/site-settings";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Root,
