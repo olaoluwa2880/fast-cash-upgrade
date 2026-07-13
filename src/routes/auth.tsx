@@ -145,8 +145,6 @@ function AuthPage() {
 
     await new Promise((r) => setTimeout(r, 1800));
     navigate({ to: "/" });
-
-    navigate({ to: "/" });
   }
 
   async function resend() {
