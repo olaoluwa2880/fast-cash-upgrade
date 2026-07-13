@@ -416,6 +416,34 @@ const BANKS_BY_CURRENCY: Record<string, { country: string; flag: string; banks: 
   },
 };
 
+const CRYPTOCURRENCIES: { symbol: string; name: string; network: string; emoji: string }[] = [
+  { symbol: "BTC", name: "Bitcoin", network: "Bitcoin", emoji: "₿" },
+  { symbol: "ETH", name: "Ethereum", network: "ERC20", emoji: "Ξ" },
+  { symbol: "BNB", name: "Binance Coin", network: "BEP20", emoji: "🅱" },
+  { symbol: "USDT", name: "Tether", network: "TRC20", emoji: "₮" },
+  { symbol: "USDC", name: "USD Coin", network: "ERC20", emoji: "🪙" },
+  { symbol: "SOL", name: "Solana", network: "Solana", emoji: "◎" },
+  { symbol: "XRP", name: "XRP", network: "XRP Ledger", emoji: "✕" },
+  { symbol: "ADA", name: "Cardano", network: "Cardano", emoji: "₳" },
+  { symbol: "DOGE", name: "Dogecoin", network: "Dogecoin", emoji: "Ð" },
+  { symbol: "AVAX", name: "Avalanche", network: "C-Chain", emoji: "🔺" },
+  { symbol: "DOT", name: "Polkadot", network: "Polkadot", emoji: "●" },
+  { symbol: "LTC", name: "Litecoin", network: "Litecoin", emoji: "Ł" },
+  { symbol: "TRX", name: "TRON", network: "TRC20", emoji: "🅃" },
+  { symbol: "BCH", name: "Bitcoin Cash", network: "BCH", emoji: "฿" },
+  { symbol: "ETC", name: "Ethereum Classic", network: "ETC", emoji: "Ξ" },
+  { symbol: "MATIC", name: "Polygon", network: "Polygon", emoji: "◆" },
+  { symbol: "LINK", name: "Chainlink", network: "ERC20", emoji: "🔗" },
+  { symbol: "XLM", name: "Stellar", network: "Stellar", emoji: "✦" },
+  { symbol: "ATOM", name: "Cosmos", network: "Cosmos", emoji: "⚛" },
+  { symbol: "XMR", name: "Monero", network: "Monero", emoji: "ɱ" },
+  { symbol: "NEAR", name: "NEAR Protocol", network: "NEAR", emoji: "🌐" },
+  { symbol: "APT", name: "Aptos", network: "Aptos", emoji: "🅰" },
+  { symbol: "ARB", name: "Arbitrum", network: "Arbitrum", emoji: "🔵" },
+  { symbol: "OP", name: "Optimism", network: "Optimism", emoji: "🔴" },
+  { symbol: "SHIB", name: "Shiba Inu", network: "ERC20", emoji: "🐕" },
+];
+
 const DAY = 24 * 60 * 60 * 1000;
 const MINE_COOLDOWN = 48 * 60 * 60 * 1000;
 const PLAN_DURATION = 14 * DAY;
