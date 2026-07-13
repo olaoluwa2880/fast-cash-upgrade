@@ -6,8 +6,11 @@ import {
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
-  Globe, Smartphone, CreditCard,
+  Globe, Smartphone, CreditCard, MessageCircle, Send, Phone, ExternalLink,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useSiteSettings, supportHref } from "@/lib/site-settings";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Root,
@@ -73,7 +76,7 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
   { icon: Briefcase, label: "Wallet", key: "wallet" },
   { icon: Receipt, label: "Payments", key: "payments" },
   { icon: RouteIcon, label: "Journey", key: "journey" },
-  { icon: Users, label: "Rosca", key: "rosca" },
+  { icon: Users, label: "Community", key: "community" },
   { icon: LifeBuoy, label: "Support", key: "support" },
   { icon: Clock, label: "History", key: "history" },
   { icon: Gift, label: "Donation", key: "donation" },
@@ -219,6 +222,7 @@ type Txn = {
 
 function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const userEmail = userProfile.email;
+  const settings = useSiteSettings();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [openCur, setOpenCur] = useState(false);
   const [dark, setDark] = useState(false);
@@ -248,21 +252,51 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [wdCrypto, setWdCrypto] = useState<typeof CRYPTOCURRENCIES[number] | null>(null);
   const [wdCryptoSearch, setWdCryptoSearch] = useState("");
   const [wdWalletAddress, setWdWalletAddress] = useState("");
-  const [transactions, setTransactions] = useState<Txn[]>(() => {
-    const t = Date.now();
-    return [
-      { id: "seed-1", kind: "declined", amountUsd: 50, method: "Card", status: "declined", at: t - 4 * 24 * 3600 * 1000, note: "Card verification failed" },
-      { id: "seed-2", kind: "withdraw", amountUsd: 15, method: "USDT · TRC20", status: "approved", at: t - 2 * 24 * 3600 * 1000, note: "Withdrawal to wallet" },
-    ];
-  });
+  const [transactions, setTransactions] = useState<Txn[]>([]);
 
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
     setTransactions(prev => [{ ...t, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now() }, ...prev]);
+
+  // Load wallet balance + payments from DB; subscribe to realtime updates
+  useEffect(() => {
+    let cancelled = false;
+    async function loadUserState() {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || cancelled) return;
+      const uid = u.user.id;
+      const { data: bal } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
+      if (!cancelled && bal) setBalanceUsd(Number(bal.balance_usd));
+      const { data: pays } = await supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(30);
+      if (!cancelled && pays) {
+        setTransactions(pays.map((p) => ({
+          id: p.id,
+          kind: p.status === "rejected" ? "declined" as const : "deposit" as const,
+          amountUsd: Number(p.amount),
+          method: p.method ?? undefined,
+          status: p.status === "approved" ? "approved" as const : p.status === "rejected" ? "declined" as const : "pending" as const,
+          at: new Date(p.created_at).getTime(),
+          note: p.rejection_reason || (p.status === "approved" ? "Deposit approved" : p.status === "pending" ? "Awaiting confirmation" : undefined),
+        })));
+      }
+      // Subscribe: balance + notifications for toast
+      const ch = supabase.channel(`user-${uid}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "wallet_balances", filter: `user_id=eq.${uid}` },
+          (payload) => { const n = payload.new as { balance_usd?: number } | null; if (n?.balance_usd != null) setBalanceUsd(Number(n.balance_usd)); })
+        .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${uid}` }, loadUserState)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` },
+          (payload) => { const n = payload.new as { title?: string; body?: string } | null; if (n?.title) { const msg = `${n.title}${n.body ? ": " + n.body : ""}`; setToast(msg); setTimeout(() => setToast((t) => t === msg ? null : t), 4500); } })
+        .subscribe();
+      return () => { supabase.removeChannel(ch); };
+    }
+    loadUserState();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
 
   const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
   const planActive = activePlan !== null && now < planExpiresAt;
@@ -311,15 +345,38 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     }
   };
 
-  const submitPayment = () => {
+  const submitPayment = async () => {
     setPaymentStep("processing");
     const amt = PREMIUM_PLANS[selectedPlan].invest;
     const methodLabel = paymentMethod === "crypto" ? "Crypto" : paymentMethod === "ngn" ? "NGN Bank Transfer" : "Card";
-    setTimeout(() => {
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Not signed in");
+      let receiptPath: string | null = null;
+      if (receiptFile) {
+        const ext = receiptFile.name.split(".").pop() || "png";
+        receiptPath = `${u.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("receipts").upload(receiptPath, receiptFile, { contentType: receiptFile.type || "image/png" });
+        if (upErr) throw upErr;
+      }
+      const { error: insErr } = await supabase.from("payments").insert({
+        user_id: u.user.id,
+        amount: amt,
+        currency: "USD",
+        method: methodLabel,
+        receipt_url: receiptPath,
+        plan_index: selectedPlan,
+        status: "pending",
+      });
+      if (insErr) throw insErr;
       setPaymentStep("pending");
       addTxn({ kind: "deposit", amountUsd: amt, method: methodLabel, status: "pending", note: `Premium plan activation · awaiting confirmation` });
-    }, 2500);
+    } catch (e) {
+      setPaymentStep("pending");
+      showToast(`Could not submit: ${(e as Error).message}`);
+    }
   };
+
 
 
   const showToast = (msg: string) => {
@@ -794,30 +851,28 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <div className="space-y-4">
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Send exactly {fmt(PREMIUM_PLANS[selectedPlan].invest, 2)} worth</p>
 
-                  <div className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
-                    <div className="flex items-center justify-between">
-                      <p className="font-black text-sm">USDT · TRC20</p>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">Recommended</span>
+                  {settings.wallets.length === 0 && (
+                    <div className={`rounded-2xl border p-4 text-center text-[11px] ${softText}`}>
+                      No crypto wallets configured yet. Please contact support.
                     </div>
-                    <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Wallet Address</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p className="font-mono text-[11px] break-all flex-1">TK5oZgp79NMGutV3Xsy3S2XtZJBDtE4opo</p>
-                      <button onClick={() => copyText("TK5oZgp79NMGutV3Xsy3S2XtZJBDtE4opo", "usdt")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
-                        {copied === "usdt" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
-                      </button>
+                  )}
+                  {settings.wallets.map((w, idx) => (
+                    <div key={w.id} className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : idx === 0 ? "border-black/5 bg-emerald-50/60" : "border-black/5 bg-white"}`}>
+                      <div className="flex items-center justify-between">
+                        <p className="font-black text-sm">{w.symbol} · {w.network}</p>
+                        {idx === 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">Recommended</span>}
+                      </div>
+                      {w.label && <p className={`text-[10px] ${softText}`}>{w.label}</p>}
+                      <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Wallet Address</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <p className="font-mono text-[11px] break-all flex-1">{w.address}</p>
+                        <button onClick={() => copyText(w.address, `w-${w.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                          {copied === `w-${w.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ))}
 
-                  <div className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}>
-                    <p className="font-black text-sm">Bitcoin · BTC</p>
-                    <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Deposit Address</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p className="font-mono text-[11px] break-all flex-1">3PiLsgLFrin8Gk5C6XP7vTe2pTnRM54RnA</p>
-                      <button onClick={() => copyText("3PiLsgLFrin8Gk5C6XP7vTe2pTnRM54RnA", "btc")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
-                        {copied === "btc" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                  </div>
 
                   <ReceiptUpload receiptFile={receiptFile} setReceiptFile={setReceiptFile} isDark={isDark} softText={softText} />
 
@@ -835,29 +890,39 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <div className="space-y-4">
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Bank transfer · Naira</p>
 
-                  <div className={`rounded-2xl border p-4 space-y-3 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Bank</p>
-                      <p className="font-black">VFD Bank</p>
-                    </div>
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Name</p>
-                      <p className="font-black">SATURDAY ARUWAYO</p>
-                    </div>
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Number</p>
-                      <div className="flex items-center gap-2">
-                        <p className="font-mono font-black text-lg flex-1">1047499461</p>
-                        <button onClick={() => copyText("1047499461", "ngn")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
-                          {copied === "ngn" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
-                        </button>
+                  {(() => {
+                    const ngnBanks = settings.banks.filter((b) => b.currency === "NGN" || b.currency === currency.code);
+                    const active = ngnBanks.length ? ngnBanks : settings.banks;
+                    if (active.length === 0) {
+                      return <div className={`rounded-2xl border p-4 text-center text-[11px] ${softText}`}>No bank accounts configured yet. Please contact support.</div>;
+                    }
+                    return active.map((b) => (
+                      <div key={b.id} className={`rounded-2xl border p-4 space-y-3 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Bank</p>
+                          <p className="font-black">{b.bank_name} <span className="text-[10px] text-slate-500">({b.currency})</span></p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Name</p>
+                          <p className="font-black">{b.account_name}</p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Number</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-mono font-black text-lg flex-1">{b.account_number}</p>
+                            <button onClick={() => copyText(b.account_number, `b-${b.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                              {copied === `b-${b.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Amount</p>
+                          <p className="font-black">{fmt(PREMIUM_PLANS[selectedPlan].invest, 2)}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Amount</p>
-                      <p className="font-black">{fmt(PREMIUM_PLANS[selectedPlan].invest, 2)}</p>
-                    </div>
-                  </div>
+                    ));
+                  })()}
+
 
                   <ReceiptUpload receiptFile={receiptFile} setReceiptFile={setReceiptFile} isDark={isDark} softText={softText} />
 
@@ -1282,6 +1347,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           activePlan={activePlan}
           currentPlan={currentPlan}
           currencyCode={currency.code}
+          settings={settings}
+
         />
       )}
 
@@ -1353,17 +1420,19 @@ type CategoryModalProps = {
   activePlan: { index: number; startedAt: number } | null;
   currentPlan: typeof PREMIUM_PLANS[number] | null;
   currencyCode: string;
+  settings: import("@/lib/site-settings").SiteSettings;
 };
 
 function CategoryModal(props: CategoryModalProps) {
-  const { categoryKey, onClose, isDark, softText, transactions, downloadReceipt, fmt, balanceUsd, bonusClaimed, userEmail, activePlan, currentPlan, currencyCode } = props;
+  const { categoryKey, onClose, isDark, softText, transactions, downloadReceipt, fmt, balanceUsd, bonusClaimed, userEmail, activePlan, currentPlan, currencyCode, settings } = props;
   const title =
     categoryKey === "savings" ? "Savings · Transactions" :
     categoryKey === "history" ? "History & Receipts" :
-    categoryKey === "rosca" ? "Profile" :
+    categoryKey === "community" ? "Community" :
     categoryKey === "donation" ? "Rewards" :
     categoryKey === "support" ? "Support" :
     categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
+
 
   const cardBg = isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]";
   const rowBg = isDark ? "bg-white/5 border-white/10" : "bg-white border-black/5";
@@ -1426,23 +1495,31 @@ function CategoryModal(props: CategoryModalProps) {
             </div>
           )}
 
-          {categoryKey === "rosca" && (
+          {categoryKey === "community" && (
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 text-white grid place-items-center">
-                  <UserCircle className="h-9 w-9" />
+              <p className={`text-[11px] ${softText}`}>Join our official channels — updates, announcements and community chat.</p>
+              {settings.community.length === 0 && (
+                <div className={`rounded-2xl border p-6 text-center ${rowBg}`}>
+                  <MessageCircle className="h-8 w-8 mx-auto text-emerald-500" />
+                  <p className={`text-xs mt-2 ${softText}`}>No community links yet. Check back soon.</p>
                 </div>
-                <div>
-                  <p className="font-black text-lg">Ryan Sterling</p>
-                  <p className={`text-[11px] ${softText}`}>FastCredit member</p>
-                </div>
-              </div>
-              <div className={`rounded-2xl border p-4 space-y-3 ${rowBg}`}>
-                <ProfileRow icon={<Mail className="h-4 w-4" />} label="Email" value={userEmail || "user@fastcredit.app"} softText={softText} />
-                <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
-                <ProfileRow icon={<Crown className="h-4 w-4" />} label="Plan" value={activePlan ? `Premium · Plan ${activePlan.index + 1}` : "No active plan"} softText={softText} />
-                <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Preferred currency" value={currencyCode} softText={softText} />
-              </div>
+              )}
+              {settings.community.map((c) => {
+                const Icon = c.platform === "telegram" ? Send : c.platform === "whatsapp" ? MessageCircle : ExternalLink;
+                return (
+                  <a key={c.id} href={c.url} target="_blank" rel="noreferrer"
+                    className={`flex items-center gap-3 rounded-2xl border p-4 ${rowBg} active:scale-[.98] transition`}>
+                    <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center shrink-0">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black truncate">{c.title}</p>
+                      <p className={`text-[11px] ${softText} truncate`}>{c.platform} · {c.url}</p>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 opacity-60" />
+                  </a>
+                );
+              })}
             </div>
           )}
 
@@ -1465,28 +1542,48 @@ function CategoryModal(props: CategoryModalProps) {
             </div>
           )}
 
-          {(categoryKey === "support" || categoryKey === "wallet" || categoryKey === "payments" || categoryKey === "journey") && (
+          {categoryKey === "support" && (
             <div className="space-y-3">
-              <div className={`rounded-2xl border p-5 text-center ${rowBg}`}>
-                <div className="mx-auto h-14 w-14 rounded-2xl bg-emerald-500 text-white grid place-items-center">
-                  {categoryKey === "support" ? <LifeBuoy className="h-6 w-6" /> : <Briefcase className="h-6 w-6" />}
+              <p className={`text-[11px] ${softText}`}>We're here 24/7 — reach us on any of these channels.</p>
+              {settings.support.length === 0 && (
+                <div className={`rounded-2xl border p-6 text-center ${rowBg}`}>
+                  <LifeBuoy className="h-8 w-8 mx-auto text-emerald-500" />
+                  <p className={`text-xs mt-2 ${softText}`}>No support contacts configured yet.</p>
                 </div>
-                <p className="mt-3 font-black">
-                  {categoryKey === "support" ? "We're here to help" : `${title} coming soon`}
-                </p>
-                <p className={`mt-1 text-[11px] ${softText}`}>
-                  {categoryKey === "support"
-                    ? "Reach our team any time — we'll get back within 24 hours."
-                    : "This section is being prepared for you."}
-                </p>
-                {categoryKey === "support" && (
-                  <a href="mailto:support@fastcredit.app" className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#0e6b3f] text-white px-4 py-2 text-xs font-bold">
-                    <Mail className="h-3.5 w-3.5" /> support@fastcredit.app
+              )}
+              {settings.support.map((s) => {
+                const Icon = s.kind === "telegram" ? Send
+                  : s.kind === "whatsapp" ? MessageCircle
+                  : s.kind === "email" ? Mail
+                  : s.kind === "phone" ? Phone
+                  : ExternalLink;
+                return (
+                  <a key={s.id} href={supportHref(s)} target="_blank" rel="noreferrer"
+                    className={`flex items-center gap-3 rounded-2xl border p-4 ${rowBg} active:scale-[.98] transition`}>
+                    <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center shrink-0">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black truncate">{s.label}</p>
+                      <p className={`text-[11px] ${softText} truncate`}>{s.value}</p>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 opacity-60" />
                   </a>
-                )}
-              </div>
+                );
+              })}
             </div>
           )}
+
+          {(categoryKey === "wallet" || categoryKey === "payments" || categoryKey === "journey") && (
+            <div className={`rounded-2xl border p-5 text-center ${rowBg}`}>
+              <div className="mx-auto h-14 w-14 rounded-2xl bg-emerald-500 text-white grid place-items-center">
+                <Briefcase className="h-6 w-6" />
+              </div>
+              <p className="mt-3 font-black">{title} coming soon</p>
+              <p className={`mt-1 text-[11px] ${softText}`}>This section is being prepared for you.</p>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

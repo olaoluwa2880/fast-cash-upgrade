@@ -119,13 +119,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
           created_at: string
+          credited: boolean
           currency: string
           id: string
+          method: string | null
+          plan_index: number | null
+          receipt_url: string | null
           reference: string | null
+          rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["request_status"]
@@ -135,9 +170,14 @@ export type Database = {
         Insert: {
           amount?: number
           created_at?: string
+          credited?: boolean
           currency?: string
           id?: string
+          method?: string | null
+          plan_index?: number | null
+          receipt_url?: string | null
           reference?: string | null
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -147,9 +187,14 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          credited?: boolean
           currency?: string
           id?: string
+          method?: string | null
+          plan_index?: number | null
+          receipt_url?: string | null
           reference?: string | null
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -304,6 +349,24 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_balances: {
+        Row: {
+          balance_usd: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_usd?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_usd?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
