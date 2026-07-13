@@ -316,12 +316,6 @@ function AuthPage() {
           </form>
         </div>
 
-            <button type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition mt-2">
-              Create Account
-            </button>
-          </form>
-        </div>
 
         <p className="text-sm text-center text-gray-600 mt-5">
           Already have an account?{" "}
