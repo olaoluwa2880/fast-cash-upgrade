@@ -449,6 +449,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [openProfile, setOpenProfile] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [openWithdraw, setOpenWithdraw] = useState(false);
+  const [wdStep, setWdStep] = useState<"country" | "bank" | "details" | "processing" | "success">("country");
+  const [wdCurrencyKey, setWdCurrencyKey] = useState<string>("NGN");
+  const [wdBank, setWdBank] = useState<string>("");
+  const [wdAccountNumber, setWdAccountNumber] = useState("");
+  const [wdAccountName, setWdAccountName] = useState("");
+  const [wdAmount, setWdAmount] = useState("");
   const [transactions, setTransactions] = useState<Txn[]>(() => {
     const t = Date.now();
     return [
