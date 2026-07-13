@@ -20,7 +20,7 @@ const COUNTRIES = [
   "United Arab Emirates", "Saudi Arabia", "India", "China", "Brazil", "Other",
 ];
 
-type Step = "register" | "creating" | "otp" | "verifying";
+type Step = "register" | "creating" | "otp" | "verifying" | "login";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -183,6 +183,27 @@ function AuthPage() {
     setCooldown(60);
   }
 
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setInfo(null);
+    const email = form.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Enter a valid email address.");
+    if (!form.password) return setError("Enter your password.");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: form.password });
+    if (error || !data.session) {
+      const msg = (error?.message || "").toLowerCase();
+      if (msg.includes("invalid")) return setError("Invalid email or password.");
+      if (msg.includes("not confirmed") || msg.includes("confirm")) {
+        setInfo(`Please verify your email. We can send a new code to ${email}.`);
+        const { error: otpErr } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+        if (!otpErr) { setStep("otp"); setCooldown(60); }
+        return;
+      }
+      return setError(error?.message || "Login failed.");
+    }
+    navigate({ to: "/" });
+  }
+
   if (step === "verifying") {
     return (
       <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-5">
@@ -242,6 +263,56 @@ function AuthPage() {
     );
   }
 
+  if (step === "login") {
+    return (
+      <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-6">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-4">
+              <ShieldCheck className="w-7 h-7" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+            <p className="text-sm text-gray-500 mt-1">Log in with your email and password.</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 p-6">
+            <form onSubmit={handleLogin} className="space-y-3">
+              <Field icon={<Mail className="w-4 h-4" />} label="Email address">
+                <input type="email" autoComplete="email" value={form.email}
+                  onChange={(e) => update("email", e.target.value)}
+                  placeholder="you@example.com" className={inputCls} required />
+              </Field>
+              <Field icon={<Lock className="w-4 h-4" />} label="Password">
+                <input type="password" autoComplete="current-password" value={form.password}
+                  onChange={(e) => update("password", e.target.value)}
+                  placeholder="Your password" className={inputCls} required />
+              </Field>
+
+              {info && <p className="text-xs text-emerald-600">{info}</p>}
+              {error && <p className="text-xs text-red-600">{error}</p>}
+
+              <button type="submit"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition mt-2">
+                Login
+              </button>
+            </form>
+          </div>
+
+          <p className="text-sm text-center text-gray-600 mt-5">
+            New here?{" "}
+            <button
+              type="button"
+              onClick={() => { setError(null); setInfo(null); setStep("register"); }}
+              className="text-emerald-600 hover:text-emerald-700 font-semibold"
+            >
+              Create an account
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
       <div className="w-full max-w-sm">
@@ -295,7 +366,19 @@ function AuthPage() {
           </form>
         </div>
 
-        <p className="text-[11px] text-center text-gray-400 mt-6">
+
+        <p className="text-sm text-center text-gray-600 mt-5">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => { setError(null); setInfo(null); setStep("login"); }}
+            className="text-emerald-600 hover:text-emerald-700 font-semibold"
+          >
+            Login
+          </button>
+        </p>
+
+        <p className="text-[11px] text-center text-gray-400 mt-3">
           By continuing you agree to our Terms & Privacy Policy.
         </p>
       </div>
