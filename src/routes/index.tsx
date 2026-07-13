@@ -692,7 +692,7 @@ function Dashboard() {
                 </ul>
               </div>
 
-              <button className="mt-4 w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2">
+              <button onClick={activatePlan} className="mt-4 w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95">
                 <Crown className="h-4 w-4" /> Activate for {fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}
               </button>
             </div>
