@@ -35,10 +35,16 @@ function AuthPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/" });
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: data.session.user.id,
+        _role: "admin",
+      });
+      navigate({ to: isAdmin ? "/admin/dashboard" : "/" });
     });
   }, [navigate]);
+
 
   useEffect(() => {
     if (cooldown <= 0) return;
