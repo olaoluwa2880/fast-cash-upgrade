@@ -453,7 +453,8 @@ type Txn = {
   kind: "deposit" | "withdraw" | "declined" | "bonus" | "mining";
   amountUsd: number;
   method?: string;
-  status: "approved" | "declined" | "credited";
+  status: "approved" | "declined" | "credited" | "pending";
+
   at: number;
   note?: string;
 };
