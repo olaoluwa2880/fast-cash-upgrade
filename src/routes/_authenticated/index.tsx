@@ -83,21 +83,24 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
   { icon: PiggyBank, label: "Savings", key: "savings" },
 ];
 
-// Premium plan returns (48h payout, 14d total). mineReward = per-mine bonus USD ($10-$19)
-const PREMIUM_PLANS = [
-  { invest: 10, profit: 0.25, total: 1.75, returned: 11.75, mineReward: 10 },
-  { invest: 25, profit: 0.63, total: 4.38, returned: 29.38, mineReward: 10.75 },
-  { invest: 50, profit: 1.25, total: 8.75, returned: 58.75, mineReward: 11.5 },
-  { invest: 100, profit: 2.50, total: 17.50, returned: 117.50, mineReward: 12.25 },
-  { invest: 250, profit: 6.25, total: 43.75, returned: 293.75, mineReward: 13 },
-  { invest: 500, profit: 12.50, total: 87.50, returned: 587.50, mineReward: 13.75 },
-  { invest: 1000, profit: 25, total: 175, returned: 1175, mineReward: 14.5 },
-  { invest: 1500, profit: 37.50, total: 262.50, returned: 1762.50, mineReward: 15.25 },
-  { invest: 2000, profit: 50, total: 350, returned: 2350, mineReward: 16 },
-  { invest: 2500, profit: 62.50, total: 437.50, returned: 2937.50, mineReward: 17 },
-  { invest: 3000, profit: 75, total: 525, returned: 3525, mineReward: 18 },
-  { invest: 3500, profit: 87.50, total: 612.50, returned: 4112.50, mineReward: 19 },
-];
+// Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day).
+const PREMIUM_PLANS = (() => {
+  const base = [
+    { name: "Starter", invest: 12,   mineReward: 17 },
+    { name: "Plan 2",  invest: 25,   mineReward: 35 },
+    { name: "Plan 3",  invest: 50,   mineReward: 70 },
+    { name: "Plan 4",  invest: 100,  mineReward: 150 },
+    { name: "Plan 5",  invest: 250,  mineReward: 380 },
+    { name: "Plan 6",  invest: 500,  mineReward: 800 },
+    { name: "Plan 7",  invest: 600,  mineReward: 1200 },
+    { name: "Plan 8",  invest: 1500, mineReward: 1760 },
+  ];
+  // 2 taps/day × 14 days = 28 total taps
+  return base.map(p => {
+    const total = p.mineReward * 28;
+    return { ...p, profit: p.mineReward * 2, total, returned: p.invest + total };
+  });
+})();
 
 const PAYMENT_METHODS = [
   { id: "crypto", label: "Pay with Crypto", desc: "BTC, USDT, ETH — instant confirm", emoji: "₿" },
@@ -254,6 +257,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [wdCryptoSearch, setWdCryptoSearch] = useState("");
   const [wdWalletAddress, setWdWalletAddress] = useState("");
   const [transactions, setTransactions] = useState<Txn[]>([]);
+  const [congrats, setCongrats] = useState<null | { title: string; body: string }>(null);
 
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
     setTransactions(prev => [{ ...t, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now() }, ...prev]);
@@ -301,7 +305,17 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           (payload) => { const n = payload.new as { balance_usd?: number } | null; if (n?.balance_usd != null) setBalanceUsd(Number(n.balance_usd)); })
         .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${uid}` }, loadUserState)
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` },
-          (payload) => { const n = payload.new as { title?: string; body?: string } | null; if (n?.title) { const msg = `${n.title}${n.body ? ": " + n.body : ""}`; setToast(msg); setTimeout(() => setToast((t) => t === msg ? null : t), 4500); } })
+          (payload) => {
+            const n = payload.new as { title?: string; body?: string; kind?: string } | null;
+            if (!n?.title) return;
+            const isApproval = /approved/i.test(n.title) || n.title.includes("🎉");
+            if (isApproval) {
+              setCongrats({ title: n.title, body: n.body || "Your payment has been approved successfully." });
+            } else {
+              const msg = `${n.title}${n.body ? ": " + n.body : ""}`;
+              setToast(msg); setTimeout(() => setToast((t) => t === msg ? null : t), 4500);
+            }
+          })
         .subscribe();
       return () => { supabase.removeChannel(ch); };
     }
@@ -419,37 +433,74 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
   const downloadReceipt = (t: Txn) => {
     try {
-      const lines = [
-        "===== FASTCREDIT RECEIPT =====",
-        `Receipt ID: ${t.id}`,
-        `Type: ${t.kind.toUpperCase()}`,
-        `Status: ${t.status.toUpperCase()}`,
-        `Amount: ${fmt(t.amountUsd, 2)} (≈ $${t.amountUsd.toFixed(2)} USD)`,
-        t.method ? `Method: ${t.method}` : "",
-        t.note ? `Note: ${t.note}` : "",
-        `Date: ${new Date(t.at).toLocaleString()}`,
-        `Account: ${userEmail || "user@fastcredit.app"}`,
-        "==============================",
-        "Thank you for using FastCredit.",
-      ].filter(Boolean).join("\n");
-      const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+      const receiptNo = `FC-${t.id.slice(0, 8).toUpperCase()}`;
+      const typeLabel = t.kind === "deposit" ? "Deposit" : t.kind === "withdraw" ? "Withdrawal" : t.kind === "mining" ? "Mining Reward" : t.kind === "bonus" ? "Bonus" : "Declined";
+      const statusColor = t.status === "approved" || t.status === "credited" ? "#0e6b3f" : t.status === "pending" ? "#d97706" : "#dc2626";
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Receipt ${receiptNo}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f2f5f3;color:#0b1e1a;padding:24px}
+  .receipt{max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 32px rgba(14,107,63,.12)}
+  .head{background:linear-gradient(135deg,#0f7a47,#0a5a34);color:#fff;padding:28px;text-align:center;position:relative}
+  .brand{font-size:28px;font-weight:900;letter-spacing:-.5px}
+  .tag{font-size:11px;opacity:.85;margin-top:4px;letter-spacing:2px;text-transform:uppercase}
+  .stamp{position:absolute;top:20px;right:20px;transform:rotate(-8deg);border:3px solid #fff;color:#fff;padding:6px 12px;border-radius:6px;font-weight:900;font-size:11px;letter-spacing:2px;opacity:.9}
+  .amt{padding:24px;text-align:center;border-bottom:1px dashed #e5e7eb}
+  .amt small{color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  .amt h1{font-size:40px;font-weight:900;margin-top:6px;color:${statusColor}}
+  .badge{display:inline-block;margin-top:8px;padding:6px 14px;border-radius:999px;background:${statusColor}15;color:${statusColor};font-weight:800;font-size:12px}
+  table{width:100%;border-collapse:collapse;padding:12px}
+  td{padding:12px 24px;font-size:13px;border-bottom:1px solid #f1f5f9}
+  td:first-child{color:#64748b;font-weight:600}
+  td:last-child{text-align:right;font-weight:700;word-break:break-all}
+  .foot{padding:20px 24px;text-align:center;background:#f8fafc;font-size:11px;color:#64748b}
+  .foot b{color:#0e6b3f}
+  .actions{padding:16px;text-align:center;background:#fff;border-top:1px solid #f1f5f9}
+  .btn{display:inline-block;padding:10px 20px;background:#0e6b3f;color:#fff;border-radius:999px;font-weight:800;border:none;cursor:pointer;margin:0 4px;font-size:13px}
+  @media print{body{background:#fff;padding:0}.receipt{box-shadow:none}.actions{display:none}}
+</style></head><body>
+<div class="receipt">
+  <div class="head">
+    <div class="brand">FastCredit</div>
+    <div class="tag">Official Receipt</div>
+    ${t.status === "approved" || t.status === "credited" ? '<div class="stamp">APPROVED</div>' : ''}
+  </div>
+  <div class="amt">
+    <small>Amount</small>
+    <h1>$${t.amountUsd.toFixed(2)}</h1>
+    <div class="badge">● ${t.status.toUpperCase()}</div>
+  </div>
+  <table>
+    <tr><td>Receipt No.</td><td>${receiptNo}</td></tr>
+    <tr><td>Transaction ID</td><td>${t.id}</td></tr>
+    <tr><td>Type</td><td>${typeLabel}</td></tr>
+    <tr><td>Date &amp; Time</td><td>${new Date(t.at).toLocaleString()}</td></tr>
+    ${t.method ? `<tr><td>Payment Method</td><td>${t.method}</td></tr>` : ''}
+    <tr><td>Account</td><td>${userEmail || "user@fastcredit.app"}</td></tr>
+    ${t.note ? `<tr><td>Note</td><td>${t.note}</td></tr>` : ''}
+  </table>
+  <div class="foot">
+    Verified by <b>FastCredit</b> · This is an electronically generated receipt.<br/>
+    Support: support@fastcreditglobal.com
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="window.print()">Download / Print PDF</button>
+  </div>
+</div>
+</body></html>`;
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      const filename = `fastcredit-${t.kind}-${t.id}.txt`;
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.rel = "noopener";
-      a.target = "_self";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // iOS Safari fallback: open in a new tab so the user can save it.
-      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
-      if (isIOS) window.open(url, "_blank");
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-      showToast(`Receipt downloaded · ${filename}`);
+      const win = window.open(url, "_blank");
+      if (!win) {
+        // Fallback: download the HTML
+        const a = document.createElement("a");
+        a.href = url; a.download = `fastcredit-receipt-${receiptNo}.html`;
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      showToast(`Receipt ${receiptNo} opened · use Print to save as PDF`);
     } catch {
-      showToast("Could not download receipt");
+      showToast("Could not generate receipt");
     }
   };
 
@@ -757,17 +808,20 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       </div>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px]">
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px] z-40">
         <div className="rounded-full bg-[#0e6b3f] text-white flex items-center justify-around px-3 py-3 shadow-2xl">
-          <button className="h-11 w-11 grid place-items-center rounded-full bg-white/20">
-            <Home className="h-5 w-5" />
-          </button>
-          <button className="h-11 w-11 grid place-items-center text-white/80"><Heart className="h-5 w-5" /></button>
-          <button className="h-11 w-11 grid place-items-center text-white/80"><Search className="h-5 w-5" /></button>
-          <button className="h-11 w-11 grid place-items-center text-white/80"><Wallet className="h-5 w-5" /></button>
-          <button className="h-11 w-11 grid place-items-center text-white/80"><User className="h-5 w-5" /></button>
+          <button
+            onClick={() => { setOpenCategory(null); setOpenProfile(false); setOpenPayment(false); setOpenPremium(false); setOpenWithdraw(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            className={`h-11 w-11 grid place-items-center rounded-full ${!openCategory && !openProfile ? "bg-white/20" : "text-white/80"}`}
+            aria-label="Home"
+          ><Home className="h-5 w-5" /></button>
+          <button onClick={() => setOpenCategory("donation")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "donation" ? "bg-white/20" : "text-white/80"}`} aria-label="Rewards"><Heart className="h-5 w-5" /></button>
+          <button onClick={() => setOpenCategory("history")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "history" ? "bg-white/20" : "text-white/80"}`} aria-label="Search / History"><Search className="h-5 w-5" /></button>
+          <button onClick={() => setOpenCategory("savings")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "savings" ? "bg-white/20" : "text-white/80"}`} aria-label="Wallet"><Wallet className="h-5 w-5" /></button>
+          <button onClick={() => setOpenProfile(true)} className={`h-11 w-11 grid place-items-center rounded-full ${openProfile ? "bg-white/20" : "text-white/80"}`} aria-label="Profile"><User className="h-5 w-5" /></button>
         </div>
       </nav>
+
 
       {openPremium && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setOpenPremium(false)}>
@@ -788,8 +842,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             <div className="p-5">
               <div className={`rounded-2xl p-4 ${isDark ? "bg-white/5" : "bg-amber-50"} border ${isDark ? "border-white/10" : "border-amber-200"}`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Starting investment</p>
-                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(10, currency.code === "USD" || currency.code === "EUR" || currency.code === "GBP" ? 2 : 0)}</p>
-                <p className={`mt-1 text-[11px] ${softText}`}>≈ $10 USD · Shown in {currency.code}</p>
+                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(12, currency.code === "USD" || currency.code === "EUR" || currency.code === "GBP" ? 2 : 0)}</p>
+                <p className={`mt-1 text-[11px] ${softText}`}>≈ $12 USD · Shown in {currency.code}</p>
               </div>
 
               <p className={`mt-5 text-xs font-bold uppercase tracking-wide ${softText}`}>Choose a plan</p>
@@ -809,18 +863,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                             {active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
                           </div>
                           <div>
-                            <p className="font-extrabold">{fmt(p.invest, dec)}</p>
-                            <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>Investment</p>
+                            <p className="font-extrabold">{p.name} · {fmt(p.invest, dec)}</p>
+                            <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>Deposit</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-extrabold text-emerald-600">{fmt(p.returned, dec)}</p>
-                          <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>at expiry</p>
+                          <p className="font-extrabold text-emerald-600">{fmt(p.mineReward, 2)}</p>
+                          <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>per mining tap</p>
                         </div>
                       </div>
                       <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active ? "text-[#0b1e1a]/80" : softText}`}>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
-                          <p className="opacity-70">Every 48h</p>
+                          <p className="opacity-70">Per day (2 taps)</p>
                           <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
@@ -1362,6 +1416,54 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {congrats && (
+        <div className="fixed inset-0 z-[80] bg-gradient-to-br from-[#0e6b3f]/95 to-[#0a4a2c]/95 backdrop-blur-md flex items-center justify-center p-6 overflow-hidden">
+          {/* Confetti */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            {Array.from({ length: 60 }).map((_, i) => {
+              const colors = ["#fbbf24", "#34d399", "#60a5fa", "#f472b6", "#a78bfa", "#fb7185"];
+              const left = Math.random() * 100;
+              const delay = Math.random() * 0.8;
+              const duration = 2.2 + Math.random() * 2;
+              const size = 6 + Math.random() * 8;
+              const bg = colors[i % colors.length];
+              const rot = Math.random() * 360;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left: `${left}%`,
+                    top: "-20px",
+                    width: size,
+                    height: size * 0.4,
+                    background: bg,
+                    transform: `rotate(${rot}deg)`,
+                    animation: `fc-fall ${duration}s ${delay}s linear infinite`,
+                    borderRadius: 2,
+                  }}
+                />
+              );
+            })}
+          </div>
+          <style>{`@keyframes fc-fall{to{transform:translateY(110vh) rotate(720deg);opacity:.4}}@keyframes fc-pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}`}</style>
+
+          <div className="relative w-full max-w-[380px] bg-white rounded-3xl p-7 text-center shadow-2xl" style={{ animation: "fc-pop .5s ease-out both" }}>
+            <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center text-white shadow-lg">
+              <Check className="h-10 w-10" strokeWidth={3} />
+            </div>
+            <p className="mt-5 text-2xl font-black text-[#0b1e1a]">🎉 Congratulations!</p>
+            <p className="mt-2 text-sm text-[#0b1e1a]/70">{congrats.body}</p>
+            <button
+              onClick={() => { setCongrats(null); setOpenCategory(null); setOpenPayment(false); setOpenPremium(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className="mt-6 w-full rounded-full bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white py-3.5 font-black text-sm shadow-lg active:scale-95"
+            >
+              Continue to Dashboard
+            </button>
           </div>
         </div>
       )}
