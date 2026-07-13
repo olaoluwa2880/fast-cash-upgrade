@@ -182,11 +182,11 @@ function Onboarding({ onContinue }: { onContinue: () => void }) {
       <div className="mt-8 rounded-3xl bg-[#0e6b3f] aspect-square w-full flex items-center justify-center">
         <div className="text-white text-center px-6">
           <p className="text-2xl font-extrabold">Smart Credit</p>
-          <p className="mt-2 text-sm opacity-90">Loans • Savings • Pools • Pay in 3</p>
+          <p className="mt-2 text-sm opacity-90">FastCredit • Savings • Pools • Pay in 3</p>
         </div>
       </div>
       <h1 className="mt-6 text-center text-2xl font-extrabold text-[#0b1e4d]">
-        Fast and reliable banking<br />at your fingertips
+        Using fasting trading app
       </h1>
       <div className="mt-auto pt-6 flex flex-col gap-3">
         <button onClick={onContinue} className="w-full rounded-2xl bg-[#0e6b3f] py-4 text-white font-bold">New To FastCredit</button>
