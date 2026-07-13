@@ -184,15 +184,12 @@ function AuthPage() {
 
   if (step === "verifying") {
     return (
-      <div className="min-h-[100dvh] bg-white flex flex-col items-center justify-center px-6">
-        <div className="text-center">
-          <h1 className="text-5xl font-extrabold text-emerald-700 tracking-tight">FastCredit</h1>
-          <p className="text-sm font-semibold text-gray-800 mt-2">Licensed &amp; Secured 🛡️</p>
-        </div>
-        <div className="mt-16 flex flex-col items-center">
-          <Loader2 className="w-12 h-12 animate-spin text-emerald-700" />
-          <p className="mt-6 text-base font-semibold text-gray-900">Processing…</p>
-          <p className="mt-1 text-sm text-gray-500">Setting up your dashboard</p>
+      <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-6">
+        <h1 className="text-5xl font-extrabold text-white tracking-tight">FastCredit</h1>
+        <div className="mt-4 flex gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce [animation-delay:-0.3s]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce [animation-delay:-0.15s]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce" />
         </div>
       </div>
     );
