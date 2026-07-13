@@ -213,7 +213,7 @@ function Signup({ onContinue, onGoogle }: { onContinue: () => void; onGoogle: ()
       </div>
 
       <button
-        onClick={onContinue}
+        onClick={onGoogle}
         className="mt-8 w-full rounded-2xl bg-white text-black py-4 font-bold flex items-center justify-center gap-3 shadow-lg"
       >
         <svg className="h-5 w-5" viewBox="0 0 48 48" aria-hidden="true">
