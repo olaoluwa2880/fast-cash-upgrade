@@ -249,9 +249,20 @@ function Signup({ onContinue, onGoogle }: { onContinue: (email: string) => void;
           <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000"
             className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
         </div>
+        <div>
+          <label className="text-xs text-white/60">Password</label>
+          <div className="mt-1 relative">
+            <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters"
+              className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 pr-16 text-sm outline-none focus:border-emerald-400" />
+            <button type="button" onClick={() => setShowPw(s => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-300 font-semibold">
+              {showPw ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <button onClick={onContinue} disabled={!canSubmit}
+      <button onClick={() => onContinue(email)} disabled={!canSubmit}
         className="mt-6 w-full rounded-2xl bg-[#0e6b3f] py-4 font-bold disabled:opacity-50">
         Create Account
       </button>
