@@ -1,133 +1,237 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Users, UserCheck, Clock, Wallet, CheckCircle2, XCircle, Ban, Crown, Search, Check, X, ShieldOff,
+} from "lucide-react";
 import { AdminLayout, useAdmin } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserPlus, Activity } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from "recharts";
 
 export const Route = createFileRoute("/admin/dashboard")({
-  component: () => (
-    <AdminLayout>
-      <Dashboard />
-    </AdminLayout>
-  ),
+  component: () => (<AdminLayout><Dashboard /></AdminLayout>),
   head: () => ({ meta: [{ title: "Admin Dashboard" }] }),
 });
 
-type Profile = {
+type Tab = "withdrawals" | "upgrades" | "users" | "payments";
+type StatusFilter = "all" | "pending" | "approved" | "rejected";
+
+type Row = {
   id: string;
-  full_name: string | null;
-  email: string | null;
+  user_id: string;
+  amount?: number | string;
+  currency?: string;
+  wallet_address?: string | null;
+  reference?: string | null;
+  plan?: string | null;
+  status?: "pending" | "approved" | "rejected";
   created_at: string;
+  profile?: { email: string | null; full_name: string | null } | null;
 };
 
+function StatCard({
+  icon: Icon, label, value, iconBg, iconColor,
+}: { icon: typeof Users; label: string; value: string | number; iconBg: string; iconColor: string }) {
+  return (
+    <div className="bg-white/70 backdrop-blur-xl border border-white rounded-2xl p-4 shadow-sm">
+      <div className={`h-9 w-9 rounded-full ${iconBg} flex items-center justify-center mb-3`}>
+        <Icon className={`h-4 w-4 ${iconColor}`} />
+      </div>
+      <div className="text-sm text-slate-500">{label}</div>
+      <div className="text-2xl font-extrabold text-slate-900 mt-0.5 tabular-nums">{value}</div>
+    </div>
+  );
+}
+
 function Dashboard() {
-  const { totalUsers } = useAdmin();
-  const [today, setToday] = useState(0);
-  const [active30, setActive30] = useState(0);
-  const [chart, setChart] = useState<{ date: string; count: number }[]>([]);
-  const [recent, setRecent] = useState<Profile[]>([]);
+  const { stats, refresh } = useAdmin();
+  const [tab, setTab] = useState<Tab>("withdrawals");
+  const [status, setStatus] = useState<StatusFilter>("pending");
+  const [q, setQ] = useState("");
+  const [rows, setRows] = useState<Row[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const now = new Date();
-      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-      const start30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const load = useCallback(async () => {
+    let data: Row[] = [];
+    const attach = async (list: Row[]) => {
+      const ids = [...new Set(list.map((r) => r.user_id))];
+      if (!ids.length) return list;
+      const { data: profs } = await supabase.from("profiles").select("id,email,full_name").in("id", ids);
+      const map = new Map((profs ?? []).map((p) => [p.id, p]));
+      return list.map((r) => ({ ...r, profile: map.get(r.user_id) as Row["profile"] ?? null }));
+    };
+    if (tab === "withdrawals") {
+      const { data: d } = await supabase.from("withdrawals").select("*").order("created_at", { ascending: false });
+      data = await attach((d ?? []) as Row[]);
+    } else if (tab === "upgrades") {
+      const { data: d } = await supabase.from("upgrades").select("*").order("created_at", { ascending: false });
+      data = await attach((d ?? []) as Row[]);
+    } else if (tab === "payments") {
+      const { data: d } = await supabase.from("payments").select("*").order("created_at", { ascending: false });
+      data = await attach((d ?? []) as Row[]);
+    } else {
+      const { data: d } = await supabase.from("profiles").select("id,email,full_name,created_at").order("created_at", { ascending: false });
+      data = (d ?? []).map((p) => ({
+        id: p.id, user_id: p.id, created_at: p.created_at,
+        profile: { email: p.email, full_name: p.full_name },
+      }));
+    }
+    setRows(data);
+  }, [tab]);
 
-      const [{ count: c1 }, { count: c2 }, { data: recentRows }, { data: rangeRows }] =
-        await Promise.all([
-          supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", startToday),
-          supabase.from("profiles").select("*", { count: "exact", head: true }).gte("updated_at", start30),
-          supabase.from("profiles").select("id,full_name,email,created_at").order("created_at", { ascending: false }).limit(10),
-          supabase.from("profiles").select("created_at").gte("created_at", start30),
-        ]);
+  useEffect(() => { load(); }, [load]);
 
-      setToday(c1 ?? 0);
-      setActive30(c2 ?? 0);
-      setRecent(recentRows ?? []);
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (tab !== "users" && status !== "all" && r.status !== status) return false;
+      if (!s) return true;
+      const hay = `${r.profile?.full_name ?? ""} ${r.profile?.email ?? ""} ${r.wallet_address ?? ""}`.toLowerCase();
+      return hay.includes(s);
+    });
+  }, [rows, q, status, tab]);
 
-      const buckets: Record<string, number> = {};
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        buckets[d.toISOString().slice(0, 10)] = 0;
-      }
-      (rangeRows ?? []).forEach((r) => {
-        const k = new Date(r.created_at).toISOString().slice(0, 10);
-        if (k in buckets) buckets[k]++;
-      });
-      setChart(Object.entries(buckets).map(([date, count]) => ({ date: date.slice(5), count })));
-    })();
-  }, []);
+  async function updateStatus(table: "payments" | "withdrawals" | "upgrades", id: string, next: "approved" | "rejected") {
+    setBusy(id);
+    const { data: u } = await supabase.auth.getUser();
+    await supabase.from(table).update({ status: next, reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() }).eq("id", id);
+    setBusy(null);
+    await Promise.all([load(), refresh()]);
+  }
+  async function banUser(userId: string) {
+    setBusy(userId);
+    const { data: u } = await supabase.auth.getUser();
+    await supabase.from("user_bans").upsert({ user_id: userId, banned_by: u.user?.id ?? null, reason: "banned by admin" }, { onConflict: "user_id" });
+    setBusy(null);
+    await Promise.all([load(), refresh()]);
+  }
 
-  const stats = [
-    { label: "Total Users", value: totalUsers, icon: Users, color: "text-blue-400" },
-    { label: "Today's Signups", value: today, icon: UserPlus, color: "text-emerald-400" },
-    { label: "Active (30d)", value: active30, icon: Activity, color: "text-amber-400" },
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "withdrawals", label: "Withdrawals" },
+    { key: "upgrades", label: "Upgrades" },
+    { key: "users", label: "Users" },
+    { key: "payments", label: "Payments" },
   ];
+  const statuses: StatusFilter[] = ["all", "pending", "approved", "rejected"];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {stats.map((s) => (
-          <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">{s.label}</span>
-              <s.icon className={`h-5 w-5 ${s.color}`} />
-            </div>
-            <div className="mt-3 text-3xl font-bold text-white">{s.value}</div>
-          </div>
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard icon={Users} label="Total Users" value={stats.totalUsers} iconBg="bg-blue-100" iconColor="text-blue-600" />
+        <StatCard icon={UserCheck} label="Active (7d)" value={stats.active7d} iconBg="bg-blue-100" iconColor="text-blue-600" />
+        <StatCard icon={Clock} label="Pending" value={stats.pending} iconBg="bg-amber-100" iconColor="text-amber-600" />
+        <StatCard icon={Wallet} label="Paid USDC" value={stats.paidUsdc.toFixed(2)} iconBg="bg-blue-100" iconColor="text-blue-600" />
+        <StatCard icon={CheckCircle2} label="Approved" value={stats.approved} iconBg="bg-blue-100" iconColor="text-blue-600" />
+        <StatCard icon={XCircle} label="Rejected" value={stats.rejected} iconBg="bg-red-100" iconColor="text-red-500" />
+        <StatCard icon={Ban} label="Banned" value={stats.banned} iconBg="bg-red-100" iconColor="text-red-500" />
+        <StatCard icon={Crown} label="Upgrades" value={stats.upgrades} iconBg="bg-amber-100" iconColor="text-amber-600" />
+      </div>
+
+      <div className="bg-white/70 backdrop-blur-xl border border-white rounded-full p-1 flex items-center shadow-sm overflow-x-auto">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition ${
+              tab === t.key ? "bg-blue-600 text-white shadow" : "text-slate-600"
+            }`}
+          >
+            {t.label}
+          </button>
         ))}
       </div>
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <div className="text-sm text-gray-400 mb-3">Registrations — Last 30 days</div>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-              <XAxis dataKey="date" stroke="#6b7280" fontSize={11} />
-              <YAxis stroke="#6b7280" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={{ background: "#111827", border: "1px solid #1f2937" }} />
-              <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+
+      <div className="relative">
+        <Search className="h-4 w-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by user, email, wallet..."
+          className="w-full pl-10 pr-4 py-3 rounded-full bg-white/80 backdrop-blur border border-white text-sm text-slate-700 placeholder:text-slate-400 shadow-sm focus:outline-none"
+        />
       </div>
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <div className="text-sm text-gray-400 mb-3">Recent Users</div>
-        <table className="w-full text-sm">
-          <thead className="text-gray-500 text-left">
-            <tr>
-              <th className="py-2">Name</th>
-              <th className="py-2">Email</th>
-              <th className="py-2">Registered</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recent.map((u) => (
-              <tr key={u.id} className="border-t border-gray-800">
-                <td className="py-2">{u.full_name ?? "—"}</td>
-                <td className="py-2 text-gray-300">{u.email ?? "—"}</td>
-                <td className="py-2 text-gray-400">{new Date(u.created_at).toLocaleString()}</td>
-              </tr>
-            ))}
-            {recent.length === 0 && (
-              <tr>
-                <td colSpan={3} className="py-6 text-center text-gray-500">
-                  No users yet
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+
+      {tab !== "users" && (
+        <div className="flex items-center gap-1 bg-white/60 backdrop-blur-xl border border-white rounded-full p-1 shadow-sm overflow-x-auto">
+          {statuses.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatus(s)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize whitespace-nowrap ${
+                status === s ? "bg-blue-600 text-white shadow" : "text-slate-600"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {filtered.length === 0 && (
+          <div className="bg-white/70 backdrop-blur-xl border border-white rounded-2xl p-8 text-center text-slate-500 shadow-sm">
+            No {tab} match your filters
+          </div>
+        )}
+        {filtered.map((r) => (
+          <div key={r.id} className="bg-white/80 backdrop-blur-xl border border-white rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold text-slate-900 truncate">
+                  {r.profile?.full_name || r.profile?.email || "Unknown user"}
+                </div>
+                <div className="text-xs text-slate-500 truncate">{r.profile?.email}</div>
+                {r.wallet_address && (
+                  <div className="text-xs text-slate-500 mt-1 font-mono truncate">{r.wallet_address}</div>
+                )}
+                {r.plan && <div className="text-xs text-slate-600 mt-1">Plan: <span className="font-medium">{r.plan}</span></div>}
+                {r.reference && <div className="text-xs text-slate-500 mt-1">Ref: {r.reference}</div>}
+                <div className="text-[11px] text-slate-400 mt-1">{new Date(r.created_at).toLocaleString()}</div>
+              </div>
+              <div className="text-right shrink-0">
+                {r.amount != null && (
+                  <div className="text-lg font-extrabold text-slate-900 tabular-nums">
+                    {Number(r.amount).toFixed(2)} <span className="text-xs text-slate-500 font-medium">{r.currency ?? "USDC"}</span>
+                  </div>
+                )}
+                {r.status && (
+                  <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${
+                    r.status === "pending" ? "bg-amber-100 text-amber-700"
+                      : r.status === "approved" ? "bg-emerald-100 text-emerald-700"
+                      : "bg-red-100 text-red-600"
+                  }`}>{r.status}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-3">
+              {tab === "users" ? (
+                <button
+                  disabled={busy === r.user_id}
+                  onClick={() => banUser(r.user_id)}
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-red-500 text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  <ShieldOff className="h-4 w-4" /> Ban user
+                </button>
+              ) : r.status === "pending" ? (
+                <>
+                  <button
+                    disabled={busy === r.id}
+                    onClick={() => updateStatus(tab, r.id, "approved")}
+                    className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-blue-600 text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    <Check className="h-4 w-4" /> Approve
+                  </button>
+                  <button
+                    disabled={busy === r.id}
+                    onClick={() => updateStatus(tab, r.id, "rejected")}
+                    className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-white border border-red-200 text-red-600 text-sm font-semibold disabled:opacity-50"
+                  >
+                    <X className="h-4 w-4" /> Reject
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
