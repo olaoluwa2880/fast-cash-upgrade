@@ -6,7 +6,7 @@ import {
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
-  Globe, Smartphone,
+  Globe, Smartphone, CreditCard,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -453,7 +453,8 @@ type Txn = {
   kind: "deposit" | "withdraw" | "declined" | "bonus" | "mining";
   amountUsd: number;
   method?: string;
-  status: "approved" | "declined" | "credited";
+  status: "approved" | "declined" | "credited" | "pending";
+
   at: number;
   note?: string;
 };
@@ -472,7 +473,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [now, setNow] = useState(Date.now());
   const [openPayment, setOpenPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
-  const [paymentStep, setPaymentStep] = useState<"choose" | "instructions" | "processing" | "success">("choose");
+  const [paymentStep, setPaymentStep] = useState<"choose" | "instructions" | "processing" | "success" | "pending" | "comingSoon">("choose");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
@@ -546,7 +547,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setPaymentMethod(methodId);
     setReceiptFile(null);
     if (methodId === "card") {
-      submitPayment();
+      setPaymentStep("comingSoon");
     } else {
       setPaymentStep("instructions");
     }
@@ -557,12 +558,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     const amt = PREMIUM_PLANS[selectedPlan].invest;
     const methodLabel = paymentMethod === "crypto" ? "Crypto" : paymentMethod === "ngn" ? "NGN Bank Transfer" : "Card";
     setTimeout(() => {
-      setActivePlan({ index: selectedPlan, startedAt: Date.now() });
-      setLastMineAt(null);
-      setPaymentStep("success");
-      addTxn({ kind: "deposit", amountUsd: amt, method: methodLabel, status: "approved", note: `Premium plan activation` });
+      setPaymentStep("pending");
+      addTxn({ kind: "deposit", amountUsd: amt, method: methodLabel, status: "pending", note: `Premium plan activation · awaiting confirmation` });
     }, 2500);
   };
+
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -1137,6 +1137,46 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </button>
                 </div>
               )}
+
+              {paymentStep === "pending" && (
+                <div className="flex flex-col items-center py-8 gap-3 text-center">
+                  <div className="h-16 w-16 rounded-full bg-amber-500 grid place-items-center text-white">
+                    <Clock className="h-8 w-8" />
+                  </div>
+                  <p className="font-black text-lg">Pending payment</p>
+                  <p className={`text-xs ${softText}`}>
+                    We received your submission. Your payment is being reviewed and will be confirmed shortly. You'll be notified once your plan is activated.
+                  </p>
+                  <div className={`w-full rounded-2xl border p-3 text-left text-[11px] ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-amber-50/60"}`}>
+                    <p className={`${softText} uppercase tracking-wide font-bold text-[10px]`}>Status</p>
+                    <p className="font-black text-amber-600">Awaiting confirmation</p>
+                  </div>
+                  <button onClick={closePayment} className="mt-2 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
+                    Got it
+                  </button>
+                </div>
+              )}
+
+              {paymentStep === "comingSoon" && (
+                <div className="flex flex-col items-center py-10 gap-3 text-center">
+                  <div className="h-16 w-16 rounded-full bg-[#0e6b3f]/10 grid place-items-center text-[#0e6b3f]">
+                    <CreditCard className="h-8 w-8" />
+                  </div>
+                  <p className="font-black text-lg">Card payments coming soon</p>
+                  <p className={`text-xs ${softText}`}>
+                    We're working on card support (Visa, Mastercard, Verve). For now, please use Crypto or NGN bank transfer.
+                  </p>
+                  <div className="mt-2 w-full flex gap-2">
+                    <button onClick={() => { setPaymentMethod(null); setPaymentStep("choose"); }} className={`flex-1 rounded-full py-3 font-bold text-sm border ${isDark ? "border-white/10" : "border-black/10"}`}>
+                      Back
+                    </button>
+                    <button onClick={() => selectMethod("crypto")} className="flex-1 rounded-full bg-[#0e6b3f] text-white py-3 font-black text-sm">
+                      Use Crypto
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </div>
