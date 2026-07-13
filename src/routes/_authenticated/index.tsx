@@ -9,7 +9,7 @@ import {
   Globe, Smartphone, CreditCard,
 } from "lucide-react";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: Root,
   head: () => ({
     meta: [
