@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Screen = "splash" | "onboarding" | "dashboard";
+type Screen = "splash" | "onboarding" | "signup" | "dashboard";
 
 function Root() {
   const [screen, setScreen] = useState<Screen>("splash");
@@ -27,7 +27,8 @@ function Root() {
     }
   }, [screen]);
   if (screen === "splash") return <Splash />;
-  if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("dashboard")} />;
+  if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("signup")} />;
+  if (screen === "signup") return <Signup onContinue={() => setScreen("dashboard")} />;
   return <Dashboard />;
 }
 
@@ -73,6 +74,67 @@ function Onboarding({ onContinue }: { onContinue: () => void }) {
     </div>
   );
 }
+
+function Signup({ onContinue }: { onContinue: () => void }) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const canSubmit = fullName.trim() && email.trim() && phone.trim();
+  return (
+    <div className="min-h-screen w-full bg-black flex flex-col px-6 pt-14 pb-8 text-white">
+      <div className="flex flex-col items-center">
+        <div className="text-white text-3xl font-black">FastCredit</div>
+        <p className="mt-1 text-xs font-semibold text-white/70">Create your account</p>
+      </div>
+
+      <button
+        onClick={onContinue}
+        className="mt-8 w-full rounded-2xl bg-white text-black py-4 font-bold flex items-center justify-center gap-3 shadow-lg"
+      >
+        <svg className="h-5 w-5" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.3-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 19 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.9 6.5 29.2 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 43.5c5.2 0 9.8-1.9 13.3-5.1l-6.2-5.1c-2 1.5-4.5 2.4-7.1 2.4-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39 16.2 43.5 24 43.5z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.2 5.4l6.2 5.1c-.4.4 6.7-4.9 6.7-14.5 0-1.2-.1-2.4-.3-3.5z"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div className="my-6 flex items-center gap-3 text-white/40 text-xs">
+        <div className="flex-1 h-px bg-white/15" />
+        <span>or fill in your details</span>
+        <div className="flex-1 h-px bg-white/15" />
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-white/60">Full Name</label>
+          <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Ryan Sterling"
+            className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
+        </div>
+        <div>
+          <label className="text-xs text-white/60">Gmail Address</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@gmail.com"
+            className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
+        </div>
+        <div>
+          <label className="text-xs text-white/60">Phone Number</label>
+          <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 000 0000"
+            className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
+        </div>
+      </div>
+
+      <button onClick={onContinue} disabled={!canSubmit}
+        className="mt-6 w-full rounded-2xl bg-[#0e6b3f] py-4 font-bold disabled:opacity-50">
+        Create Account
+      </button>
+      <p className="mt-4 text-center text-xs text-white/60">
+        By continuing you agree to FastCredit's Terms & Privacy Policy.
+      </p>
+    </div>
+  );
+}
+
 
 const CURRENCIES = [
   { code: "USD", symbol: "$", rate: 1 },
