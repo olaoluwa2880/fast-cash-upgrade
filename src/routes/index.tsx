@@ -4,6 +4,7 @@ import {
   Moon, Sun, Bell, ChevronDown, ArrowDownLeft, ArrowUpRight, Crown,
   Briefcase, Receipt, Route as RouteIcon, Users, FileText, BookOpen,
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
+  Sparkles, Pickaxe, Zap, Pause, Play,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -295,19 +296,20 @@ const CATEGORIES = [
   { icon: PiggyBank, label: "Savings" },
 ];
 
+// Realistic returns: ~1.5% every 48h (7 payouts) → ~10.5% total over 14 days
 const PREMIUM_PLANS = [
-  { invest: 10, profit: 2, total: 14, returned: 24 },
-  { invest: 25, profit: 6, total: 42, returned: 67 },
-  { invest: 50, profit: 13, total: 91, returned: 141 },
-  { invest: 100, profit: 30, total: 210, returned: 310 },
-  { invest: 250, profit: 85, total: 595, returned: 845 },
-  { invest: 500, profit: 190, total: 1330, returned: 1830 },
-  { invest: 1000, profit: 420, total: 2940, returned: 3940 },
-  { invest: 1500, profit: 660, total: 4620, returned: 6120 },
-  { invest: 2000, profit: 920, total: 6440, returned: 8440 },
-  { invest: 2500, profit: 1200, total: 8400, returned: 10900 },
-  { invest: 3000, profit: 1500, total: 10500, returned: 13500 },
-  { invest: 3500, profit: 1850, total: 12950, returned: 16450 },
+  { invest: 10, profit: 0.15, total: 1.05, returned: 11.05 },
+  { invest: 25, profit: 0.38, total: 2.63, returned: 27.63 },
+  { invest: 50, profit: 0.75, total: 5.25, returned: 55.25 },
+  { invest: 100, profit: 1.50, total: 10.50, returned: 110.50 },
+  { invest: 250, profit: 3.75, total: 26.25, returned: 276.25 },
+  { invest: 500, profit: 7.50, total: 52.50, returned: 552.50 },
+  { invest: 1000, profit: 15, total: 105, returned: 1105 },
+  { invest: 1500, profit: 22.50, total: 157.50, returned: 1657.50 },
+  { invest: 2000, profit: 30, total: 210, returned: 2210 },
+  { invest: 2500, profit: 37.50, total: 262.50, returned: 2762.50 },
+  { invest: 3000, profit: 45, total: 315, returned: 3315 },
+  { invest: 3500, profit: 52.50, total: 367.50, returned: 3867.50 },
 ];
 
 function Dashboard() {
@@ -316,6 +318,16 @@ function Dashboard() {
   const [dark, setDark] = useState(false);
   const [openPremium, setOpenPremium] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(0);
+  const [bonusClaimed, setBonusClaimed] = useState(false);
+  const [mining, setMining] = useState(false);
+  const [mined, setMined] = useState(0); // in USD
+  const HASH_RATE = 0.00012; // USD per second while mining (~$0.43/hr)
+
+  useEffect(() => {
+    if (!mining) return;
+    const id = setInterval(() => setMined(m => m + HASH_RATE), 1000);
+    return () => clearInterval(id);
+  }, [mining]);
 
   const fmtBalance = (usd: number) => {
     const v = usd * currency.rate;
@@ -416,6 +428,73 @@ function Dashboard() {
             ))}
           </div>
         </section>
+
+        {/* Welcome Bonus */}
+        <section className="mx-4 mt-4">
+          <div className={`rounded-3xl p-4 flex items-center gap-3 shadow-sm ${isDark ? "bg-gradient-to-r from-emerald-900/60 to-emerald-800/40 border border-emerald-500/20" : "bg-gradient-to-r from-emerald-50 to-lime-50 border border-emerald-200"}`}>
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center text-white shadow-lg shrink-0">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Welcome bonus</p>
+              <p className={`font-extrabold text-lg leading-tight ${isDark ? "text-white" : "text-[#0b1e1a]"}`}>{fmt(2, 2)} <span className="text-[11px] font-medium opacity-70">≈ $2 USD</span></p>
+            </div>
+            <button
+              onClick={() => setBonusClaimed(true)}
+              disabled={bonusClaimed}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${bonusClaimed ? "bg-emerald-600/20 text-emerald-500" : "bg-emerald-500 text-white shadow-md active:scale-95"}`}
+            >
+              {bonusClaimed ? "Claimed" : "Claim"}
+            </button>
+          </div>
+        </section>
+
+        {/* Mining */}
+        <section className="mx-4 mt-4">
+          <div className={`rounded-3xl overflow-hidden shadow-sm ${card}`}>
+            <div className="p-5 bg-gradient-to-br from-[#0e6b3f] to-[#0a4a2c] text-white relative">
+              <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/5" />
+              <div className="flex items-center justify-between relative">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-xl bg-white/15 grid place-items-center">
+                    <Pickaxe className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold leading-tight">FastCredit Mining</p>
+                    <p className="text-[11px] opacity-80 flex items-center gap-1">
+                      <span className={`h-1.5 w-1.5 rounded-full ${mining ? "bg-emerald-300 animate-pulse" : "bg-white/40"}`} />
+                      {mining ? "Mining active" : "Idle"}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] opacity-70 uppercase">Hash rate</p>
+                  <p className="text-sm font-bold flex items-center gap-1 justify-end"><Zap className="h-3 w-3" /> 12.4 MH/s</p>
+                </div>
+              </div>
+              <p className="mt-4 text-[11px] opacity-80 relative">Mined earnings</p>
+              <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">{fmt(mined, 4)}</p>
+              <p className="text-[10px] opacity-70 relative">≈ ${mined.toFixed(4)} USD</p>
+            </div>
+            <div className="p-4 flex items-center gap-2">
+              <button
+                onClick={() => setMining(m => !m)}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-full py-3 text-sm font-bold shadow-md ${mining ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"}`}
+              >
+                {mining ? <><Pause className="h-4 w-4" /> Stop mining</> : <><Play className="h-4 w-4" /> Start mining</>}
+              </button>
+              <button
+                onClick={() => setMined(0)}
+                disabled={mined === 0}
+                className={`rounded-full px-4 py-3 text-xs font-bold border ${isDark ? "border-white/10 text-white/80" : "border-black/10 text-[#0b1e1a]/70"} disabled:opacity-40`}
+              >
+                Collect
+              </button>
+            </div>
+          </div>
+        </section>
+
+
 
         {/* Great Deals */}
         <section className="mt-5 pl-4">
@@ -536,11 +615,11 @@ function Dashboard() {
                       <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active ? "text-[#0b1e1a]/80" : softText}`}>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Every 48h</p>
-                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, dec)}</p>
+                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Total 14d</p>
-                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, dec)}</p>
+                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
                         </div>
                       </div>
                     </button>
