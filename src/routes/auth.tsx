@@ -263,6 +263,56 @@ function AuthPage() {
     );
   }
 
+  if (step === "login") {
+    return (
+      <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-6">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-4">
+              <ShieldCheck className="w-7 h-7" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+            <p className="text-sm text-gray-500 mt-1">Log in with your email and password.</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 p-6">
+            <form onSubmit={handleLogin} className="space-y-3">
+              <Field icon={<Mail className="w-4 h-4" />} label="Email address">
+                <input type="email" autoComplete="email" value={form.email}
+                  onChange={(e) => update("email", e.target.value)}
+                  placeholder="you@example.com" className={inputCls} required />
+              </Field>
+              <Field icon={<Lock className="w-4 h-4" />} label="Password">
+                <input type="password" autoComplete="current-password" value={form.password}
+                  onChange={(e) => update("password", e.target.value)}
+                  placeholder="Your password" className={inputCls} required />
+              </Field>
+
+              {info && <p className="text-xs text-emerald-600">{info}</p>}
+              {error && <p className="text-xs text-red-600">{error}</p>}
+
+              <button type="submit"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition mt-2">
+                Login
+              </button>
+            </form>
+          </div>
+
+          <p className="text-sm text-center text-gray-600 mt-5">
+            New here?{" "}
+            <button
+              type="button"
+              onClick={() => { setError(null); setInfo(null); setStep("register"); }}
+              className="text-emerald-600 hover:text-emerald-700 font-semibold"
+            >
+              Create an account
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
       <div className="w-full max-w-sm">
