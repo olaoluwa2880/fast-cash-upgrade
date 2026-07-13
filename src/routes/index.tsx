@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
   Moon, Sun, Bell, ChevronDown, ArrowDownLeft, ArrowUpRight, Crown,
   Briefcase, Receipt, Route as RouteIcon, Users, FileText, BookOpen,
-  Gift, PiggyBank, Heart, Home, Search, Wallet, User,
+  Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
