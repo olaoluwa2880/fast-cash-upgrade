@@ -851,30 +851,28 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <div className="space-y-4">
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Send exactly {fmt(PREMIUM_PLANS[selectedPlan].invest, 2)} worth</p>
 
-                  <div className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
-                    <div className="flex items-center justify-between">
-                      <p className="font-black text-sm">USDT · TRC20</p>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">Recommended</span>
+                  {settings.wallets.length === 0 && (
+                    <div className={`rounded-2xl border p-4 text-center text-[11px] ${softText}`}>
+                      No crypto wallets configured yet. Please contact support.
                     </div>
-                    <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Wallet Address</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p className="font-mono text-[11px] break-all flex-1">TK5oZgp79NMGutV3Xsy3S2XtZJBDtE4opo</p>
-                      <button onClick={() => copyText("TK5oZgp79NMGutV3Xsy3S2XtZJBDtE4opo", "usdt")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
-                        {copied === "usdt" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
-                      </button>
+                  )}
+                  {settings.wallets.map((w, idx) => (
+                    <div key={w.id} className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : idx === 0 ? "border-black/5 bg-emerald-50/60" : "border-black/5 bg-white"}`}>
+                      <div className="flex items-center justify-between">
+                        <p className="font-black text-sm">{w.symbol} · {w.network}</p>
+                        {idx === 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">Recommended</span>}
+                      </div>
+                      {w.label && <p className={`text-[10px] ${softText}`}>{w.label}</p>}
+                      <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Wallet Address</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <p className="font-mono text-[11px] break-all flex-1">{w.address}</p>
+                        <button onClick={() => copyText(w.address, `w-${w.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                          {copied === `w-${w.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ))}
 
-                  <div className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}>
-                    <p className="font-black text-sm">Bitcoin · BTC</p>
-                    <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Deposit Address</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p className="font-mono text-[11px] break-all flex-1">3PiLsgLFrin8Gk5C6XP7vTe2pTnRM54RnA</p>
-                      <button onClick={() => copyText("3PiLsgLFrin8Gk5C6XP7vTe2pTnRM54RnA", "btc")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
-                        {copied === "btc" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                  </div>
 
                   <ReceiptUpload receiptFile={receiptFile} setReceiptFile={setReceiptFile} isDark={isDark} softText={softText} />
 
