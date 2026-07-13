@@ -808,17 +808,20 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       </div>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px]">
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px] z-40">
         <div className="rounded-full bg-[#0e6b3f] text-white flex items-center justify-around px-3 py-3 shadow-2xl">
-          <button className="h-11 w-11 grid place-items-center rounded-full bg-white/20">
-            <Home className="h-5 w-5" />
-          </button>
-          <button className="h-11 w-11 grid place-items-center text-white/80"><Heart className="h-5 w-5" /></button>
-          <button className="h-11 w-11 grid place-items-center text-white/80"><Search className="h-5 w-5" /></button>
-          <button className="h-11 w-11 grid place-items-center text-white/80"><Wallet className="h-5 w-5" /></button>
-          <button className="h-11 w-11 grid place-items-center text-white/80"><User className="h-5 w-5" /></button>
+          <button
+            onClick={() => { setOpenCategory(null); setOpenProfile(false); setOpenPayment(false); setOpenPremium(false); setOpenWithdraw(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            className={`h-11 w-11 grid place-items-center rounded-full ${!openCategory && !openProfile ? "bg-white/20" : "text-white/80"}`}
+            aria-label="Home"
+          ><Home className="h-5 w-5" /></button>
+          <button onClick={() => setOpenCategory("donation")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "donation" ? "bg-white/20" : "text-white/80"}`} aria-label="Rewards"><Heart className="h-5 w-5" /></button>
+          <button onClick={() => setOpenCategory("history")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "history" ? "bg-white/20" : "text-white/80"}`} aria-label="Search / History"><Search className="h-5 w-5" /></button>
+          <button onClick={() => setOpenCategory("savings")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "savings" ? "bg-white/20" : "text-white/80"}`} aria-label="Wallet"><Wallet className="h-5 w-5" /></button>
+          <button onClick={() => setOpenProfile(true)} className={`h-11 w-11 grid place-items-center rounded-full ${openProfile ? "bg-white/20" : "text-white/80"}`} aria-label="Profile"><User className="h-5 w-5" /></button>
         </div>
       </nav>
+
 
       {openPremium && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setOpenPremium(false)}>
