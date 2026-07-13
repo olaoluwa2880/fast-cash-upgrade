@@ -620,40 +620,43 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
   const openWithdrawFlow = () => {
     const preselect = BANKS_BY_CURRENCY[currency.code] ? currency.code : "NGN";
+    setWdMethod(null);
     setWdCurrencyKey(preselect);
     setWdBank("");
     setWdAccountNumber("");
     setWdAccountName("");
     setWdAmount("");
-    setWdStep("country");
+    setWdCrypto(null);
+    setWdCryptoSearch("");
+    setWdWalletAddress("");
+    setWdStep("method");
     setOpenWithdraw(true);
   };
   const closeWithdraw = () => {
     setOpenWithdraw(false);
-    setWdStep("country");
+    setWdStep("method");
   };
   const submitWithdraw = () => {
     setWdStep("processing");
-    const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (currency.rate || 1);
+    const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (wdMethod === "crypto" ? 1 : (currency.rate || 1));
     const bankInfo = BANKS_BY_CURRENCY[wdCurrencyKey];
     setTimeout(() => {
+      const method = wdMethod === "crypto"
+        ? `${wdCrypto?.name} (${wdCrypto?.symbol}) · ${wdCrypto?.network}`
+        : `${bankInfo?.country} · ${wdBank}`;
+      const note = wdMethod === "crypto"
+        ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
+        : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
       if (balanceUsd >= amtUsd && amtUsd > 0) {
         setBalanceUsd(b => b - amtUsd);
-        addTxn({
-          kind: "withdraw", amountUsd: amtUsd, status: "approved",
-          method: `${bankInfo?.country} · ${wdBank}`,
-          note: `To ${wdAccountName || "account"} · ${wdAccountNumber}`,
-        });
+        addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "approved", method, note });
       } else {
-        addTxn({
-          kind: "declined", amountUsd: amtUsd, status: "declined",
-          method: `${bankInfo?.country} · ${wdBank}`,
-          note: "Insufficient balance for withdrawal",
-        });
+        addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: "Insufficient balance for withdrawal" });
       }
       setWdStep("success");
     }, 2200);
   };
+
 
 
   const fmtBalance = (usd: number) => {
