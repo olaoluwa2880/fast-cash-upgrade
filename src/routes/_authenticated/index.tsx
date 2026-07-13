@@ -222,6 +222,7 @@ type Txn = {
 
 function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const userEmail = userProfile.email;
+  const settings = useSiteSettings();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [openCur, setOpenCur] = useState(false);
   const [dark, setDark] = useState(false);
@@ -251,21 +252,51 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [wdCrypto, setWdCrypto] = useState<typeof CRYPTOCURRENCIES[number] | null>(null);
   const [wdCryptoSearch, setWdCryptoSearch] = useState("");
   const [wdWalletAddress, setWdWalletAddress] = useState("");
-  const [transactions, setTransactions] = useState<Txn[]>(() => {
-    const t = Date.now();
-    return [
-      { id: "seed-1", kind: "declined", amountUsd: 50, method: "Card", status: "declined", at: t - 4 * 24 * 3600 * 1000, note: "Card verification failed" },
-      { id: "seed-2", kind: "withdraw", amountUsd: 15, method: "USDT · TRC20", status: "approved", at: t - 2 * 24 * 3600 * 1000, note: "Withdrawal to wallet" },
-    ];
-  });
+  const [transactions, setTransactions] = useState<Txn[]>([]);
 
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
     setTransactions(prev => [{ ...t, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now() }, ...prev]);
+
+  // Load wallet balance + payments from DB; subscribe to realtime updates
+  useEffect(() => {
+    let cancelled = false;
+    async function loadUserState() {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || cancelled) return;
+      const uid = u.user.id;
+      const { data: bal } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
+      if (!cancelled && bal) setBalanceUsd(Number(bal.balance_usd));
+      const { data: pays } = await supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(30);
+      if (!cancelled && pays) {
+        setTransactions(pays.map((p) => ({
+          id: p.id,
+          kind: p.status === "rejected" ? "declined" as const : "deposit" as const,
+          amountUsd: Number(p.amount),
+          method: p.method ?? undefined,
+          status: p.status === "approved" ? "approved" as const : p.status === "rejected" ? "declined" as const : "pending" as const,
+          at: new Date(p.created_at).getTime(),
+          note: p.rejection_reason || (p.status === "approved" ? "Deposit approved" : p.status === "pending" ? "Awaiting confirmation" : undefined),
+        })));
+      }
+      // Subscribe: balance + notifications for toast
+      const ch = supabase.channel(`user-${uid}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "wallet_balances", filter: `user_id=eq.${uid}` },
+          (payload) => { const n = payload.new as { balance_usd?: number } | null; if (n?.balance_usd != null) setBalanceUsd(Number(n.balance_usd)); })
+        .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${uid}` }, loadUserState)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` },
+          (payload) => { const n = payload.new as { title?: string; body?: string } | null; if (n?.title) { const msg = `${n.title}${n.body ? ": " + n.body : ""}`; setToast(msg); setTimeout(() => setToast((t) => t === msg ? null : t), 4500); } })
+        .subscribe();
+      return () => { supabase.removeChannel(ch); };
+    }
+    loadUserState();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
 
   const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
   const planActive = activePlan !== null && now < planExpiresAt;
