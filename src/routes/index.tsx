@@ -1143,38 +1143,57 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       )}
 
       {openWithdraw && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={closeWithdraw}>
-          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${card} shadow-2xl`}>
-            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white rounded-t-3xl">
-              <div className="flex items-center gap-2">
-                <ArrowUpRight className="h-4 w-4" />
-                <p className="font-black text-base">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4" onClick={closeWithdraw}>
+          <div onClick={e => e.stopPropagation()} className={`w-full sm:max-w-[440px] h-[100dvh] sm:h-auto sm:max-h-[92vh] overflow-y-auto sm:rounded-3xl ${card} shadow-2xl flex flex-col`}>
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white sm:rounded-t-3xl" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
+              <div className="flex items-center gap-2 min-w-0">
+                <ArrowUpRight className="h-4 w-4 shrink-0" />
+                <p className="font-black text-base truncate">
                   Withdraw
-                  {wdStep !== "country" && BANKS_BY_CURRENCY[wdCurrencyKey] && (
+                  {wdMethod === "bank" && wdStep !== "method" && wdStep !== "country" && BANKS_BY_CURRENCY[wdCurrencyKey] && (
                     <span className="ml-2 text-xs opacity-80">· {BANKS_BY_CURRENCY[wdCurrencyKey].flag} {BANKS_BY_CURRENCY[wdCurrencyKey].country}</span>
+                  )}
+                  {wdMethod === "crypto" && wdCrypto && (
+                    <span className="ml-2 text-xs opacity-80">· {wdCrypto.symbol}</span>
                   )}
                 </p>
               </div>
-              <button onClick={closeWithdraw} className="h-8 w-8 grid place-items-center rounded-full bg-black/20"><X className="h-4 w-4" /></button>
+              <button onClick={closeWithdraw} className="h-8 w-8 grid place-items-center rounded-full bg-black/20 shrink-0"><X className="h-4 w-4" /></button>
             </div>
 
-            <div className="p-5">
-              {/* Step indicator */}
-              {wdStep !== "processing" && wdStep !== "success" && (
-                <div className="flex items-center gap-1 mb-4 text-[10px] font-bold uppercase tracking-wide">
-                  {["country", "bank", "details"].map((s, i) => {
-                    const active = wdStep === s;
-                    const done = ["country", "bank", "details"].indexOf(wdStep) > i;
-                    return (
-                      <div key={s} className={`flex-1 h-1.5 rounded-full ${active ? "bg-[#0e6b3f]" : done ? "bg-emerald-400" : "bg-black/10"}`} />
-                    );
-                  })}
+            <div className="p-5 flex-1">
+              {wdStep === "method" && (
+                <div className="space-y-3">
+                  <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Choose withdrawal method</p>
+                  <button
+                    onClick={() => { setWdMethod("bank"); setWdStep("country"); }}
+                    className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left active:scale-[0.98] transition ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-emerald-100 text-[#0e6b3f] grid place-items-center text-2xl shrink-0">🏦</div>
+                    <div className="min-w-0">
+                      <p className="font-black text-sm">Bank account</p>
+                      <p className={`text-[11px] ${softText}`}>Withdraw to your local bank</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => { setWdMethod("crypto"); setWdStep("crypto"); }}
+                    className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left active:scale-[0.98] transition ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-amber-100 text-amber-700 grid place-items-center text-2xl shrink-0">₿</div>
+                    <div className="min-w-0">
+                      <p className="font-black text-sm">Cryptocurrency wallet</p>
+                      <p className={`text-[11px] ${softText}`}>BTC, ETH, USDT and more</p>
+                    </div>
+                  </button>
                 </div>
               )}
 
               {wdStep === "country" && (
                 <div className="space-y-2">
-                  <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your country</p>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your country</p>
+                    <button onClick={() => setWdStep("method")} className="text-[11px] font-bold text-[#0e6b3f]">Back</button>
+                  </div>
                   <p className={`text-[11px] ${softText}`}>We'll show the banks supported in your country for withdrawal.</p>
                   <div className="mt-3 space-y-2">
                     {Object.entries(BANKS_BY_CURRENCY).map(([key, info]) => {
@@ -1185,14 +1204,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                           onClick={() => { setWdCurrencyKey(key); setWdBank(""); setWdStep("bank"); }}
                           className={`w-full flex items-center justify-between rounded-2xl border p-3 text-left active:scale-[0.98] transition ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{info.flag}</span>
-                            <div>
-                              <p className="font-bold text-sm">{info.country}</p>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="text-2xl shrink-0">{info.flag}</span>
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm truncate">{info.country}</p>
                               <p className={`text-[11px] ${softText}`}>{info.banks.length} banks · {key}</p>
                             </div>
                           </div>
-                          <ArrowUpRight className="h-4 w-4 opacity-60" />
+                          <ArrowUpRight className="h-4 w-4 opacity-60 shrink-0" />
                         </button>
                       );
                     })}
@@ -1206,7 +1225,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your bank</p>
                     <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
                   </div>
-                  <div className="mt-2 space-y-1.5 max-h-[52vh] overflow-y-auto pr-1">
+                  <div className="mt-2 space-y-1.5 pr-1">
                     {BANKS_BY_CURRENCY[wdCurrencyKey]?.banks.map(b => {
                       const isActive = wdBank === b;
                       return (
@@ -1215,8 +1234,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                           onClick={() => { setWdBank(b); setWdStep("details"); }}
                           className={`w-full flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
                         >
-                          <span className="font-semibold text-sm">{b}</span>
-                          <ChevronDown className="h-4 w-4 -rotate-90 opacity-50" />
+                          <span className="font-semibold text-sm truncate">{b}</span>
+                          <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 shrink-0" />
                         </button>
                       );
                     })}
@@ -1226,13 +1245,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
               {wdStep === "details" && (
                 <div className="space-y-3">
-                  <div className={`rounded-2xl p-3 ${isDark ? "bg-white/5" : "bg-emerald-50"} flex items-center justify-between`}>
-                    <div>
+                  <div className={`rounded-2xl p-3 ${isDark ? "bg-white/5" : "bg-emerald-50"} flex items-center justify-between gap-2`}>
+                    <div className="min-w-0">
                       <p className={`text-[10px] uppercase font-bold ${softText}`}>Selected bank</p>
-                      <p className="font-black text-sm">{wdBank}</p>
+                      <p className="font-black text-sm truncate">{wdBank}</p>
                       <p className={`text-[10px] ${softText}`}>{BANKS_BY_CURRENCY[wdCurrencyKey]?.flag} {BANKS_BY_CURRENCY[wdCurrencyKey]?.country}</p>
                     </div>
-                    <button onClick={() => setWdStep("bank")} className="text-[11px] font-bold text-[#0e6b3f]">Change</button>
+                    <button onClick={() => setWdStep("bank")} className="text-[11px] font-bold text-[#0e6b3f] shrink-0">Change</button>
                   </div>
 
                   <label className="block">
@@ -1258,12 +1277,157 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </label>
 
                   <button
-                    onClick={submitWithdraw}
+                    onClick={() => setWdStep("review")}
                     disabled={!wdAccountNumber || !wdAccountName || !wdAmount || parseFloat(wdAmount) <= 0}
                     className="mt-2 w-full rounded-full bg-[#0e6b3f] disabled:bg-[#0e6b3f]/40 text-white py-3.5 font-black text-sm active:scale-95"
                   >
-                    Continue withdrawal
+                    Review withdrawal
                   </button>
+                </div>
+              )}
+
+              {wdStep === "crypto" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select cryptocurrency</p>
+                    <button onClick={() => setWdStep("method")} className="text-[11px] font-bold text-[#0e6b3f]">Back</button>
+                  </div>
+                  <div className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${isDark ? "bg-white/5 border-white/10" : "bg-white border-black/10"}`}>
+                    <Search className="h-4 w-4 opacity-60 shrink-0" />
+                    <input
+                      value={wdCryptoSearch}
+                      onChange={e => setWdCryptoSearch(e.target.value)}
+                      placeholder="Search coin or symbol…"
+                      className="w-full bg-transparent outline-none text-sm"
+                    />
+                    {wdCryptoSearch && (
+                      <button onClick={() => setWdCryptoSearch("")} className="opacity-60"><X className="h-4 w-4" /></button>
+                    )}
+                  </div>
+                  <p className={`text-[10px] uppercase font-bold ${softText}`}>All cryptocurrencies</p>
+                  <div className="space-y-1.5">
+                    {CRYPTOCURRENCIES
+                      .filter(c => {
+                        const q = wdCryptoSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q);
+                      })
+                      .map(c => (
+                        <button
+                          key={c.symbol}
+                          onClick={() => { setWdCrypto(c); setWdStep("cryptoDetails"); }}
+                          className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left active:scale-[0.98] ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                        >
+                          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center text-base font-black shrink-0">
+                            {c.emoji}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-sm truncate">{c.name}</p>
+                            <p className={`text-[11px] ${softText}`}>{c.symbol} · {c.network}</p>
+                          </div>
+                          <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 shrink-0" />
+                        </button>
+                      ))}
+                    {CRYPTOCURRENCIES.filter(c => {
+                      const q = wdCryptoSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q);
+                    }).length === 0 && (
+                      <p className={`text-center text-xs py-6 ${softText}`}>No coins match "{wdCryptoSearch}"</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {wdStep === "cryptoDetails" && wdCrypto && (
+                <div className="space-y-3">
+                  <div className={`rounded-2xl p-3 ${isDark ? "bg-white/5" : "bg-emerald-50"} flex items-center gap-3`}>
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center text-lg font-black shrink-0">
+                      {wdCrypto.emoji}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black text-sm truncate">{wdCrypto.name}</p>
+                      <p className={`text-[10px] ${softText}`}>{wdCrypto.symbol} · {wdCrypto.network}</p>
+                    </div>
+                    <button onClick={() => setWdStep("crypto")} className="text-[11px] font-bold text-[#0e6b3f] shrink-0">Change</button>
+                  </div>
+
+                  <label className="block">
+                    <span className={`text-[11px] font-bold ${softText}`}>Destination wallet address</span>
+                    <input value={wdWalletAddress} onChange={e => setWdWalletAddress(e.target.value.trim())}
+                      placeholder={`Your ${wdCrypto.symbol} wallet address`}
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-xs font-mono outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                  </label>
+
+                  <label className="block">
+                    <span className={`text-[11px] font-bold ${softText}`}>Amount (USD)</span>
+                    <input value={wdAmount} onChange={e => setWdAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                      inputMode="decimal" placeholder="0.00"
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                    <span className={`mt-1 block text-[10px] ${softText}`}>Available: ${balanceUsd.toFixed(2)}</span>
+                  </label>
+
+                  <button
+                    onClick={() => setWdStep("review")}
+                    disabled={!wdWalletAddress || wdWalletAddress.length < 8 || !wdAmount || parseFloat(wdAmount) <= 0}
+                    className="mt-2 w-full rounded-full bg-[#0e6b3f] disabled:bg-[#0e6b3f]/40 text-white py-3.5 font-black text-sm active:scale-95"
+                  >
+                    Review withdrawal
+                  </button>
+                </div>
+              )}
+
+              {wdStep === "review" && (
+                <div className="space-y-3">
+                  <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Review your withdrawal</p>
+                  <div className={`rounded-2xl border p-4 space-y-2 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}>
+                    <div className="flex justify-between text-sm">
+                      <span className={softText}>Method</span>
+                      <span className="font-bold">{wdMethod === "crypto" ? "Crypto wallet" : "Bank transfer"}</span>
+                    </div>
+                    {wdMethod === "crypto" && wdCrypto && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className={softText}>Coin</span>
+                          <span className="font-bold">{wdCrypto.name} ({wdCrypto.symbol})</span>
+                        </div>
+                        <div className="flex justify-between text-sm gap-2">
+                          <span className={softText}>Wallet</span>
+                          <span className="font-mono text-[11px] truncate max-w-[60%]">{wdWalletAddress}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className={softText}>Network</span>
+                          <span className="font-bold">{wdCrypto.network}</span>
+                        </div>
+                      </>
+                    )}
+                    {wdMethod === "bank" && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className={softText}>Bank</span>
+                          <span className="font-bold truncate max-w-[60%]">{wdBank}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className={softText}>Account</span>
+                          <span className="font-bold">{wdAccountNumber}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className={softText}>Name</span>
+                          <span className="font-bold truncate max-w-[60%]">{wdAccountName}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between text-sm pt-2 border-t border-black/5">
+                      <span className={softText}>Amount</span>
+                      <span className="font-black">
+                        {wdMethod === "crypto" ? `$${parseFloat(wdAmount || "0").toFixed(2)}` : `${currency.symbol}${parseFloat(wdAmount || "0").toFixed(2)} ${currency.code}`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setWdStep(wdMethod === "crypto" ? "cryptoDetails" : "details")} className={`flex-1 rounded-full py-3 font-bold text-sm border ${isDark ? "border-white/10" : "border-black/10"}`}>Edit</button>
+                    <button onClick={submitWithdraw} className="flex-1 rounded-full bg-[#0e6b3f] text-white py-3 font-black text-sm active:scale-95">Confirm</button>
+                  </div>
                 </div>
               )}
 
@@ -1271,7 +1435,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <div className="flex flex-col items-center py-10 gap-3 text-center">
                   <div className="h-14 w-14 rounded-full border-4 border-emerald-500/30 border-t-emerald-500 animate-spin" />
                   <p className="font-black">Processing withdrawal…</p>
-                  <p className={`text-xs ${softText}`}>Sending to {wdBank}</p>
+                  <p className={`text-xs ${softText}`}>
+                    {wdMethod === "crypto" ? `Sending ${wdCrypto?.symbol}` : `Sending to ${wdBank}`}
+                  </p>
                 </div>
               )}
 
@@ -1281,7 +1447,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <Check className="h-8 w-8" />
                   </div>
                   <p className="font-black text-lg">Withdrawal submitted!</p>
-                  <p className={`text-xs ${softText}`}>{wdBank} · {wdAccountNumber}</p>
+                  <p className={`text-xs ${softText}`}>
+                    {wdMethod === "crypto" ? `${wdCrypto?.symbol} · ${wdWalletAddress.slice(0, 8)}…${wdWalletAddress.slice(-4)}` : `${wdBank} · ${wdAccountNumber}`}
+                  </p>
                   <p className={`text-xs ${softText}`}>You can download a receipt from History.</p>
                   <button onClick={closeWithdraw} className="mt-3 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
                     Done
@@ -1292,6 +1460,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           </div>
         </div>
       )}
+
 
       {toast && (
         <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] rounded-full bg-black/85 text-white text-xs font-semibold px-4 py-2 shadow-2xl backdrop-blur">
