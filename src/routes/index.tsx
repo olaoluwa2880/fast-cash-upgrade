@@ -4,7 +4,7 @@ import {
   Moon, Sun, Bell, ChevronDown, ArrowDownLeft, ArrowUpRight, Crown,
   Briefcase, Receipt, Route as RouteIcon, Users, FileText, BookOpen,
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
-  Sparkles, Pickaxe, Zap, Pause,
+  Sparkles, Pickaxe, Zap, Pause, Copy, Upload,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
