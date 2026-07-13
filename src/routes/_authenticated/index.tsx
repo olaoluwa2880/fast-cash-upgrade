@@ -301,8 +301,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
   const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
   const planActive = activePlan !== null && now < planExpiresAt;
-  const nextMineAt = lastMineAt ? lastMineAt + MINE_COOLDOWN : 0;
-  const mineReady = planActive && (lastMineAt === null || now >= nextMineAt);
+  const minesInWindow = recentMines.filter(t => now - t < DAY);
+  const minesUsedToday = minesInWindow.length;
+  const nextMineAt = minesUsedToday >= MAX_DAILY_MINES && minesInWindow.length ? Math.min(...minesInWindow) + DAY : 0;
+  const mineReady = planActive && minesUsedToday < MAX_DAILY_MINES;
   const currentPlan = activePlan ? PREMIUM_PLANS[activePlan.index] : null;
 
   const formatCountdown = (ms: number) => {
