@@ -6,6 +6,7 @@ import {
   Gift, PiggyBank, Heart, Home, Search, Wallet, User, X, Check,
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
+  Globe, Smartphone,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -20,9 +21,18 @@ export const Route = createFileRoute("/")({
 
 type Screen = "splash" | "onboarding" | "signup" | "google" | "processing" | "otp" | "dashboard";
 
+type UserProfile = {
+  name: string;
+  email: string;
+  phone: string;
+  country: string;
+};
+
+const DEFAULT_PROFILE: UserProfile = { name: "", email: "", phone: "", country: "Nigeria" };
+
 function Root() {
   const [screen, setScreen] = useState<Screen>("splash");
-  const [userEmail, setUserEmail] = useState("");
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   useEffect(() => {
     if (screen === "splash") {
       const t = setTimeout(() => setScreen("onboarding"), 5000);
@@ -35,18 +45,20 @@ function Root() {
   }, [screen]);
   if (screen === "splash") return <Splash />;
   if (screen === "onboarding") return <Onboarding onContinue={() => setScreen("signup")} />;
-  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={(email) => { setUserEmail(email); setScreen("processing"); }} />;
-  if (screen === "google") return <GoogleAuth onDone={(email) => { setUserEmail(email); setScreen("processing"); }} />;
+  if (screen === "signup") return <Signup onGoogle={() => setScreen("google")} onContinue={(profile) => { setUserProfile(profile); setScreen("processing"); }} />;
+  if (screen === "google") return <GoogleAuth onDone={(profile) => { setUserProfile(profile); setScreen("processing"); }} />;
   if (screen === "processing") return <Processing />;
-  if (screen === "otp") return <OtpScreen email={userEmail} onDone={() => setScreen("dashboard")} />;
-  return <Dashboard userEmail={userEmail} />;
+  if (screen === "otp") return <OtpScreen email={userProfile.email} onDone={() => setScreen("dashboard")} />;
+  return <Dashboard userProfile={userProfile} />;
 }
 
-function GoogleAuth({ onDone }: { onDone: (email: string) => void }) {
+function GoogleAuth({ onDone }: { onDone: (profile: UserProfile) => void }) {
   const [step, setStep] = useState<"email" | "password">("email");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [country, setCountry] = useState(DEFAULT_PROFILE.country);
+  const countries = ["Nigeria", "United States", "United Kingdom", "Ghana", "South Africa", "Kenya", "Cameroon", "India", "Canada", "Germany", "France", "Other"];
   return (
     <div className="min-h-screen w-full bg-white flex flex-col px-6 pt-10 pb-8">
       <div className="flex items-center gap-2">
@@ -62,6 +74,10 @@ function GoogleAuth({ onDone }: { onDone: (email: string) => void }) {
             className="mt-6 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8]" />
           <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email or phone"
             className="mt-3 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8]" />
+          <select value={country} onChange={e => setCountry(e.target.value)}
+            className="mt-3 w-full rounded-md border border-[#dadce0] px-4 py-3.5 text-sm outline-none focus:border-[#1a73e8] bg-white">
+            {countries.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
           <p className="mt-3 text-[13px] text-[#1a73e8] font-medium">Forgot email?</p>
           <p className="mt-6 text-xs text-[#5f6368]">Not your computer? Use Guest mode to sign in privately.</p>
           <div className="mt-auto flex items-center justify-between pt-8">
@@ -84,7 +100,7 @@ function GoogleAuth({ onDone }: { onDone: (email: string) => void }) {
           </label>
           <div className="mt-auto flex items-center justify-between pt-8">
             <button className="text-[#1a73e8] text-sm font-medium">Forgot password?</button>
-            <button disabled={!password} onClick={() => onDone(email)}
+            <button disabled={!password} onClick={() => onDone({ name: name.trim() || email.split("@")[0], email, phone: "", country })}
               className="rounded-md bg-[#1a73e8] px-6 py-2.5 text-white text-sm font-medium disabled:opacity-50">Next</button>
           </div>
         </>
@@ -202,12 +218,14 @@ function Onboarding({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-function Signup({ onContinue, onGoogle }: { onContinue: (email: string) => void; onGoogle: () => void }) {
+function Signup({ onContinue, onGoogle }: { onContinue: (profile: UserProfile) => void; onGoogle: () => void }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [country, setCountry] = useState(DEFAULT_PROFILE.country);
   const [showPw, setShowPw] = useState(false);
+  const countries = ["Nigeria", "United States", "United Kingdom", "Ghana", "South Africa", "Kenya", "Cameroon", "India", "Canada", "Germany", "France", "Other"];
   const canSubmit = fullName.trim() && email.trim() && phone.trim() && password.length >= 6;
   return (
     <div className="min-h-screen w-full bg-black flex flex-col px-6 pt-14 pb-8 text-white">
@@ -252,6 +270,13 @@ function Signup({ onContinue, onGoogle }: { onContinue: (email: string) => void;
             className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400" />
         </div>
         <div>
+          <label className="text-xs text-white/60">Country</label>
+          <select value={country} onChange={e => setCountry(e.target.value)}
+            className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-sm outline-none focus:border-emerald-400 text-white appearance-none">
+            {countries.map(c => <option key={c} value={c} className="bg-black text-white">{c}</option>)}
+          </select>
+        </div>
+        <div>
           <label className="text-xs text-white/60">Password</label>
           <div className="mt-1 relative">
             <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters"
@@ -264,7 +289,7 @@ function Signup({ onContinue, onGoogle }: { onContinue: (email: string) => void;
         </div>
       </div>
 
-      <button onClick={() => onContinue(email)} disabled={!canSubmit}
+      <button onClick={() => onContinue({ name: fullName.trim(), email: email.trim(), phone: phone.trim(), country })} disabled={!canSubmit}
         className="mt-6 w-full rounded-2xl bg-[#0e6b3f] py-4 font-bold disabled:opacity-50">
         Create Account
       </button>
@@ -333,7 +358,8 @@ type Txn = {
   note?: string;
 };
 
-function Dashboard({ userEmail }: { userEmail: string }) {
+function Dashboard({ userProfile }: { userProfile: UserProfile }) {
+  const userEmail = userProfile.email;
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [openCur, setOpenCur] = useState(false);
   const [dark, setDark] = useState(false);
@@ -350,6 +376,7 @@ function Dashboard({ userEmail }: { userEmail: string }) {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
+  const [openProfile, setOpenProfile] = useState(false);
   const [transactions, setTransactions] = useState<Txn[]>(() => {
     const t = Date.now();
     return [
@@ -490,13 +517,13 @@ function Dashboard({ userEmail }: { userEmail: string }) {
           <div className="absolute right-10 top-32 h-24 w-24 rounded-full bg-white/5" />
 
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-white/15 grid place-items-center font-black">F</div>
+            <button onClick={() => setOpenProfile(true)} className="flex items-center gap-3 text-left active:scale-95 transition">
+              <div className="h-9 w-9 rounded-xl bg-white/15 grid place-items-center font-black">{(userProfile.name || userProfile.email || "F")[0].toUpperCase()}</div>
               <div>
                 <p className="text-[11px] opacity-80">Good morning!</p>
-                <p className="font-bold leading-tight">Ryan Sterling</p>
+                <p className="font-bold leading-tight">{userProfile.name || "Ryan Sterling"}</p>
               </div>
-            </div>
+            </button>
             <div className="flex items-center gap-2">
               <button onClick={() => setDark(d => !d)} className="h-10 w-10 grid place-items-center rounded-full bg-white/15 backdrop-blur">
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -962,6 +989,57 @@ function Dashboard({ userEmail }: { userEmail: string }) {
           currentPlan={currentPlan}
           currencyCode={currency.code}
         />
+      )}
+
+      {openProfile && (
+        <div className="fixed inset-0 z-50 flex flex-col">
+          <div className={`flex-1 overflow-y-auto ${isDark ? "bg-[#0a1410] text-white" : "bg-[#e8f5ec] text-[#0b1e1a]"}`}>
+            <div className="bg-gradient-to-b from-[#0f7a47] to-[#0a5a34] text-white px-5 pt-10 pb-8 rounded-b-[28px] relative overflow-hidden">
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+              <div className="flex items-center justify-between relative">
+                <p className="font-black text-lg">My Profile</p>
+                <button onClick={() => setOpenProfile(false)} className="h-10 w-10 grid place-items-center rounded-full bg-white/15 backdrop-blur">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="mt-8 flex flex-col items-center relative">
+                <div className="h-24 w-24 rounded-full bg-white/20 grid place-items-center text-3xl font-black border-4 border-white/30">
+                  {(userProfile.name || userProfile.email || "F")[0].toUpperCase()}
+                </div>
+                <p className="mt-4 text-xl font-black">{userProfile.name || "Ryan Sterling"}</p>
+                <p className="text-sm opacity-80">{userProfile.country}</p>
+              </div>
+            </div>
+
+            <div className="mx-4 mt-4 space-y-3 pb-8">
+              <div className={`rounded-3xl p-5 shadow-sm ${card}`}>
+                <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Profile details</p>
+                <div className="mt-4 space-y-4">
+                  <ProfileRow icon={<User className="h-4 w-4" />} label="Full name" value={userProfile.name || "—"} softText={softText} />
+                  <ProfileRow icon={<Mail className="h-4 w-4" />} label="Email address" value={userProfile.email || "—"} softText={softText} />
+                  <ProfileRow icon={<Smartphone className="h-4 w-4" />} label="Phone number" value={userProfile.phone || "—"} softText={softText} />
+                  <ProfileRow icon={<Globe className="h-4 w-4" />} label="Country" value={userProfile.country || "—"} softText={softText} />
+                  <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
+                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Active plan" value={activePlan ? `Premium · Plan ${activePlan.index + 1}` : "No active plan"} softText={softText} />
+                  <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Preferred currency" value={currency.code} softText={softText} />
+                </div>
+              </div>
+
+              <div className={`rounded-3xl p-5 shadow-sm ${card}`}>
+                <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Account status</p>
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-emerald-500/15 text-emerald-600 grid place-items-center shrink-0">
+                    <Check className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">Verified member</p>
+                    <p className={`text-[11px] ${softText}`}>Account created today</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
