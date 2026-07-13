@@ -547,7 +547,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setPaymentMethod(methodId);
     setReceiptFile(null);
     if (methodId === "card") {
-      submitPayment();
+      setPaymentStep("comingSoon");
     } else {
       setPaymentStep("instructions");
     }
@@ -558,12 +558,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     const amt = PREMIUM_PLANS[selectedPlan].invest;
     const methodLabel = paymentMethod === "crypto" ? "Crypto" : paymentMethod === "ngn" ? "NGN Bank Transfer" : "Card";
     setTimeout(() => {
-      setActivePlan({ index: selectedPlan, startedAt: Date.now() });
-      setLastMineAt(null);
-      setPaymentStep("success");
-      addTxn({ kind: "deposit", amountUsd: amt, method: methodLabel, status: "approved", note: `Premium plan activation` });
+      setPaymentStep("pending");
+      addTxn({ kind: "deposit", amountUsd: amt, method: methodLabel, status: "pending", note: `Premium plan activation · awaiting confirmation` });
     }, 2500);
   };
+
 
   const showToast = (msg: string) => {
     setToast(msg);
