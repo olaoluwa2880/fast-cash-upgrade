@@ -323,11 +323,25 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     addTxn({ kind: "bonus", amountUsd: 2, status: "credited", note: "Welcome bonus" });
   };
 
-  const mine = () => {
-    if (!mineReady || !currentPlan) return;
-    setBalanceUsd(b => b + currentPlan.mineReward);
-    setLastMineAt(Date.now());
-    addTxn({ kind: "mining", amountUsd: currentPlan.mineReward, status: "credited", note: `Mining reward · Plan ${activePlan!.index + 1}` });
+  const mine = async () => {
+    if (!mineReady || !currentPlan || !activePlan) return;
+    const reward = currentPlan.mineReward;
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    const uid = u.user.id;
+    // Insert claim
+    const { error: cErr } = await supabase.from("mining_claims").insert({
+      user_id: uid, amount_usd: reward, plan_index: activePlan.index,
+    });
+    if (cErr) { showToast("Could not record mining claim"); return; }
+    // Update wallet_balances
+    const { data: existing } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
+    const next = Number(existing?.balance_usd ?? 0) + reward;
+    if (existing) await supabase.from("wallet_balances").update({ balance_usd: next }).eq("user_id", uid);
+    else await supabase.from("wallet_balances").insert({ user_id: uid, balance_usd: next });
+    setBalanceUsd(next);
+    setRecentMines(prev => [...prev, Date.now()]);
+    addTxn({ kind: "mining", amountUsd: reward, status: "credited", note: `Mining reward · Plan ${activePlan.index + 1}` });
   };
 
   const activatePlan = () => {
