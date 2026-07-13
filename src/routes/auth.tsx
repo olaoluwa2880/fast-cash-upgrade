@@ -119,7 +119,6 @@ function AuthPage() {
     e.preventDefault();
     setError(null);
     if (token.trim().length < 6) return setError("Enter the 6-digit code.");
-    setStep("verifying");
     console.log("[auth] verifyOtp start", { email: form.email.trim() });
     const { data, error } = await supabase.auth.verifyOtp({
       email: form.email.trim(),
@@ -128,7 +127,6 @@ function AuthPage() {
     });
     console.log("[auth] verifyOtp result", { data, error });
     if (error || !data.user) {
-      setStep("otp");
       const msg = (error?.message || "").toLowerCase();
       if (msg.includes("expired")) return setError("Your verification code has expired. Please request a new code.");
       if (msg.includes("invalid")) return setError("The verification code is incorrect. Please try again.");
@@ -143,7 +141,6 @@ function AuthPage() {
       country: form.country,
     }, { onConflict: "id" });
 
-    await new Promise((r) => setTimeout(r, 1800));
     navigate({ to: "/" });
   }
 
@@ -166,20 +163,6 @@ function AuthPage() {
     }
     setInfo("A new code was sent.");
     setCooldown(60);
-  }
-
-
-  if (step === "verifying") {
-    return (
-      <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-6">
-        <h1 className="text-5xl font-extrabold text-white tracking-tight">FastCredit</h1>
-        <div className="mt-4 flex gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce [animation-delay:-0.3s]" />
-          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce [animation-delay:-0.15s]" />
-          <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-bounce" />
-        </div>
-      </div>
-    );
   }
 
   if (step === "otp") {
