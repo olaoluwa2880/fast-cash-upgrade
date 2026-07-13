@@ -39,7 +39,7 @@ function Root() {
   if (screen === "google") return <GoogleAuth onDone={(email) => { setUserEmail(email); setScreen("processing"); }} />;
   if (screen === "processing") return <Processing />;
   if (screen === "otp") return <OtpScreen email={userEmail} onDone={() => setScreen("dashboard")} />;
-  return <Dashboard />;
+  return <Dashboard userEmail={userEmail} />;
 }
 
 function GoogleAuth({ onDone }: { onDone: (email: string) => void }) {
