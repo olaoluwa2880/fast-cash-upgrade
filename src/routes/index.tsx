@@ -497,36 +497,55 @@ function Dashboard() {
                     <Pickaxe className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="font-bold leading-tight">FastCredit Mining</p>
+                    <p className="font-bold leading-tight">Premium Mining</p>
                     <p className="text-[11px] opacity-80 flex items-center gap-1">
-                      <span className={`h-1.5 w-1.5 rounded-full ${mining ? "bg-emerald-300 animate-pulse" : "bg-white/40"}`} />
-                      {mining ? "Mining active" : "Idle"}
+                      <span className={`h-1.5 w-1.5 rounded-full ${planActive ? "bg-emerald-300 animate-pulse" : "bg-white/40"}`} />
+                      {planActive ? `Plan active · ${formatCountdown(planExpiresAt - now)} left` : "No active plan"}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] opacity-70 uppercase">Hash rate</p>
-                  <p className="text-sm font-bold flex items-center gap-1 justify-end"><Zap className="h-3 w-3" /> 12.4 MH/s</p>
+                  <p className="text-[10px] opacity-70 uppercase">Reward</p>
+                  <p className="text-sm font-bold flex items-center gap-1 justify-end">
+                    <Zap className="h-3 w-3" /> {currentPlan ? fmt(currentPlan.profit, 2) : "—"}
+                  </p>
                 </div>
               </div>
-              <p className="mt-4 text-[11px] opacity-80 relative">Mined earnings</p>
-              <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">{fmt(mined, 4)}</p>
-              <p className="text-[10px] opacity-70 relative">≈ ${mined.toFixed(4)} USD</p>
+              <p className="mt-4 text-[11px] opacity-80 relative">Next mine reward</p>
+              <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">
+                {currentPlan ? fmt(currentPlan.profit, 2) : fmt(0, 2)}
+              </p>
+              <p className="text-[10px] opacity-70 relative">
+                {planActive
+                  ? mineReady
+                    ? "Ready to mine now"
+                    : `Next mine in ${formatCountdown(nextMineAt - now)}`
+                  : "Activate a Premium plan to start mining"}
+              </p>
             </div>
-            <div className="p-4 flex items-center gap-2">
+            <div className="p-4">
               <button
-                onClick={() => setMining(m => !m)}
-                className={`flex-1 flex items-center justify-center gap-2 rounded-full py-3 text-sm font-bold shadow-md ${mining ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"}`}
+                onClick={planActive ? mine : () => setOpenPremium(true)}
+                disabled={planActive && !mineReady}
+                className={`w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold shadow-md ${
+                  !planActive
+                    ? "bg-amber-500 text-[#3a2500]"
+                    : mineReady
+                    ? "bg-emerald-500 text-white active:scale-95"
+                    : "bg-black/10 text-[#0b1e1a]/50"
+                }`}
               >
-                {mining ? <><Pause className="h-4 w-4" /> Stop mining</> : <><Play className="h-4 w-4" /> Start mining</>}
+                {!planActive ? (
+                  <><Crown className="h-4 w-4" /> Activate Premium to Mine</>
+                ) : mineReady ? (
+                  <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.profit, 2) : ""}</>
+                ) : (
+                  <><Pause className="h-4 w-4" /> Cooldown {formatCountdown(nextMineAt - now)}</>
+                )}
               </button>
-              <button
-                onClick={() => setMined(0)}
-                disabled={mined === 0}
-                className={`rounded-full px-4 py-3 text-xs font-bold border ${isDark ? "border-white/10 text-white/80" : "border-black/10 text-[#0b1e1a]/70"} disabled:opacity-40`}
-              >
-                Collect
-              </button>
+              <p className={`mt-2 text-center text-[10px] ${softText}`}>
+                Mine once every 48 hours · Higher plan = higher reward
+              </p>
             </div>
           </div>
         </section>
