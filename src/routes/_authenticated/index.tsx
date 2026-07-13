@@ -1495,23 +1495,31 @@ function CategoryModal(props: CategoryModalProps) {
             </div>
           )}
 
-          {categoryKey === "rosca" && (
+          {categoryKey === "community" && (
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 text-white grid place-items-center">
-                  <UserCircle className="h-9 w-9" />
+              <p className={`text-[11px] ${softText}`}>Join our official channels — updates, announcements and community chat.</p>
+              {settings.community.length === 0 && (
+                <div className={`rounded-2xl border p-6 text-center ${rowBg}`}>
+                  <MessageCircle className="h-8 w-8 mx-auto text-emerald-500" />
+                  <p className={`text-xs mt-2 ${softText}`}>No community links yet. Check back soon.</p>
                 </div>
-                <div>
-                  <p className="font-black text-lg">Ryan Sterling</p>
-                  <p className={`text-[11px] ${softText}`}>FastCredit member</p>
-                </div>
-              </div>
-              <div className={`rounded-2xl border p-4 space-y-3 ${rowBg}`}>
-                <ProfileRow icon={<Mail className="h-4 w-4" />} label="Email" value={userEmail || "user@fastcredit.app"} softText={softText} />
-                <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
-                <ProfileRow icon={<Crown className="h-4 w-4" />} label="Plan" value={activePlan ? `Premium · Plan ${activePlan.index + 1}` : "No active plan"} softText={softText} />
-                <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Preferred currency" value={currencyCode} softText={softText} />
-              </div>
+              )}
+              {settings.community.map((c) => {
+                const Icon = c.platform === "telegram" ? Send : c.platform === "whatsapp" ? MessageCircle : ExternalLink;
+                return (
+                  <a key={c.id} href={c.url} target="_blank" rel="noreferrer"
+                    className={`flex items-center gap-3 rounded-2xl border p-4 ${rowBg} active:scale-[.98] transition`}>
+                    <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center shrink-0">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black truncate">{c.title}</p>
+                      <p className={`text-[11px] ${softText} truncate`}>{c.platform} · {c.url}</p>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 opacity-60" />
+                  </a>
+                );
+              })}
             </div>
           )}
 
@@ -1534,28 +1542,48 @@ function CategoryModal(props: CategoryModalProps) {
             </div>
           )}
 
-          {(categoryKey === "support" || categoryKey === "wallet" || categoryKey === "payments" || categoryKey === "journey") && (
+          {categoryKey === "support" && (
             <div className="space-y-3">
-              <div className={`rounded-2xl border p-5 text-center ${rowBg}`}>
-                <div className="mx-auto h-14 w-14 rounded-2xl bg-emerald-500 text-white grid place-items-center">
-                  {categoryKey === "support" ? <LifeBuoy className="h-6 w-6" /> : <Briefcase className="h-6 w-6" />}
+              <p className={`text-[11px] ${softText}`}>We're here 24/7 — reach us on any of these channels.</p>
+              {settings.support.length === 0 && (
+                <div className={`rounded-2xl border p-6 text-center ${rowBg}`}>
+                  <LifeBuoy className="h-8 w-8 mx-auto text-emerald-500" />
+                  <p className={`text-xs mt-2 ${softText}`}>No support contacts configured yet.</p>
                 </div>
-                <p className="mt-3 font-black">
-                  {categoryKey === "support" ? "We're here to help" : `${title} coming soon`}
-                </p>
-                <p className={`mt-1 text-[11px] ${softText}`}>
-                  {categoryKey === "support"
-                    ? "Reach our team any time — we'll get back within 24 hours."
-                    : "This section is being prepared for you."}
-                </p>
-                {categoryKey === "support" && (
-                  <a href="mailto:support@fastcredit.app" className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#0e6b3f] text-white px-4 py-2 text-xs font-bold">
-                    <Mail className="h-3.5 w-3.5" /> support@fastcredit.app
+              )}
+              {settings.support.map((s) => {
+                const Icon = s.kind === "telegram" ? Send
+                  : s.kind === "whatsapp" ? MessageCircle
+                  : s.kind === "email" ? Mail
+                  : s.kind === "phone" ? Phone
+                  : ExternalLink;
+                return (
+                  <a key={s.id} href={supportHref(s)} target="_blank" rel="noreferrer"
+                    className={`flex items-center gap-3 rounded-2xl border p-4 ${rowBg} active:scale-[.98] transition`}>
+                    <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center shrink-0">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black truncate">{s.label}</p>
+                      <p className={`text-[11px] ${softText} truncate`}>{s.value}</p>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 opacity-60" />
                   </a>
-                )}
-              </div>
+                );
+              })}
             </div>
           )}
+
+          {(categoryKey === "wallet" || categoryKey === "payments" || categoryKey === "journey") && (
+            <div className={`rounded-2xl border p-5 text-center ${rowBg}`}>
+              <div className="mx-auto h-14 w-14 rounded-2xl bg-emerald-500 text-white grid place-items-center">
+                <Briefcase className="h-6 w-6" />
+              </div>
+              <p className="mt-3 font-black">{title} coming soon</p>
+              <p className={`mt-1 text-[11px] ${softText}`}>This section is being prepared for you.</p>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
