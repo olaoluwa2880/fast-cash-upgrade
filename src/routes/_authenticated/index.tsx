@@ -257,6 +257,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [wdCryptoSearch, setWdCryptoSearch] = useState("");
   const [wdWalletAddress, setWdWalletAddress] = useState("");
   const [transactions, setTransactions] = useState<Txn[]>([]);
+  const [congrats, setCongrats] = useState<null | { title: string; body: string }>(null);
 
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
     setTransactions(prev => [{ ...t, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now() }, ...prev]);
