@@ -890,29 +890,39 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <div className="space-y-4">
                   <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Bank transfer · Naira</p>
 
-                  <div className={`rounded-2xl border p-4 space-y-3 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Bank</p>
-                      <p className="font-black">VFD Bank</p>
-                    </div>
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Name</p>
-                      <p className="font-black">SATURDAY ARUWAYO</p>
-                    </div>
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Number</p>
-                      <div className="flex items-center gap-2">
-                        <p className="font-mono font-black text-lg flex-1">1047499461</p>
-                        <button onClick={() => copyText("1047499461", "ngn")} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
-                          {copied === "ngn" ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
-                        </button>
+                  {(() => {
+                    const ngnBanks = settings.banks.filter((b) => b.currency === "NGN" || b.currency === currency.code);
+                    const active = ngnBanks.length ? ngnBanks : settings.banks;
+                    if (active.length === 0) {
+                      return <div className={`rounded-2xl border p-4 text-center text-[11px] ${softText}`}>No bank accounts configured yet. Please contact support.</div>;
+                    }
+                    return active.map((b) => (
+                      <div key={b.id} className={`rounded-2xl border p-4 space-y-3 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Bank</p>
+                          <p className="font-black">{b.bank_name} <span className="text-[10px] text-slate-500">({b.currency})</span></p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Name</p>
+                          <p className="font-black">{b.account_name}</p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Number</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-mono font-black text-lg flex-1">{b.account_number}</p>
+                            <button onClick={() => copyText(b.account_number, `b-${b.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                              {copied === `b-${b.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Amount</p>
+                          <p className="font-black">{fmt(PREMIUM_PLANS[selectedPlan].invest, 2)}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Amount</p>
-                      <p className="font-black">{fmt(PREMIUM_PLANS[selectedPlan].invest, 2)}</p>
-                    </div>
-                  </div>
+                    ));
+                  })()}
+
 
                   <ReceiptUpload receiptFile={receiptFile} setReceiptFile={setReceiptFile} isDark={isDark} softText={softText} />
 
