@@ -141,8 +141,11 @@ function AuthPage() {
       country: form.country,
     }, { onConflict: "id" });
 
+    setStep("verifying");
+    await new Promise((r) => setTimeout(r, 1800));
     navigate({ to: "/" });
   }
+
 
   async function resend() {
     if (cooldown > 0) return;
