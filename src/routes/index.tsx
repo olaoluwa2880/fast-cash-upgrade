@@ -473,7 +473,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [now, setNow] = useState(Date.now());
   const [openPayment, setOpenPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
-  const [paymentStep, setPaymentStep] = useState<"choose" | "instructions" | "processing" | "success">("choose");
+  const [paymentStep, setPaymentStep] = useState<"choose" | "instructions" | "processing" | "success" | "pending" | "comingSoon">("choose");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
