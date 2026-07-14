@@ -385,7 +385,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
   const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
   const planActive = activePlan !== null && now < planExpiresAt;
-  const minesInWindow = recentMines.filter(t => now - t < DAY);
+  const planExpired = activePlan !== null && now >= planExpiresAt;
+  // Mining resets whenever a new plan is activated (upgrades reopen mining immediately).
+  const planStartedAt = activePlan?.startedAt ?? 0;
+  const minesInWindow = recentMines.filter(t => t >= planStartedAt && now - t < DAY);
   const minesUsedToday = minesInWindow.length;
   const nextMineAt = minesUsedToday >= MAX_DAILY_MINES && minesInWindow.length ? Math.min(...minesInWindow) + DAY : 0;
   const mineReady = planActive && minesUsedToday < MAX_DAILY_MINES;
