@@ -84,7 +84,7 @@ function UsersPage() {
       }
       return true;
     });
-  }, [rows, q, status]);
+  }, [rows, q, status, bans]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pages);
