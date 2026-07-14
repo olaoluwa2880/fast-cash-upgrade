@@ -337,34 +337,57 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const uid = u.user.id;
       const { data: bal } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
       if (!cancelled && bal) setBalanceUsd(Number(bal.balance_usd));
-      const { data: pays } = await supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(30);
+      const [{ data: pays }, { data: wds }, { data: allClaims }] = await Promise.all([
+        supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(50),
+        supabase.from("withdrawals").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(50),
+        supabase.from("mining_claims").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(200),
+      ]);
+      // Determine active mining plan from most recent approved payment with a plan_index
+      let planStartedAt = 0;
       if (!cancelled && pays) {
-        setTransactions(pays.map((p) => ({
-          id: p.id,
-          kind: p.status === "rejected" ? "declined" as const : "deposit" as const,
-          amountUsd: Number(p.amount),
-          method: p.method ?? undefined,
-          status: p.status === "approved" ? "approved" as const : p.status === "rejected" ? "declined" as const : "pending" as const,
-          at: new Date(p.created_at).getTime(),
-          note: p.rejection_reason || (p.status === "approved" ? "Deposit approved" : p.status === "pending" ? "Awaiting confirmation" : undefined),
-        })));
-        // Determine active mining plan from most recent approved payment with a plan_index
         const planPay = pays.find((p) => p.status === "approved" && p.plan_index != null);
         if (planPay) {
-          const startedAt = new Date(planPay.created_at).getTime();
-          if (Date.now() - startedAt < PLAN_DURATION) {
-            setActivePlan({ index: planPay.plan_index as number, startedAt });
-          } else {
-            setActivePlan(null);
-          }
+          planStartedAt = new Date(planPay.created_at).getTime();
+          setActivePlan({ index: planPay.plan_index as number, startedAt: planStartedAt });
         } else {
           setActivePlan(null);
         }
       }
-      // Load mining claims from last 24h
-      const since = new Date(Date.now() - DAY).toISOString();
-      const { data: claims } = await supabase.from("mining_claims").select("created_at").eq("user_id", uid).gte("created_at", since);
-      if (!cancelled) setRecentMines((claims ?? []).map((c) => new Date(c.created_at).getTime()));
+      // Merge payments, withdrawals and mining claims into a single transaction list.
+      const payTx: Txn[] = (pays ?? []).map((p) => ({
+        id: `pay-${p.id}`,
+        kind: p.status === "rejected" ? "declined" : "deposit",
+        amountUsd: Number(p.amount),
+        method: p.method ?? undefined,
+        status: p.status === "approved" ? "approved" : p.status === "rejected" ? "declined" : "pending",
+        at: new Date(p.created_at).getTime(),
+        note: p.rejection_reason || (p.status === "approved" ? "Deposit approved" : p.status === "pending" ? "Awaiting confirmation" : undefined),
+      }));
+      const wdTx: Txn[] = (wds ?? []).map((w) => ({
+        id: `wd-${w.id}`,
+        kind: w.status === "rejected" ? "declined" : "withdraw",
+        amountUsd: Number(w.amount),
+        method: w.method ?? undefined,
+        status: w.status === "approved" ? "approved" : w.status === "rejected" ? "declined" : "pending",
+        at: new Date(w.created_at).getTime(),
+        note: w.status === "approved" ? "Withdrawal approved" : w.status === "pending" ? "Awaiting confirmation" : undefined,
+      }));
+      const mineTx: Txn[] = (allClaims ?? []).map((c) => ({
+        id: `mine-${c.id}`,
+        kind: "mining",
+        amountUsd: Number(c.amount_usd),
+        status: "credited",
+        at: new Date(c.created_at).getTime(),
+        note: `Mining reward${c.plan_index != null ? ` · Plan ${(c.plan_index as number) + 1}` : ""}`,
+      }));
+      if (!cancelled) {
+        setTransactions([...payTx, ...wdTx, ...mineTx].sort((a, b) => b.at - a.at));
+        // Keep last 24h claim timestamps for the tap counter (filtered further to current plan client-side).
+        const cutoff = Date.now() - DAY;
+        setRecentMines((allClaims ?? [])
+          .map((c) => new Date(c.created_at).getTime())
+          .filter((t) => t >= cutoff));
+      }
       // Subscribe: balance + notifications for toast
       const ch = supabase.channel(`user-${uid}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "wallet_balances", filter: `user_id=eq.${uid}` },
