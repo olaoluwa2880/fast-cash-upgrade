@@ -29,22 +29,43 @@ const PAGE_SIZE = 25;
 
 function UsersPage() {
   const [rows, setRows] = useState<Profile[]>([]);
+  const [bans, setBans] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+  const [status, setStatus] = useState<"all" | "active" | "inactive" | "suspended">("all");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      setRows(data ?? []);
-      setLoading(false);
-    })();
-  }, []);
+  async function reload() {
+    const [{ data: profs }, { data: banRows }] = await Promise.all([
+      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("user_bans").select("user_id"),
+    ]);
+    setRows(profs ?? []);
+    setBans(new Set((banRows ?? []).map((b) => b.user_id)));
+    setLoading(false);
+  }
+
+  useEffect(() => { reload(); }, []);
+
+  async function toggleBan(userId: string, currentlyBanned: boolean) {
+    setBusy(userId);
+    if (currentlyBanned) {
+      await supabase.from("user_bans").delete().eq("user_id", userId);
+    } else {
+      if (!window.confirm("Suspend this user? They will be signed out immediately and unable to log in.")) {
+        setBusy(null); return;
+      }
+      const { data: u } = await supabase.auth.getUser();
+      await supabase.from("user_bans").upsert(
+        { user_id: userId, banned_by: u.user?.id ?? null, reason: "suspended by admin" },
+        { onConflict: "user_id" },
+      );
+    }
+    setBusy(null);
+    await reload();
+  }
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
