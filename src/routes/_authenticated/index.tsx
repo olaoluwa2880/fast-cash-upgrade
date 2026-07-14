@@ -33,11 +33,12 @@ type UserProfile = {
   avatar_url: string;
   referral_code: string;
   created_at: string;
+  currency: string;
 };
 
 const DEFAULT_PROFILE: UserProfile = {
   name: "", username: "", email: "", phone: "", country: "Nigeria",
-  avatar_url: "", referral_code: "", created_at: "",
+  avatar_url: "", referral_code: "", created_at: "", currency: "USD",
 };
 
 function Root() {
@@ -57,7 +58,7 @@ function Root() {
       if (!u.user || cancelled) return;
       const { data: p } = await supabase
         .from("profiles")
-        .select("full_name, username, email, phone, country, avatar_url, referral_code, created_at")
+        .select("full_name, username, email, phone, country, avatar_url, referral_code, created_at, currency")
         .eq("id", u.user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -71,6 +72,7 @@ function Root() {
         avatar_url: p?.avatar_url ?? "",
         referral_code: p?.referral_code ?? "",
         created_at: p?.created_at ?? u.user.created_at ?? "",
+        currency: p?.currency ?? "USD",
       });
     }
     loadProfile();
@@ -138,23 +140,20 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
   { icon: PiggyBank, label: "Savings", key: "savings" },
 ];
 
-// Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day).
+// Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day, 7 days).
 const PREMIUM_PLANS = (() => {
-  // Realistic, sustainable ROI. 2 taps/day × 14 days = 28 total taps.
-  // mineReward is credited per tap; total 14-day earnings ≈ deposit × ~1.35.
   const base = [
-    { name: "Starter", invest: 12,   mineReward: 0.60 },  // 14d total ≈ $16.80
-    { name: "Plan 2",  invest: 25,   mineReward: 1.20 },  // 14d total ≈ $33.60
-    { name: "Plan 3",  invest: 50,   mineReward: 2.40 },  // 14d total ≈ $67.20
-    { name: "Plan 4",  invest: 100,  mineReward: 4.80 },  // 14d total ≈ $134.40
-    { name: "Plan 5",  invest: 250,  mineReward: 12 },    // 14d total ≈ $336
-    { name: "Plan 6",  invest: 500,  mineReward: 24 },    // 14d total ≈ $672
-    { name: "Plan 7",  invest: 600,  mineReward: 29 },    // 14d total ≈ $812
-    { name: "Plan 8",  invest: 1500, mineReward: 72 },    // 14d total ≈ $2,016
+    { name: "Starter", invest: 12,   mineReward: 8.70 },   // 7d total ≈ $121.80
+    { name: "Plan 2",  invest: 25,   mineReward: 17.40 },  // 7d total ≈ $243.60
+    { name: "Plan 3",  invest: 50,   mineReward: 34.80 },  // 7d total ≈ $487.20
+    { name: "Plan 4",  invest: 100,  mineReward: 69.60 },  // 7d total ≈ $974.40
+    { name: "Plan 5",  invest: 200,  mineReward: 139.20 }, // 7d total ≈ $1,948.80
+    { name: "Plan 6",  invest: 500,  mineReward: 348.00 }, // 7d total ≈ $4,872
+    { name: "Plan 7",  invest: 1000, mineReward: 696.00 }, // 7d total ≈ $9,744
   ];
-  // 2 taps/day × 14 days = 28 total taps
+  // 2 taps/day × 7 days = 14 total taps
   return base.map(p => {
-    const total = p.mineReward * 28;
+    const total = p.mineReward * 14;
     return { ...p, profit: p.mineReward * 2, total, returned: p.invest + total };
   });
 })();
@@ -267,7 +266,7 @@ const CRYPTOCURRENCIES: { symbol: string; name: string; network: string; emoji: 
 
 const DAY = 24 * 60 * 60 * 1000;
 const MAX_DAILY_MINES = 2;
-const PLAN_DURATION = 14 * DAY;
+const PLAN_DURATION = 7 * DAY;
 const MIN_WITHDRAW_USD = 100;
 
 type Txn = {
@@ -285,6 +284,16 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const userEmail = userProfile.email;
   const settings = useSiteSettings();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
+  // Restore preferred currency from the saved profile whenever it changes.
+  useEffect(() => {
+    const saved = CURRENCIES.find(c => c.code === userProfile.currency);
+    if (saved) setCurrency(saved);
+  }, [userProfile.currency]);
+  const changeCurrency = async (c: typeof CURRENCIES[number]) => {
+    setCurrency(c);
+    const { data: u } = await supabase.auth.getUser();
+    if (u.user) await supabase.from("profiles").update({ currency: c.code }).eq("id", u.user.id);
+  };
   const [openCur, setOpenCur] = useState(false);
   const [dark, setDark] = useState(false);
   const [openPremium, setOpenPremium] = useState(false);
@@ -328,34 +337,56 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const uid = u.user.id;
       const { data: bal } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
       if (!cancelled && bal) setBalanceUsd(Number(bal.balance_usd));
-      const { data: pays } = await supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(30);
+      const [{ data: pays }, { data: wds }, { data: allClaims }] = await Promise.all([
+        supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(50),
+        supabase.from("withdrawals").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(50),
+        supabase.from("mining_claims").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(200),
+      ]);
+      // Determine active mining plan from most recent approved payment with a plan_index
       if (!cancelled && pays) {
-        setTransactions(pays.map((p) => ({
-          id: p.id,
-          kind: p.status === "rejected" ? "declined" as const : "deposit" as const,
-          amountUsd: Number(p.amount),
-          method: p.method ?? undefined,
-          status: p.status === "approved" ? "approved" as const : p.status === "rejected" ? "declined" as const : "pending" as const,
-          at: new Date(p.created_at).getTime(),
-          note: p.rejection_reason || (p.status === "approved" ? "Deposit approved" : p.status === "pending" ? "Awaiting confirmation" : undefined),
-        })));
-        // Determine active mining plan from most recent approved payment with a plan_index
         const planPay = pays.find((p) => p.status === "approved" && p.plan_index != null);
         if (planPay) {
           const startedAt = new Date(planPay.created_at).getTime();
-          if (Date.now() - startedAt < PLAN_DURATION) {
-            setActivePlan({ index: planPay.plan_index as number, startedAt });
-          } else {
-            setActivePlan(null);
-          }
+          setActivePlan({ index: planPay.plan_index as number, startedAt });
         } else {
           setActivePlan(null);
         }
       }
-      // Load mining claims from last 24h
-      const since = new Date(Date.now() - DAY).toISOString();
-      const { data: claims } = await supabase.from("mining_claims").select("created_at").eq("user_id", uid).gte("created_at", since);
-      if (!cancelled) setRecentMines((claims ?? []).map((c) => new Date(c.created_at).getTime()));
+      // Merge payments, withdrawals and mining claims into a single transaction list.
+      const payTx: Txn[] = (pays ?? []).map((p) => ({
+        id: `pay-${p.id}`,
+        kind: p.status === "rejected" ? "declined" : "deposit",
+        amountUsd: Number(p.amount),
+        method: p.method ?? undefined,
+        status: p.status === "approved" ? "approved" : p.status === "rejected" ? "declined" : "pending",
+        at: new Date(p.created_at).getTime(),
+        note: p.rejection_reason || (p.status === "approved" ? "Deposit approved" : p.status === "pending" ? "Awaiting confirmation" : undefined),
+      }));
+      const wdTx: Txn[] = (wds ?? []).map((w) => ({
+        id: `wd-${w.id}`,
+        kind: w.status === "rejected" ? "declined" : "withdraw",
+        amountUsd: Number(w.amount),
+        method: w.wallet_address ? "Crypto" : (w.currency ?? undefined),
+        status: w.status === "approved" ? "approved" : w.status === "rejected" ? "declined" : "pending",
+        at: new Date(w.created_at).getTime(),
+        note: w.status === "approved" ? "Withdrawal approved" : w.status === "pending" ? "Awaiting confirmation" : undefined,
+      }));
+      const mineTx: Txn[] = (allClaims ?? []).map((c) => ({
+        id: `mine-${c.id}`,
+        kind: "mining",
+        amountUsd: Number(c.amount_usd),
+        status: "credited",
+        at: new Date(c.created_at).getTime(),
+        note: `Mining reward${c.plan_index != null ? ` · Plan ${(c.plan_index as number) + 1}` : ""}`,
+      }));
+      if (!cancelled) {
+        setTransactions([...payTx, ...wdTx, ...mineTx].sort((a, b) => b.at - a.at));
+        // Keep last 24h claim timestamps for the tap counter (filtered further to current plan client-side).
+        const cutoff = Date.now() - DAY;
+        setRecentMines((allClaims ?? [])
+          .map((c) => new Date(c.created_at).getTime())
+          .filter((t) => t >= cutoff));
+      }
       // Subscribe: balance + notifications for toast
       const ch = supabase.channel(`user-${uid}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "wallet_balances", filter: `user_id=eq.${uid}` },
@@ -388,7 +419,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
   const planExpiresAt = activePlan ? activePlan.startedAt + PLAN_DURATION : 0;
   const planActive = activePlan !== null && now < planExpiresAt;
-  const minesInWindow = recentMines.filter(t => now - t < DAY);
+  const planExpired = activePlan !== null && now >= planExpiresAt;
+  // Mining resets whenever a new plan is activated (upgrades reopen mining immediately).
+  const planStartedAt = activePlan?.startedAt ?? 0;
+  const minesInWindow = recentMines.filter(t => t >= planStartedAt && now - t < DAY);
   const minesUsedToday = minesInWindow.length;
   const nextMineAt = minesUsedToday >= MAX_DAILY_MINES && minesInWindow.length ? Math.min(...minesInWindow) + DAY : 0;
   const mineReady = planActive && minesUsedToday < MAX_DAILY_MINES;
@@ -693,7 +727,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               {openCur && (
                 <div className="absolute right-0 mt-2 w-32 rounded-xl bg-white text-[#0b1e1a] shadow-xl z-20 overflow-hidden">
                   {CURRENCIES.map(c => (
-                    <button key={c.code} onClick={() => { setCurrency(c); setOpenCur(false); }}
+                    <button key={c.code} onClick={() => { changeCurrency(c); setOpenCur(false); }}
                       className={`w-full px-3 py-2 text-left text-xs hover:bg-black/5 ${c.code === currency.code ? "font-bold text-emerald-600" : ""}`}>
                       {c.symbol} {c.code}
                     </button>
@@ -774,8 +808,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <div>
                     <p className="font-bold leading-tight">Premium Mining</p>
                     <p className="text-[11px] opacity-80 flex items-center gap-1">
-                      <span className={`h-1.5 w-1.5 rounded-full ${planActive ? "bg-emerald-300 animate-pulse" : "bg-white/40"}`} />
-                      {planActive ? `Plan active · ${formatCountdown(planExpiresAt - now)} left` : "No active plan"}
+                      <span className={`h-1.5 w-1.5 rounded-full ${planActive ? "bg-emerald-300 animate-pulse" : planExpired ? "bg-red-300" : "bg-white/40"}`} />
+                      {planActive
+                        ? `${currentPlan?.name} · Active · ${formatCountdown(planExpiresAt - now)} left`
+                        : planExpired
+                          ? "Plan expired"
+                          : "No active plan"}
                     </p>
                   </div>
                 </div>
@@ -795,7 +833,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   ? mineReady
                     ? `Ready to mine — ${MAX_DAILY_MINES - minesUsedToday} tap${MAX_DAILY_MINES - minesUsedToday === 1 ? "" : "s"} left today`
                     : `Mining will be available again in: ${formatCountdown(nextMineAt - now)}`
-                  : "Activate a Premium plan to start mining"}
+                  : planExpired
+                    ? "Your plan has expired. Please renew or upgrade your plan to continue mining."
+                    : "Activate a Premium plan to start mining"}
               </p>
             </div>
             <div className="p-4">
@@ -811,7 +851,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 }`}
               >
                 {!planActive ? (
-                  <><Crown className="h-4 w-4" /> Activate Premium to Mine</>
+                  <><Crown className="h-4 w-4" /> {planExpired ? "Renew or Upgrade Plan" : "Activate Premium to Mine"}</>
                 ) : mineReady ? (
                   <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.mineReward, 2) : ""}</>
                 ) : (
@@ -905,7 +945,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <Crown className="h-5 w-5" />
                 <div>
                   <p className="font-black text-base leading-tight">Premium Upgrade</p>
-                  <p className="text-[10px] font-semibold opacity-80">14 days · Payouts every 48h</p>
+                  <p className="text-[10px] font-semibold opacity-80">7 days · 2 mining taps daily</p>
                 </div>
               </div>
               <button onClick={() => setOpenPremium(false)} className="h-8 w-8 grid place-items-center rounded-full bg-black/10">
@@ -952,7 +992,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                           <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
-                          <p className="opacity-70">Total 14d</p>
+                          <p className="opacity-70">Total 7d</p>
                           <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
                         </div>
                       </div>
@@ -964,9 +1004,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               <div className={`mt-4 rounded-2xl p-3 text-[11px] ${isDark ? "bg-white/5 text-white/70" : "bg-[#f6f8f7] text-[#0b1e1a]/70"}`}>
                 <p className="font-bold mb-1">How it works</p>
                 <ul className="space-y-0.5 list-disc pl-4">
-                  <li>Profits credited every 48 hours (7 payouts).</li>
-                  <li>Each plan runs for 14 days, then expires automatically.</li>
-                  <li>Purchase a new plan after the current one ends.</li>
+                  <li>Mine twice per day — earnings credit instantly to your wallet.</li>
+                  <li>Each plan runs for 7 days, then expires automatically.</li>
+                  <li>Upgrading to a higher plan activates it immediately and reopens mining.</li>
                 </ul>
               </div>
 
@@ -1607,7 +1647,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <ProfileRow icon={<Smartphone className="h-4 w-4" />} label="Phone number" value={userProfile.phone || "—"} softText={softText} />
                   <ProfileRow icon={<Globe className="h-4 w-4" />} label="Country" value={userProfile.country || "—"} softText={softText} />
                   <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
-                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Active plan" value={activePlan ? `Premium · ${PREMIUM_PLANS[activePlan.index].name}` : "No active plan"} softText={softText} />
+                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Current plan" value={activePlan ? `Premium ${PREMIUM_PLANS[activePlan.index].name} (${planActive ? "Active" : "Expired"})` : "No active plan"} softText={softText} />
                   <ProfileRow icon={<CreditCard className="h-4 w-4" />} label="Preferred currency" value={`${currency.code} (${currency.symbol.trim()})`} softText={softText} />
                   <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Date joined" value={userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"} softText={softText} />
                   <div className="flex items-center gap-3">
