@@ -33,11 +33,12 @@ type UserProfile = {
   avatar_url: string;
   referral_code: string;
   created_at: string;
+  currency: string;
 };
 
 const DEFAULT_PROFILE: UserProfile = {
   name: "", username: "", email: "", phone: "", country: "Nigeria",
-  avatar_url: "", referral_code: "", created_at: "",
+  avatar_url: "", referral_code: "", created_at: "", currency: "USD",
 };
 
 function Root() {
