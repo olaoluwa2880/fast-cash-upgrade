@@ -659,10 +659,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
           <div className="flex items-start justify-between">
             <button onClick={() => setOpenProfile(true)} className="flex items-center gap-3 text-left active:scale-95 transition">
-              <div className="h-9 w-9 rounded-xl bg-white/15 grid place-items-center font-black">{(userProfile.name || userProfile.email || "F")[0].toUpperCase()}</div>
+              <div className="h-9 w-9 rounded-xl bg-white/15 grid place-items-center font-black overflow-hidden">
+                {userProfile.avatar_url
+                  ? <img src={userProfile.avatar_url} alt="" className="h-full w-full object-cover" />
+                  : (userProfile.name || userProfile.username || userProfile.email || "F")[0].toUpperCase()}
+              </div>
               <div>
                 <p className="text-[11px] opacity-80">Good morning!</p>
-                <p className="font-bold leading-tight">{userProfile.name || "Ryan Sterling"}</p>
+                <p className="font-bold leading-tight">{userProfile.name || userProfile.username || "FastCredit user"}</p>
               </div>
             </button>
             <div className="flex items-center gap-2">
