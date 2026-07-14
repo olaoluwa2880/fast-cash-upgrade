@@ -35,8 +35,19 @@ function AuthPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // Show suspended banner if redirected here after a ban
+    if (typeof window !== "undefined" && window.location.search.includes("suspended=1")) {
+      setError("Your account has been suspended. Please contact support for assistance.");
+    }
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return;
+      const { data: ban } = await supabase
+        .from("user_bans").select("user_id").eq("user_id", data.session.user.id).maybeSingle();
+      if (ban) {
+        await supabase.auth.signOut();
+        setError("Your account has been suspended. Please contact support for assistance.");
+        return;
+      }
       const { data: isAdmin } = await supabase.rpc("has_role", {
         _user_id: data.session.user.id,
         _role: "admin",
