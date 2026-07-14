@@ -75,7 +75,9 @@ function UsersPage() {
         const hay = `${r.full_name ?? ""} ${r.email ?? ""} ${r.phone ?? ""}`.toLowerCase();
         if (!hay.includes(s)) return false;
       }
-      if (status !== "all") {
+      if (status === "suspended") {
+        if (!bans.has(r.id)) return false;
+      } else if (status !== "all") {
         const active = new Date(r.updated_at).getTime() > thirtyAgo;
         if (status === "active" && !active) return false;
         if (status === "inactive" && active) return false;
