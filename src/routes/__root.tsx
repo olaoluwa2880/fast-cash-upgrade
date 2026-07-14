@@ -91,15 +91,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Fastcreditglobal" },
       { name: "twitter:description", content: "FastCredit Global is a financial dashboard app for managing multiple currencies." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1f7bd667-219f-4f32-aa82-58c8f4052267/id-preview-04cea0ab--2932d92d-5b3e-4d04-bfd3-d4ffb7544989.lovable.app-1783950560670.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1f7bd667-219f-4f32-aa82-58c8f4052267/id-preview-04cea0ab--2932d92d-5b3e-4d04-bfd3-d4ffb7544989.lovable.app-1783950560670.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/Y7c8kWwBqaNDERyXxRlzaM3dTHB3/social-images/social-1784024949124-IMG_0260.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/Y7c8kWwBqaNDERyXxRlzaM3dTHB3/social-images/social-1784024949124-IMG_0260.webp" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,
