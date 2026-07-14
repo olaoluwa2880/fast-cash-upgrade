@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LogOut, RefreshCw, Shield, LayoutDashboard, Users, Landmark, Bitcoin, LifeBuoy, MessagesSquare } from "lucide-react";
+import { LogOut, RefreshCw, Shield, LayoutDashboard, Users, Landmark, Bitcoin, LifeBuoy, MessagesSquare, ScrollText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 

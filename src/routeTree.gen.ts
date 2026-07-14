@@ -16,6 +16,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSupportSettingsRouteImport } from './routes/admin.support-settings'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminLegalSettingsRouteImport } from './routes/admin.legal-settings'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCryptoWalletsRouteImport } from './routes/admin.crypto-wallets'
 import { Route as AdminCommunityRouteImport } from './routes/admin.community'
@@ -57,6 +58,11 @@ const AdminSupportSettingsRoute = AdminSupportSettingsRouteImport.update({
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLegalSettingsRoute = AdminLegalSettingsRouteImport.update({
+  id: '/admin/legal-settings',
+  path: '/admin/legal-settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/admin/community': typeof AdminCommunityRoute
   '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/legal-settings': typeof AdminLegalSettingsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/admin/community': typeof AdminCommunityRoute
   '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/legal-settings': typeof AdminLegalSettingsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/admin/community': typeof AdminCommunityRoute
   '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/legal-settings': typeof AdminLegalSettingsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/admin/community'
     | '/admin/crypto-wallets'
     | '/admin/dashboard'
+    | '/admin/legal-settings'
     | '/admin/login'
     | '/admin/support-settings'
     | '/admin/users'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/admin/community'
     | '/admin/crypto-wallets'
     | '/admin/dashboard'
+    | '/admin/legal-settings'
     | '/admin/login'
     | '/admin/support-settings'
     | '/admin/users'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/admin/community'
     | '/admin/crypto-wallets'
     | '/admin/dashboard'
+    | '/admin/legal-settings'
     | '/admin/login'
     | '/admin/support-settings'
     | '/admin/users'
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   AdminCommunityRoute: typeof AdminCommunityRoute
   AdminCryptoWalletsRoute: typeof AdminCryptoWalletsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminLegalSettingsRoute: typeof AdminLegalSettingsRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSupportSettingsRoute: typeof AdminSupportSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/login'
       fullPath: '/admin/login'
       preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/legal-settings': {
+      id: '/admin/legal-settings'
+      path: '/admin/legal-settings'
+      fullPath: '/admin/legal-settings'
+      preLoaderRoute: typeof AdminLegalSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/dashboard': {
@@ -349,6 +369,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminCommunityRoute: AdminCommunityRoute,
   AdminCryptoWalletsRoute: AdminCryptoWalletsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminLegalSettingsRoute: AdminLegalSettingsRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminSupportSettingsRoute: AdminSupportSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
