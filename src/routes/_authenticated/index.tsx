@@ -367,7 +367,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         id: `wd-${w.id}`,
         kind: w.status === "rejected" ? "declined" : "withdraw",
         amountUsd: Number(w.amount),
-        method: w.method ?? undefined,
+        method: w.wallet_address ? "Crypto" : (w.currency ?? undefined),
         status: w.status === "approved" ? "approved" : w.status === "rejected" ? "declined" : "pending",
         at: new Date(w.created_at).getTime(),
         note: w.status === "approved" ? "Withdrawal approved" : w.status === "pending" ? "Awaiting confirmation" : undefined,
