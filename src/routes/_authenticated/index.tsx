@@ -416,8 +416,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             if (isApproval) {
               setCongrats({ title: n.title, body: n.body || "Your payment has been approved successfully." });
             } else {
-              const msg = `${n.title}${n.body ? ": " + n.body : ""}`;
-              setToast(msg); setTimeout(() => setToast((t) => t === msg ? null : t), 4500);
+              push({ title: n.title, message: n.body || undefined, kind: "info" });
             }
           })
         .subscribe();
