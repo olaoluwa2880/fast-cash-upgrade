@@ -911,7 +911,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <Crown className="h-5 w-5" />
                 <div>
                   <p className="font-black text-base leading-tight">Premium Upgrade</p>
-                  <p className="text-[10px] font-semibold opacity-80">14 days · Payouts every 48h</p>
+                  <p className="text-[10px] font-semibold opacity-80">7 days · 2 mining taps daily</p>
                 </div>
               </div>
               <button onClick={() => setOpenPremium(false)} className="h-8 w-8 grid place-items-center rounded-full bg-black/10">
