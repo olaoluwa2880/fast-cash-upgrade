@@ -686,6 +686,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <span className={`text-[11px] ${softText}`}>{label}</span>
               </button>
             ))}
+            <Link to="/legal" className="flex flex-col items-center gap-2 active:scale-95 transition">
+              <div className={`h-14 w-14 rounded-2xl ${chipBg} ${isDark ? "" : "shadow-[0_4px_12px_rgba(14,107,63,0.08)]"} grid place-items-center`}>
+                <span className="text-lg">📄</span>
+              </div>
+              <span className={`text-[11px] ${softText}`}>Legal</span>
+            </Link>
           </div>
         </section>
 
