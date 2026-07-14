@@ -100,7 +100,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icon-192.png" },
     ],
+
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -127,6 +130,7 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
+    import("@/lib/register-sw").then(({ registerServiceWorker }) => registerServiceWorker());
     import("@/integrations/supabase/client").then(({ supabase }) => {
       const { data: sub } = supabase.auth.onAuthStateChange((event) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -141,6 +145,18 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <InstallPromptMount />
     </QueryClientProvider>
   );
 }
+
+function InstallPromptMount() {
+  const [Comp, setComp] = useState<React.ComponentType | null>(null);
+  useEffect(() => {
+    let alive = true;
+    import("@/components/InstallPrompt").then((m) => { if (alive) setComp(() => m.InstallPrompt); });
+    return () => { alive = false; };
+  }, []);
+  return Comp ? <Comp /> : null;
+}
+
