@@ -218,6 +218,13 @@ function AuthPage() {
       }
       return setError(error?.message || "Login failed.");
     }
+    // Block suspended accounts
+    const { data: ban } = await supabase
+      .from("user_bans").select("user_id").eq("user_id", data.user.id).maybeSingle();
+    if (ban) {
+      await supabase.auth.signOut();
+      return setError("Your account has been suspended. Please contact support for assistance.");
+    }
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: data.user.id,
       _role: "admin",
