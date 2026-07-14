@@ -149,6 +149,7 @@ function UsersPage() {
           <option value="all">All</option>
           <option value="active">Active (30d)</option>
           <option value="inactive">Inactive</option>
+          <option value="suspended">Suspended</option>
         </select>
       </div>
 
