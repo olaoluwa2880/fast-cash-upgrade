@@ -174,9 +174,15 @@ function AuthPage() {
     }, { onConflict: "id" });
 
     setStep("verifying");
-    await new Promise((r) => setTimeout(r, 1800));
-    navigate({ to: "/" });
+    await new Promise((r) => setTimeout(r, 5000));
+    // Redirect admins to admin dashboard, others to home
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: data.user.id,
+      _role: "admin",
+    });
+    navigate({ to: isAdmin ? "/admin/dashboard" : "/" });
   }
+
 
 
   async function resend() {
