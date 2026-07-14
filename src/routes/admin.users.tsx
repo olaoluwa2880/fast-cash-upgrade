@@ -29,22 +29,43 @@ const PAGE_SIZE = 25;
 
 function UsersPage() {
   const [rows, setRows] = useState<Profile[]>([]);
+  const [bans, setBans] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+  const [status, setStatus] = useState<"all" | "active" | "inactive" | "suspended">("all");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      setRows(data ?? []);
-      setLoading(false);
-    })();
-  }, []);
+  async function reload() {
+    const [{ data: profs }, { data: banRows }] = await Promise.all([
+      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("user_bans").select("user_id"),
+    ]);
+    setRows(profs ?? []);
+    setBans(new Set((banRows ?? []).map((b) => b.user_id)));
+    setLoading(false);
+  }
+
+  useEffect(() => { reload(); }, []);
+
+  async function toggleBan(userId: string, currentlyBanned: boolean) {
+    setBusy(userId);
+    if (currentlyBanned) {
+      await supabase.from("user_bans").delete().eq("user_id", userId);
+    } else {
+      if (!window.confirm("Suspend this user? They will be signed out immediately and unable to log in.")) {
+        setBusy(null); return;
+      }
+      const { data: u } = await supabase.auth.getUser();
+      await supabase.from("user_bans").upsert(
+        { user_id: userId, banned_by: u.user?.id ?? null, reason: "suspended by admin" },
+        { onConflict: "user_id" },
+      );
+    }
+    setBusy(null);
+    await reload();
+  }
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -54,14 +75,16 @@ function UsersPage() {
         const hay = `${r.full_name ?? ""} ${r.email ?? ""} ${r.phone ?? ""}`.toLowerCase();
         if (!hay.includes(s)) return false;
       }
-      if (status !== "all") {
+      if (status === "suspended") {
+        if (!bans.has(r.id)) return false;
+      } else if (status !== "all") {
         const active = new Date(r.updated_at).getTime() > thirtyAgo;
         if (status === "active" && !active) return false;
         if (status === "inactive" && active) return false;
       }
       return true;
     });
-  }, [rows, q, status]);
+  }, [rows, q, status, bans]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pages);
@@ -126,6 +149,7 @@ function UsersPage() {
           <option value="all">All</option>
           <option value="active">Active (30d)</option>
           <option value="inactive">Inactive</option>
+          <option value="suspended">Suspended</option>
         </select>
       </div>
 
@@ -154,6 +178,7 @@ function UsersPage() {
               </tr>
             )}
             {pageRows.map((r) => {
+              const suspended = bans.has(r.id);
               const active =
                 new Date(r.updated_at).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000;
               return (
@@ -170,20 +195,29 @@ function UsersPage() {
                   <td className="px-3 py-2">
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs ${
-                        active
-                          ? "bg-emerald-500/20 text-emerald-300"
-                          : "bg-gray-700/40 text-gray-400"
+                        suspended
+                          ? "bg-red-500/20 text-red-300"
+                          : active
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : "bg-gray-700/40 text-gray-400"
                       }`}
                     >
-                      {active ? "Active" : "Inactive"}
+                      {suspended ? "Suspended" : active ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 space-x-3 whitespace-nowrap">
                     <button
                       onClick={() => setSelected(r)}
                       className="text-blue-400 hover:text-blue-300 text-sm"
                     >
                       View
+                    </button>
+                    <button
+                      disabled={busy === r.id}
+                      onClick={() => toggleBan(r.id, suspended)}
+                      className={`text-sm disabled:opacity-40 ${suspended ? "text-emerald-400 hover:text-emerald-300" : "text-red-400 hover:text-red-300"}`}
+                    >
+                      {suspended ? "Unsuspend" : "Suspend"}
                     </button>
                   </td>
                 </tr>

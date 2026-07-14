@@ -42,6 +42,26 @@ function Root() {
       return () => clearTimeout(t);
     }
   }, [screen]);
+  // Realtime enforcement: kick the user out if an admin bans them mid-session.
+  useEffect(() => {
+    let cancelled = false;
+    async function kickIfBanned() {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || cancelled) return;
+      const { data: ban } = await supabase
+        .from("user_bans").select("user_id").eq("user_id", u.user.id).maybeSingle();
+      if (ban && !cancelled) {
+        await supabase.auth.signOut();
+        window.location.replace("/auth?suspended=1");
+      }
+    }
+    kickIfBanned();
+    const channel = supabase
+      .channel("ban-watch")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "user_bans" }, kickIfBanned)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, []);
   if (screen === "splash") return <Splash />;
   return <Dashboard userProfile={userProfile} />;
 }
@@ -85,15 +105,17 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
 
 // Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day).
 const PREMIUM_PLANS = (() => {
+  // Realistic, sustainable ROI. 2 taps/day × 14 days = 28 total taps.
+  // mineReward is credited per tap; total 14-day earnings ≈ deposit × ~1.35.
   const base = [
-    { name: "Starter", invest: 12,   mineReward: 17 },
-    { name: "Plan 2",  invest: 25,   mineReward: 35 },
-    { name: "Plan 3",  invest: 50,   mineReward: 70 },
-    { name: "Plan 4",  invest: 100,  mineReward: 150 },
-    { name: "Plan 5",  invest: 250,  mineReward: 380 },
-    { name: "Plan 6",  invest: 500,  mineReward: 800 },
-    { name: "Plan 7",  invest: 600,  mineReward: 1200 },
-    { name: "Plan 8",  invest: 1500, mineReward: 1760 },
+    { name: "Starter", invest: 12,   mineReward: 0.60 },  // 14d total ≈ $16.80
+    { name: "Plan 2",  invest: 25,   mineReward: 1.20 },  // 14d total ≈ $33.60
+    { name: "Plan 3",  invest: 50,   mineReward: 2.40 },  // 14d total ≈ $67.20
+    { name: "Plan 4",  invest: 100,  mineReward: 4.80 },  // 14d total ≈ $134.40
+    { name: "Plan 5",  invest: 250,  mineReward: 12 },    // 14d total ≈ $336
+    { name: "Plan 6",  invest: 500,  mineReward: 24 },    // 14d total ≈ $672
+    { name: "Plan 7",  invest: 600,  mineReward: 29 },    // 14d total ≈ $812
+    { name: "Plan 8",  invest: 1500, mineReward: 72 },    // 14d total ≈ $2,016
   ];
   // 2 taps/day × 14 days = 28 total taps
   return base.map(p => {

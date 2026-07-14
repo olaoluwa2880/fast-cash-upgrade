@@ -161,8 +161,13 @@ function Dashboard() {
 
   async function banUser(userId: string) {
     setBusy(userId);
-    const { data: u } = await supabase.auth.getUser();
-    await supabase.from("user_bans").upsert({ user_id: userId, banned_by: u.user?.id ?? null, reason: "banned by admin" }, { onConflict: "user_id" });
+    const { data: existing } = await supabase.from("user_bans").select("user_id").eq("user_id", userId).maybeSingle();
+    if (existing) {
+      await supabase.from("user_bans").delete().eq("user_id", userId);
+    } else {
+      const { data: u } = await supabase.auth.getUser();
+      await supabase.from("user_bans").upsert({ user_id: userId, banned_by: u.user?.id ?? null, reason: "suspended by admin" }, { onConflict: "user_id" });
+    }
     setBusy(null);
     await Promise.all([load(), refresh()]);
   }
