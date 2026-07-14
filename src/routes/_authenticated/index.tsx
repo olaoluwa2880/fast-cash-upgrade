@@ -284,6 +284,16 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const userEmail = userProfile.email;
   const settings = useSiteSettings();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
+  // Restore preferred currency from the saved profile whenever it changes.
+  useEffect(() => {
+    const saved = CURRENCIES.find(c => c.code === userProfile.currency);
+    if (saved) setCurrency(saved);
+  }, [userProfile.currency]);
+  const changeCurrency = async (c: typeof CURRENCIES[number]) => {
+    setCurrency(c);
+    const { data: u } = await supabase.auth.getUser();
+    if (u.user) await supabase.from("profiles").update({ currency: c.code }).eq("id", u.user.id);
+  };
   const [openCur, setOpenCur] = useState(false);
   const [dark, setDark] = useState(false);
   const [openPremium, setOpenPremium] = useState(false);
