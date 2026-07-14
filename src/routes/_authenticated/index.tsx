@@ -138,23 +138,20 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
   { icon: PiggyBank, label: "Savings", key: "savings" },
 ];
 
-// Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day).
+// Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day, 7 days).
 const PREMIUM_PLANS = (() => {
-  // Realistic, sustainable ROI. 2 taps/day × 14 days = 28 total taps.
-  // mineReward is credited per tap; total 14-day earnings ≈ deposit × ~1.35.
   const base = [
-    { name: "Starter", invest: 12,   mineReward: 0.60 },  // 14d total ≈ $16.80
-    { name: "Plan 2",  invest: 25,   mineReward: 1.20 },  // 14d total ≈ $33.60
-    { name: "Plan 3",  invest: 50,   mineReward: 2.40 },  // 14d total ≈ $67.20
-    { name: "Plan 4",  invest: 100,  mineReward: 4.80 },  // 14d total ≈ $134.40
-    { name: "Plan 5",  invest: 250,  mineReward: 12 },    // 14d total ≈ $336
-    { name: "Plan 6",  invest: 500,  mineReward: 24 },    // 14d total ≈ $672
-    { name: "Plan 7",  invest: 600,  mineReward: 29 },    // 14d total ≈ $812
-    { name: "Plan 8",  invest: 1500, mineReward: 72 },    // 14d total ≈ $2,016
+    { name: "Starter", invest: 12,   mineReward: 8.70 },   // 7d total ≈ $121.80
+    { name: "Plan 2",  invest: 25,   mineReward: 17.40 },  // 7d total ≈ $243.60
+    { name: "Plan 3",  invest: 50,   mineReward: 34.80 },  // 7d total ≈ $487.20
+    { name: "Plan 4",  invest: 100,  mineReward: 69.60 },  // 7d total ≈ $974.40
+    { name: "Plan 5",  invest: 200,  mineReward: 139.20 }, // 7d total ≈ $1,948.80
+    { name: "Plan 6",  invest: 500,  mineReward: 348.00 }, // 7d total ≈ $4,872
+    { name: "Plan 7",  invest: 1000, mineReward: 696.00 }, // 7d total ≈ $9,744
   ];
-  // 2 taps/day × 14 days = 28 total taps
+  // 2 taps/day × 7 days = 14 total taps
   return base.map(p => {
-    const total = p.mineReward * 28;
+    const total = p.mineReward * 14;
     return { ...p, profit: p.mineReward * 2, total, returned: p.invest + total };
   });
 })();
