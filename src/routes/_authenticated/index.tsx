@@ -1613,7 +1613,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <ProfileRow icon={<Smartphone className="h-4 w-4" />} label="Phone number" value={userProfile.phone || "—"} softText={softText} />
                   <ProfileRow icon={<Globe className="h-4 w-4" />} label="Country" value={userProfile.country || "—"} softText={softText} />
                   <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
-                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Active plan" value={activePlan ? `Premium · ${PREMIUM_PLANS[activePlan.index].name}` : "No active plan"} softText={softText} />
+                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Current plan" value={activePlan ? `Premium ${PREMIUM_PLANS[activePlan.index].name} (${planActive ? "Active" : "Expired"})` : "No active plan"} softText={softText} />
                   <ProfileRow icon={<CreditCard className="h-4 w-4" />} label="Preferred currency" value={`${currency.code} (${currency.symbol.trim()})`} softText={softText} />
                   <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Date joined" value={userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"} softText={softText} />
                   <div className="flex items-center gap-3">
