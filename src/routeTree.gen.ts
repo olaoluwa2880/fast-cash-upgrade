@@ -21,6 +21,7 @@ import { Route as AdminCryptoWalletsRouteImport } from './routes/admin.crypto-wa
 import { Route as AdminCommunityRouteImport } from './routes/admin.community'
 import { Route as AdminBankDetailsRouteImport } from './routes/admin.bank-details'
 import { Route as AuthenticatedLegalIndexRouteImport } from './routes/_authenticated/legal.index'
+import { Route as AuthenticatedLegalSlugRouteImport } from './routes/_authenticated/legal.$slug'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 
@@ -83,6 +84,11 @@ const AuthenticatedLegalIndexRoute = AuthenticatedLegalIndexRouteImport.update({
   path: '/legal/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLegalSlugRoute = AuthenticatedLegalSlugRouteImport.update({
+  id: '/legal/$slug',
+  path: '/legal/$slug',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
   id: '/lovable/email/auth/webhook',
   path: '/lovable/email/auth/webhook',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/legal/$slug': typeof AuthenticatedLegalSlugRoute
   '/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/legal/$slug': typeof AuthenticatedLegalSlugRoute
   '/legal': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/_authenticated/legal/$slug': typeof AuthenticatedLegalSlugRoute
   '/_authenticated/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/admin/support-settings'
     | '/admin/users'
     | '/admin/'
+    | '/legal/$slug'
     | '/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/'
     | '/admin'
+    | '/legal/$slug'
     | '/legal'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/_authenticated/'
     | '/admin/'
+    | '/_authenticated/legal/$slug'
     | '/_authenticated/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -291,6 +303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLegalIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/legal/$slug': {
+      id: '/_authenticated/legal/$slug'
+      path: '/legal/$slug'
+      fullPath: '/legal/$slug'
+      preLoaderRoute: typeof AuthenticatedLegalSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/lovable/email/auth/webhook': {
       id: '/lovable/email/auth/webhook'
       path: '/lovable/email/auth/webhook'
@@ -310,11 +329,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedLegalSlugRoute: typeof AuthenticatedLegalSlugRoute
   AuthenticatedLegalIndexRoute: typeof AuthenticatedLegalIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedLegalSlugRoute: AuthenticatedLegalSlugRoute,
   AuthenticatedLegalIndexRoute: AuthenticatedLegalIndexRoute,
 }
 
