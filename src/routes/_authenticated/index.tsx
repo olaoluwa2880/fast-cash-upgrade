@@ -1578,11 +1578,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 </button>
               </div>
               <div className="mt-8 flex flex-col items-center relative">
-                <div className="h-24 w-24 rounded-full bg-white/20 grid place-items-center text-3xl font-black border-4 border-white/30">
-                  {(userProfile.name || userProfile.email || "F")[0].toUpperCase()}
+                <div className="h-24 w-24 rounded-full bg-white/20 grid place-items-center text-3xl font-black border-4 border-white/30 overflow-hidden">
+                  {userProfile.avatar_url ? (
+                    <img src={userProfile.avatar_url} alt={userProfile.name || "avatar"} className="h-full w-full object-cover" />
+                  ) : (
+                    (userProfile.name || userProfile.username || userProfile.email || "F")[0].toUpperCase()
+                  )}
                 </div>
-                <p className="mt-4 text-xl font-black">{userProfile.name || "Ryan Sterling"}</p>
-                <p className="text-sm opacity-80">{userProfile.country}</p>
+                <p className="mt-4 text-xl font-black">{userProfile.name || userProfile.username || "FastCredit user"}</p>
+                {userProfile.username && (
+                  <p className="text-sm opacity-80">@{userProfile.username}</p>
+                )}
+                <p className="text-xs opacity-70">{userProfile.country || "—"}</p>
               </div>
             </div>
 
@@ -1591,12 +1598,31 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Profile details</p>
                 <div className="mt-4 space-y-4">
                   <ProfileRow icon={<User className="h-4 w-4" />} label="Full name" value={userProfile.name || "—"} softText={softText} />
+                  <ProfileRow icon={<UserCircle className="h-4 w-4" />} label="Username" value={userProfile.username ? `@${userProfile.username}` : "—"} softText={softText} />
                   <ProfileRow icon={<Mail className="h-4 w-4" />} label="Email address" value={userProfile.email || "—"} softText={softText} />
                   <ProfileRow icon={<Smartphone className="h-4 w-4" />} label="Phone number" value={userProfile.phone || "—"} softText={softText} />
                   <ProfileRow icon={<Globe className="h-4 w-4" />} label="Country" value={userProfile.country || "—"} softText={softText} />
                   <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
-                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Active plan" value={activePlan ? `Premium · Plan ${activePlan.index + 1}` : "No active plan"} softText={softText} />
-                  <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Preferred currency" value={currency.code} softText={softText} />
+                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Active plan" value={activePlan ? `Premium · ${PREMIUM_PLANS[activePlan.index].name}` : "No active plan"} softText={softText} />
+                  <ProfileRow icon={<CreditCard className="h-4 w-4" />} label="Preferred currency" value={`${currency.code} (${currency.symbol.trim()})`} softText={softText} />
+                  <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Date joined" value={userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"} softText={softText} />
+                  <div className="flex items-center gap-3">
+                    <div className={`h-8 w-8 rounded-full grid place-items-center ${isDark ? "bg-white/10" : "bg-black/5"}`}>
+                      <Gift className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[11px] ${softText}`}>Referral code</p>
+                      <p className="font-black tracking-wide">{userProfile.referral_code || "—"}</p>
+                    </div>
+                    {userProfile.referral_code && (
+                      <button
+                        onClick={() => copyText(userProfile.referral_code, "ref")}
+                        className="inline-flex items-center gap-1 rounded-full bg-[#0e6b3f] text-white px-3 py-1.5 text-[11px] font-bold active:scale-95"
+                      >
+                        {copied === "ref" ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1608,7 +1634,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </div>
                   <div>
                     <p className="font-bold text-sm">Verified member</p>
-                    <p className={`text-[11px] ${softText}`}>Account created today</p>
+                    <p className={`text-[11px] ${softText}`}>
+                      {userProfile.created_at ? `Joined ${new Date(userProfile.created_at).toLocaleDateString()}` : "Account active"}
+                    </p>
                   </div>
                 </div>
               </div>
