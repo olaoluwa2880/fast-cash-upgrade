@@ -178,6 +178,7 @@ function UsersPage() {
               </tr>
             )}
             {pageRows.map((r) => {
+              const suspended = bans.has(r.id);
               const active =
                 new Date(r.updated_at).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000;
               return (
@@ -194,20 +195,29 @@ function UsersPage() {
                   <td className="px-3 py-2">
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs ${
-                        active
-                          ? "bg-emerald-500/20 text-emerald-300"
-                          : "bg-gray-700/40 text-gray-400"
+                        suspended
+                          ? "bg-red-500/20 text-red-300"
+                          : active
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : "bg-gray-700/40 text-gray-400"
                       }`}
                     >
-                      {active ? "Active" : "Inactive"}
+                      {suspended ? "Suspended" : active ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 space-x-3 whitespace-nowrap">
                     <button
                       onClick={() => setSelected(r)}
                       className="text-blue-400 hover:text-blue-300 text-sm"
                     >
                       View
+                    </button>
+                    <button
+                      disabled={busy === r.id}
+                      onClick={() => toggleBan(r.id, suspended)}
+                      className={`text-sm disabled:opacity-40 ${suspended ? "text-emerald-400 hover:text-emerald-300" : "text-red-400 hover:text-red-300"}`}
+                    >
+                      {suspended ? "Unsuspend" : "Suspend"}
                     </button>
                   </td>
                 </tr>
