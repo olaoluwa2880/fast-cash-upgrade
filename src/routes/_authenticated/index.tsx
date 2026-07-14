@@ -477,11 +477,19 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     return `${h}:${m}:${sec}`;
   };
 
-  const claimBonus = () => {
+  const claimBonus = async () => {
     if (bonusClaimed) return;
-    setBalanceUsd(b => b + 2);
     setBonusClaimed(true);
+    // Atomic + persistent server-side balance change.
+    const { data, error } = await supabase.rpc("adjust_wallet_balance", { p_delta: 2 });
+    if (error) {
+      setBonusClaimed(false);
+      push({ title: "Bonus failed", message: error.message, kind: "error" });
+      return;
+    }
+    if (typeof data === "number") setBalanceUsd(data);
     addTxn({ kind: "bonus", amountUsd: 2, status: "credited", note: "Welcome bonus" });
+    push({ title: "Welcome bonus credited", message: "+$2.00 added to your wallet", kind: "bonus" });
   };
 
   const mine = async () => {
@@ -490,20 +498,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     const uid = u.user.id;
-    // Insert claim
+    // 1. Record the claim (idempotency: mining_claims has its own row per tap)
     const { error: cErr } = await supabase.from("mining_claims").insert({
       user_id: uid, amount_usd: reward, plan_index: activePlan.index,
     });
-    if (cErr) { showToast("Could not record mining claim"); return; }
-    // Update wallet_balances
-    const { data: existing } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
-    const next = Number(existing?.balance_usd ?? 0) + reward;
-    if (existing) await supabase.from("wallet_balances").update({ balance_usd: next }).eq("user_id", uid);
-    else await supabase.from("wallet_balances").insert({ user_id: uid, balance_usd: next });
-    setBalanceUsd(next);
+    if (cErr) { push({ title: "Mining failed", message: cErr.message, kind: "error" }); return; }
+    // 2. Atomically credit the wallet through the DB function (RLS-safe, persistent)
+    const { data: newBal, error: bErr } = await supabase.rpc("adjust_wallet_balance", { p_delta: reward });
+    if (bErr) { push({ title: "Reward not credited", message: bErr.message, kind: "error" }); return; }
+    if (typeof newBal === "number") setBalanceUsd(newBal);
     setRecentMines(prev => [...prev, Date.now()]);
     addTxn({ kind: "mining", amountUsd: reward, status: "credited", note: `Mining reward · Plan ${activePlan.index + 1}` });
-    // If this was the second (final) tap of the day, celebrate and start the 24h cooldown message.
+    push({ title: "Mining reward", message: `+$${reward.toFixed(2)} credited to your wallet`, kind: "reward" });
     if (minesUsedToday + 1 >= MAX_DAILY_MINES) {
       setCongrats({
         title: "🎉 Congratulations!",
