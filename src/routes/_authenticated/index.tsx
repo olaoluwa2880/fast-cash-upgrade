@@ -328,22 +328,34 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
     setTransactions(prev => [{ ...t, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now() }, ...prev]);
 
-  // Load wallet balance + payments from DB; subscribe to realtime updates
+  // Load wallet balance + payments from DB; subscribe to realtime updates.
+  // Uses onAuthStateChange to guarantee the session is fully restored before
+  // querying — otherwise a race would make wallet_balances read return nothing
+  // and the UI would flash $0.00 after login.
   useEffect(() => {
     let cancelled = false;
-    async function loadUserState() {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user || cancelled) return;
-      const uid = u.user.id;
-      const { data: bal } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
-      if (!cancelled && bal) setBalanceUsd(Number(bal.balance_usd));
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let loadedUid: string | null = null;
+
+    async function loadUserState(uid: string) {
+      const { data: bal } = await supabase
+        .from("wallet_balances")
+        .select("balance_usd")
+        .eq("user_id", uid)
+        .maybeSingle();
+      // IMPORTANT: only overwrite balance when we successfully read a row.
+      // Do NOT reset to 0 on a missing/failed read — that would wipe the
+      // displayed balance on a transient network hiccup or auth race.
+      if (!cancelled && bal && bal.balance_usd != null) {
+        setBalanceUsd(Number(bal.balance_usd));
+      }
       const [{ data: pays }, { data: wds }, { data: allClaims }] = await Promise.all([
         supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(50),
         supabase.from("withdrawals").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(50),
         supabase.from("mining_claims").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(200),
       ]);
-      // Determine active mining plan from most recent approved payment with a plan_index
-      if (!cancelled && pays) {
+      if (cancelled) return;
+      if (pays) {
         const planPay = pays.find((p) => p.status === "approved" && p.plan_index != null);
         if (planPay) {
           const startedAt = new Date(planPay.created_at).getTime();
@@ -352,7 +364,6 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           setActivePlan(null);
         }
       }
-      // Merge payments, withdrawals and mining claims into a single transaction list.
       const payTx: Txn[] = (pays ?? []).map((p) => ({
         id: `pay-${p.id}`,
         kind: p.status === "rejected" ? "declined" : "deposit",
@@ -379,19 +390,20 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         at: new Date(c.created_at).getTime(),
         note: `Mining reward${c.plan_index != null ? ` · Plan ${(c.plan_index as number) + 1}` : ""}`,
       }));
-      if (!cancelled) {
-        setTransactions([...payTx, ...wdTx, ...mineTx].sort((a, b) => b.at - a.at));
-        // Keep last 24h claim timestamps for the tap counter (filtered further to current plan client-side).
-        const cutoff = Date.now() - DAY;
-        setRecentMines((allClaims ?? [])
-          .map((c) => new Date(c.created_at).getTime())
-          .filter((t) => t >= cutoff));
-      }
-      // Subscribe: balance + notifications for toast
-      const ch = supabase.channel(`user-${uid}`)
+      if (cancelled) return;
+      setTransactions([...payTx, ...wdTx, ...mineTx].sort((a, b) => b.at - a.at));
+      const cutoff = Date.now() - DAY;
+      setRecentMines((allClaims ?? [])
+        .map((c) => new Date(c.created_at).getTime())
+        .filter((t) => t >= cutoff));
+    }
+
+    async function subscribe(uid: string) {
+      if (channel) return;
+      channel = supabase.channel(`user-${uid}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "wallet_balances", filter: `user_id=eq.${uid}` },
           (payload) => { const n = payload.new as { balance_usd?: number } | null; if (n?.balance_usd != null) setBalanceUsd(Number(n.balance_usd)); })
-        .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${uid}` }, loadUserState)
+        .on("postgres_changes", { event: "*", schema: "public", table: "payments", filter: `user_id=eq.${uid}` }, () => { void loadUserState(uid); })
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` },
           (payload) => {
             const n = payload.new as { title?: string; body?: string; kind?: string } | null;
@@ -405,11 +417,36 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             }
           })
         .subscribe();
-      return () => { supabase.removeChannel(ch); };
     }
-    loadUserState();
-    return () => { cancelled = true; };
+
+    async function bootstrap(uid: string) {
+      if (loadedUid === uid) return;
+      loadedUid = uid;
+      await loadUserState(uid);
+      await subscribe(uid);
+    }
+
+    // Prime immediately from the restored session, then keep listening for
+    // subsequent SIGNED_IN / TOKEN_REFRESHED events so a fresh login always
+    // reloads the persisted balance instead of showing the initial 0.
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (data.session?.user) void bootstrap(data.session.user.id);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (session?.user && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
+        void bootstrap(session.user.id);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
+
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
