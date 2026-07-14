@@ -817,7 +817,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 }`}
               >
                 {!planActive ? (
-                  <><Crown className="h-4 w-4" /> Activate Premium to Mine</>
+                  <><Crown className="h-4 w-4" /> {planExpired ? "Renew or Upgrade Plan" : "Activate Premium to Mine"}</>
                 ) : mineReady ? (
                   <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.mineReward, 2) : ""}</>
                 ) : (
