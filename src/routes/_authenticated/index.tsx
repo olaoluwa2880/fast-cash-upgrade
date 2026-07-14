@@ -970,9 +970,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               <div className={`mt-4 rounded-2xl p-3 text-[11px] ${isDark ? "bg-white/5 text-white/70" : "bg-[#f6f8f7] text-[#0b1e1a]/70"}`}>
                 <p className="font-bold mb-1">How it works</p>
                 <ul className="space-y-0.5 list-disc pl-4">
-                  <li>Profits credited every 48 hours (7 payouts).</li>
-                  <li>Each plan runs for 14 days, then expires automatically.</li>
-                  <li>Purchase a new plan after the current one ends.</li>
+                  <li>Mine twice per day — earnings credit instantly to your wallet.</li>
+                  <li>Each plan runs for 7 days, then expires automatically.</li>
+                  <li>Upgrading to a higher plan activates it immediately and reopens mining.</li>
                 </ul>
               </div>
 
