@@ -562,13 +562,6 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     }
   };
 
-
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(t => (t === msg ? null : t)), 2200);
-  };
-
   const downloadReceipt = (t: Txn) => {
     try {
       const receiptNo = `FC-${t.id.slice(0, 8).toUpperCase()}`;
