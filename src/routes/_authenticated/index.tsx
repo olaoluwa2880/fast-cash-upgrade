@@ -705,7 +705,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               {openCur && (
                 <div className="absolute right-0 mt-2 w-32 rounded-xl bg-white text-[#0b1e1a] shadow-xl z-20 overflow-hidden">
                   {CURRENCIES.map(c => (
-                    <button key={c.code} onClick={() => { setCurrency(c); setOpenCur(false); }}
+                    <button key={c.code} onClick={() => { changeCurrency(c); setOpenCur(false); }}
                       className={`w-full px-3 py-2 text-left text-xs hover:bg-black/5 ${c.code === currency.code ? "font-bold text-emerald-600" : ""}`}>
                       {c.symbol} {c.code}
                     </button>
