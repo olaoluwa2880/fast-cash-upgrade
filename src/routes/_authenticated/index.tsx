@@ -774,8 +774,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <div>
                     <p className="font-bold leading-tight">Premium Mining</p>
                     <p className="text-[11px] opacity-80 flex items-center gap-1">
-                      <span className={`h-1.5 w-1.5 rounded-full ${planActive ? "bg-emerald-300 animate-pulse" : "bg-white/40"}`} />
-                      {planActive ? `Plan active · ${formatCountdown(planExpiresAt - now)} left` : "No active plan"}
+                      <span className={`h-1.5 w-1.5 rounded-full ${planActive ? "bg-emerald-300 animate-pulse" : planExpired ? "bg-red-300" : "bg-white/40"}`} />
+                      {planActive
+                        ? `${currentPlan?.name} · Active · ${formatCountdown(planExpiresAt - now)} left`
+                        : planExpired
+                          ? "Plan expired"
+                          : "No active plan"}
                     </p>
                   </div>
                 </div>
@@ -795,7 +799,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   ? mineReady
                     ? `Ready to mine — ${MAX_DAILY_MINES - minesUsedToday} tap${MAX_DAILY_MINES - minesUsedToday === 1 ? "" : "s"} left today`
                     : `Mining will be available again in: ${formatCountdown(nextMineAt - now)}`
-                  : "Activate a Premium plan to start mining"}
+                  : planExpired
+                    ? "Your plan has expired. Please renew or upgrade your plan to continue mining."
+                    : "Activate a Premium plan to start mining"}
               </p>
             </div>
             <div className="p-4">
