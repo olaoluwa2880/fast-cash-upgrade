@@ -126,6 +126,7 @@ function AdminNav() {
     { to: "/admin/crypto-wallets", label: "Wallets", icon: Bitcoin },
     { to: "/admin/support-settings", label: "Support", icon: LifeBuoy },
     { to: "/admin/community", label: "Community", icon: MessagesSquare },
+    { to: "/admin/legal-settings", label: "Legal", icon: ScrollText },
   ] as const;
   return (
     <nav className="px-5 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
