@@ -429,6 +429,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setBalanceUsd(next);
     setRecentMines(prev => [...prev, Date.now()]);
     addTxn({ kind: "mining", amountUsd: reward, status: "credited", note: `Mining reward · Plan ${activePlan.index + 1}` });
+    // If this was the second (final) tap of the day, celebrate and start the 24h cooldown message.
+    if (minesUsedToday + 1 >= MAX_DAILY_MINES) {
+      setCongrats({
+        title: "🎉 Congratulations!",
+        body: "Your today's tasks are completed. Please come back after 24 hours to continue mining.",
+      });
+    }
   };
 
   const activatePlan = () => {
