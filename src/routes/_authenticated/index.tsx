@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
+import { usePush } from "@/components/PushNotifications";
 
 
 export const Route = createFileRoute("/_authenticated/")({
