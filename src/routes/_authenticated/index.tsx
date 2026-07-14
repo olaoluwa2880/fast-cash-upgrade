@@ -42,6 +42,26 @@ function Root() {
       return () => clearTimeout(t);
     }
   }, [screen]);
+  // Realtime enforcement: kick the user out if an admin bans them mid-session.
+  useEffect(() => {
+    let cancelled = false;
+    async function kickIfBanned() {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || cancelled) return;
+      const { data: ban } = await supabase
+        .from("user_bans").select("user_id").eq("user_id", u.user.id).maybeSingle();
+      if (ban && !cancelled) {
+        await supabase.auth.signOut();
+        window.location.replace("/auth?suspended=1");
+      }
+    }
+    kickIfBanned();
+    const channel = supabase
+      .channel("ban-watch")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "user_bans" }, kickIfBanned)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, []);
   if (screen === "splash") return <Splash />;
   return <Dashboard userProfile={userProfile} />;
 }
