@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
+import { usePush } from "@/components/PushNotifications";
 
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -310,7 +311,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [openProfile, setOpenProfile] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const { push } = usePush();
+  const showToast = (msg: string, kind: "info" | "success" | "error" | "wallet" | "reward" | "bonus" = "info") => {
+    push({ title: msg, kind });
+  };
   const [openWithdraw, setOpenWithdraw] = useState(false);
   const [wdStep, setWdStep] = useState<"method" | "country" | "bank" | "details" | "crypto" | "cryptoDetails" | "review" | "processing" | "success">("method");
   const [wdMethod, setWdMethod] = useState<"bank" | "crypto" | null>(null);
@@ -412,8 +416,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             if (isApproval) {
               setCongrats({ title: n.title, body: n.body || "Your payment has been approved successfully." });
             } else {
-              const msg = `${n.title}${n.body ? ": " + n.body : ""}`;
-              setToast(msg); setTimeout(() => setToast((t) => t === msg ? null : t), 4500);
+              push({ title: n.title, message: n.body || undefined, kind: "info" });
             }
           })
         .subscribe();
@@ -474,11 +477,19 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     return `${h}:${m}:${sec}`;
   };
 
-  const claimBonus = () => {
+  const claimBonus = async () => {
     if (bonusClaimed) return;
-    setBalanceUsd(b => b + 2);
     setBonusClaimed(true);
+    // Atomic + persistent server-side balance change.
+    const { data, error } = await supabase.rpc("adjust_wallet_balance", { p_delta: 2 });
+    if (error) {
+      setBonusClaimed(false);
+      push({ title: "Bonus failed", message: error.message, kind: "error" });
+      return;
+    }
+    if (typeof data === "number") setBalanceUsd(data);
     addTxn({ kind: "bonus", amountUsd: 2, status: "credited", note: "Welcome bonus" });
+    push({ title: "Welcome bonus credited", message: "+$2.00 added to your wallet", kind: "bonus" });
   };
 
   const mine = async () => {
@@ -487,20 +498,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
     const uid = u.user.id;
-    // Insert claim
+    // 1. Record the claim (idempotency: mining_claims has its own row per tap)
     const { error: cErr } = await supabase.from("mining_claims").insert({
       user_id: uid, amount_usd: reward, plan_index: activePlan.index,
     });
-    if (cErr) { showToast("Could not record mining claim"); return; }
-    // Update wallet_balances
-    const { data: existing } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle();
-    const next = Number(existing?.balance_usd ?? 0) + reward;
-    if (existing) await supabase.from("wallet_balances").update({ balance_usd: next }).eq("user_id", uid);
-    else await supabase.from("wallet_balances").insert({ user_id: uid, balance_usd: next });
-    setBalanceUsd(next);
+    if (cErr) { push({ title: "Mining failed", message: cErr.message, kind: "error" }); return; }
+    // 2. Atomically credit the wallet through the DB function (RLS-safe, persistent)
+    const { data: newBal, error: bErr } = await supabase.rpc("adjust_wallet_balance", { p_delta: reward });
+    if (bErr) { push({ title: "Reward not credited", message: bErr.message, kind: "error" }); return; }
+    if (typeof newBal === "number") setBalanceUsd(newBal);
     setRecentMines(prev => [...prev, Date.now()]);
     addTxn({ kind: "mining", amountUsd: reward, status: "credited", note: `Mining reward · Plan ${activePlan.index + 1}` });
-    // If this was the second (final) tap of the day, celebrate and start the 24h cooldown message.
+    push({ title: "Mining reward", message: `+$${reward.toFixed(2)} credited to your wallet`, kind: "reward" });
     if (minesUsedToday + 1 >= MAX_DAILY_MINES) {
       setCongrats({
         title: "🎉 Congratulations!",
@@ -557,13 +566,6 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       setPaymentStep("pending");
       showToast(`Could not submit: ${(e as Error).message}`);
     }
-  };
-
-
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(t => (t === msg ? null : t)), 2200);
   };
 
   const downloadReceipt = (t: Txn) => {
@@ -683,7 +685,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setWdStep("processing");
     const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (wdMethod === "crypto" ? 1 : (currency.rate || 1));
     const bankInfo = BANKS_BY_CURRENCY[wdCurrencyKey];
-    setTimeout(() => {
+    setTimeout(async () => {
       const method = wdMethod === "crypto"
         ? `${wdCrypto?.name} (${wdCrypto?.symbol}) · ${wdCrypto?.network}`
         : `${bankInfo?.country} · ${wdBank}`;
@@ -691,10 +693,19 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
         : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
       if (balanceUsd >= amtUsd && amtUsd > 0) {
-        setBalanceUsd(b => b - amtUsd);
-        addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "approved", method, note });
+        // Atomically debit the wallet in the DB. The RPC blocks overdrafts.
+        const { data: newBal, error } = await supabase.rpc("adjust_wallet_balance", { p_delta: -amtUsd });
+        if (error) {
+          addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: error.message });
+          push({ title: "Withdrawal failed", message: error.message, kind: "error" });
+        } else {
+          if (typeof newBal === "number") setBalanceUsd(newBal);
+          addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "approved", method, note });
+          push({ title: "Withdrawal submitted", message: `$${amtUsd.toFixed(2)} · ${method}`, kind: "wallet" });
+        }
       } else {
         addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: "Insufficient balance for withdrawal" });
+        push({ title: "Insufficient balance", message: "Not enough funds to complete this withdrawal.", kind: "error" });
       }
       setWdStep("success");
     }, 2200);
@@ -1620,11 +1631,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       )}
 
 
-      {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] rounded-full bg-black/85 text-white text-xs font-semibold px-4 py-2 shadow-2xl backdrop-blur">
-          {toast}
-        </div>
-      )}
+
 
 
       {openCategory && (

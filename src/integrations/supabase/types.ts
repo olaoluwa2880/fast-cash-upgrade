@@ -469,6 +469,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_wallet_balance: { Args: { p_delta: number }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
