@@ -311,7 +311,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [openProfile, setOpenProfile] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const { push } = usePush();
+  const showToast = (msg: string, kind: "info" | "success" | "error" | "wallet" | "reward" | "bonus" = "info") => {
+    push({ title: msg, kind });
+  };
   const [openWithdraw, setOpenWithdraw] = useState(false);
   const [wdStep, setWdStep] = useState<"method" | "country" | "bank" | "details" | "crypto" | "cryptoDetails" | "review" | "processing" | "success">("method");
   const [wdMethod, setWdMethod] = useState<"bank" | "crypto" | null>(null);
