@@ -343,12 +343,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         supabase.from("mining_claims").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(200),
       ]);
       // Determine active mining plan from most recent approved payment with a plan_index
-      let planStartedAt = 0;
       if (!cancelled && pays) {
         const planPay = pays.find((p) => p.status === "approved" && p.plan_index != null);
         if (planPay) {
-          planStartedAt = new Date(planPay.created_at).getTime();
-          setActivePlan({ index: planPay.plan_index as number, startedAt: planStartedAt });
+          const startedAt = new Date(planPay.created_at).getTime();
+          setActivePlan({ index: planPay.plan_index as number, startedAt });
         } else {
           setActivePlan(null);
         }
