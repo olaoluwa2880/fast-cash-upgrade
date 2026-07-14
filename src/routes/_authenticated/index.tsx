@@ -26,22 +26,56 @@ type Screen = "splash" | "dashboard";
 
 type UserProfile = {
   name: string;
+  username: string;
   email: string;
   phone: string;
   country: string;
+  avatar_url: string;
+  referral_code: string;
+  created_at: string;
 };
 
-const DEFAULT_PROFILE: UserProfile = { name: "", email: "", phone: "", country: "Nigeria" };
+const DEFAULT_PROFILE: UserProfile = {
+  name: "", username: "", email: "", phone: "", country: "Nigeria",
+  avatar_url: "", referral_code: "", created_at: "",
+};
 
 function Root() {
   const [screen, setScreen] = useState<Screen>("splash");
-  const [userProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   useEffect(() => {
     if (screen === "splash") {
       const t = setTimeout(() => setScreen("dashboard"), 2000);
       return () => clearTimeout(t);
     }
   }, [screen]);
+  // Load registered profile details from the database
+  useEffect(() => {
+    let cancelled = false;
+    async function loadProfile() {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || cancelled) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("full_name, username, email, phone, country, avatar_url, referral_code, created_at")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const meta = (u.user.user_metadata ?? {}) as Record<string, string | undefined>;
+      setUserProfile({
+        name: p?.full_name ?? meta.full_name ?? meta.name ?? "",
+        username: p?.username ?? (u.user.email ? u.user.email.split("@")[0] : ""),
+        email: p?.email ?? u.user.email ?? "",
+        phone: p?.phone ?? meta.phone ?? "",
+        country: p?.country ?? meta.country ?? "Nigeria",
+        avatar_url: p?.avatar_url ?? "",
+        referral_code: p?.referral_code ?? "",
+        created_at: p?.created_at ?? u.user.created_at ?? "",
+      });
+    }
+    loadProfile();
+    return () => { cancelled = true; };
+  }, []);
   // Realtime enforcement: kick the user out if an admin bans them mid-session.
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +99,7 @@ function Root() {
   if (screen === "splash") return <Splash />;
   return <Dashboard userProfile={userProfile} />;
 }
+
 
 function Splash() {
   return (
