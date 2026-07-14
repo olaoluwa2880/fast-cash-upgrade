@@ -685,7 +685,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setWdStep("processing");
     const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (wdMethod === "crypto" ? 1 : (currency.rate || 1));
     const bankInfo = BANKS_BY_CURRENCY[wdCurrencyKey];
-    setTimeout(() => {
+    setTimeout(async () => {
       const method = wdMethod === "crypto"
         ? `${wdCrypto?.name} (${wdCrypto?.symbol}) · ${wdCrypto?.network}`
         : `${bankInfo?.country} · ${wdBank}`;
@@ -693,10 +693,19 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
         : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
       if (balanceUsd >= amtUsd && amtUsd > 0) {
-        setBalanceUsd(b => b - amtUsd);
-        addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "approved", method, note });
+        // Atomically debit the wallet in the DB. The RPC blocks overdrafts.
+        const { data: newBal, error } = await supabase.rpc("adjust_wallet_balance", { p_delta: -amtUsd });
+        if (error) {
+          addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: error.message });
+          push({ title: "Withdrawal failed", message: error.message, kind: "error" });
+        } else {
+          if (typeof newBal === "number") setBalanceUsd(newBal);
+          addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "approved", method, note });
+          push({ title: "Withdrawal submitted", message: `$${amtUsd.toFixed(2)} · ${method}`, kind: "wallet" });
+        }
       } else {
         addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: "Insufficient balance for withdrawal" });
+        push({ title: "Insufficient balance", message: "Not enough funds to complete this withdrawal.", kind: "error" });
       }
       setWdStep("success");
     }, 2200);
