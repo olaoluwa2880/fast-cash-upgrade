@@ -58,7 +58,7 @@ function Root() {
       if (!u.user || cancelled) return;
       const { data: p } = await supabase
         .from("profiles")
-        .select("full_name, username, email, phone, country, avatar_url, referral_code, created_at")
+        .select("full_name, username, email, phone, country, avatar_url, referral_code, created_at, currency")
         .eq("id", u.user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -72,6 +72,7 @@ function Root() {
         avatar_url: p?.avatar_url ?? "",
         referral_code: p?.referral_code ?? "",
         created_at: p?.created_at ?? u.user.created_at ?? "",
+        currency: p?.currency ?? "USD",
       });
     }
     loadProfile();
