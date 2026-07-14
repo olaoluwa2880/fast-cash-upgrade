@@ -1616,11 +1616,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       )}
 
 
-      {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] rounded-full bg-black/85 text-white text-xs font-semibold px-4 py-2 shadow-2xl backdrop-blur">
-          {toast}
-        </div>
-      )}
+
 
 
       {openCategory && (
