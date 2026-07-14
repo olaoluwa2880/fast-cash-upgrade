@@ -26,22 +26,56 @@ type Screen = "splash" | "dashboard";
 
 type UserProfile = {
   name: string;
+  username: string;
   email: string;
   phone: string;
   country: string;
+  avatar_url: string;
+  referral_code: string;
+  created_at: string;
 };
 
-const DEFAULT_PROFILE: UserProfile = { name: "", email: "", phone: "", country: "Nigeria" };
+const DEFAULT_PROFILE: UserProfile = {
+  name: "", username: "", email: "", phone: "", country: "Nigeria",
+  avatar_url: "", referral_code: "", created_at: "",
+};
 
 function Root() {
   const [screen, setScreen] = useState<Screen>("splash");
-  const [userProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   useEffect(() => {
     if (screen === "splash") {
       const t = setTimeout(() => setScreen("dashboard"), 2000);
       return () => clearTimeout(t);
     }
   }, [screen]);
+  // Load registered profile details from the database
+  useEffect(() => {
+    let cancelled = false;
+    async function loadProfile() {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || cancelled) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("full_name, username, email, phone, country, avatar_url, referral_code, created_at")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const meta = (u.user.user_metadata ?? {}) as Record<string, string | undefined>;
+      setUserProfile({
+        name: p?.full_name ?? meta.full_name ?? meta.name ?? "",
+        username: p?.username ?? (u.user.email ? u.user.email.split("@")[0] : ""),
+        email: p?.email ?? u.user.email ?? "",
+        phone: p?.phone ?? meta.phone ?? "",
+        country: p?.country ?? meta.country ?? "Nigeria",
+        avatar_url: p?.avatar_url ?? "",
+        referral_code: p?.referral_code ?? "",
+        created_at: p?.created_at ?? u.user.created_at ?? "",
+      });
+    }
+    loadProfile();
+    return () => { cancelled = true; };
+  }, []);
   // Realtime enforcement: kick the user out if an admin bans them mid-session.
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +99,7 @@ function Root() {
   if (screen === "splash") return <Splash />;
   return <Dashboard userProfile={userProfile} />;
 }
+
 
 function Splash() {
   return (
@@ -394,6 +429,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setBalanceUsd(next);
     setRecentMines(prev => [...prev, Date.now()]);
     addTxn({ kind: "mining", amountUsd: reward, status: "credited", note: `Mining reward · Plan ${activePlan.index + 1}` });
+    // If this was the second (final) tap of the day, celebrate and start the 24h cooldown message.
+    if (minesUsedToday + 1 >= MAX_DAILY_MINES) {
+      setCongrats({
+        title: "🎉 Congratulations!",
+        body: "Your today's tasks are completed. Please come back after 24 hours to continue mining.",
+      });
+    }
   };
 
   const activatePlan = () => {
@@ -617,10 +659,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
           <div className="flex items-start justify-between">
             <button onClick={() => setOpenProfile(true)} className="flex items-center gap-3 text-left active:scale-95 transition">
-              <div className="h-9 w-9 rounded-xl bg-white/15 grid place-items-center font-black">{(userProfile.name || userProfile.email || "F")[0].toUpperCase()}</div>
+              <div className="h-9 w-9 rounded-xl bg-white/15 grid place-items-center font-black overflow-hidden">
+                {userProfile.avatar_url
+                  ? <img src={userProfile.avatar_url} alt="" className="h-full w-full object-cover" />
+                  : (userProfile.name || userProfile.username || userProfile.email || "F")[0].toUpperCase()}
+              </div>
               <div>
                 <p className="text-[11px] opacity-80">Good morning!</p>
-                <p className="font-bold leading-tight">{userProfile.name || "Ryan Sterling"}</p>
+                <p className="font-bold leading-tight">{userProfile.name || userProfile.username || "FastCredit user"}</p>
               </div>
             </button>
             <div className="flex items-center gap-2">
@@ -747,8 +793,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               <p className="text-[10px] opacity-70 relative">
                 {planActive
                   ? mineReady
-                    ? "Ready to mine now"
-                    : `Next mine in ${formatCountdown(nextMineAt - now)}`
+                    ? `Ready to mine — ${MAX_DAILY_MINES - minesUsedToday} tap${MAX_DAILY_MINES - minesUsedToday === 1 ? "" : "s"} left today`
+                    : `Mining will be available again in: ${formatCountdown(nextMineAt - now)}`
                   : "Activate a Premium plan to start mining"}
               </p>
             </div>
@@ -1536,11 +1582,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 </button>
               </div>
               <div className="mt-8 flex flex-col items-center relative">
-                <div className="h-24 w-24 rounded-full bg-white/20 grid place-items-center text-3xl font-black border-4 border-white/30">
-                  {(userProfile.name || userProfile.email || "F")[0].toUpperCase()}
+                <div className="h-24 w-24 rounded-full bg-white/20 grid place-items-center text-3xl font-black border-4 border-white/30 overflow-hidden">
+                  {userProfile.avatar_url ? (
+                    <img src={userProfile.avatar_url} alt={userProfile.name || "avatar"} className="h-full w-full object-cover" />
+                  ) : (
+                    (userProfile.name || userProfile.username || userProfile.email || "F")[0].toUpperCase()
+                  )}
                 </div>
-                <p className="mt-4 text-xl font-black">{userProfile.name || "Ryan Sterling"}</p>
-                <p className="text-sm opacity-80">{userProfile.country}</p>
+                <p className="mt-4 text-xl font-black">{userProfile.name || userProfile.username || "FastCredit user"}</p>
+                {userProfile.username && (
+                  <p className="text-sm opacity-80">@{userProfile.username}</p>
+                )}
+                <p className="text-xs opacity-70">{userProfile.country || "—"}</p>
               </div>
             </div>
 
@@ -1549,12 +1602,31 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Profile details</p>
                 <div className="mt-4 space-y-4">
                   <ProfileRow icon={<User className="h-4 w-4" />} label="Full name" value={userProfile.name || "—"} softText={softText} />
+                  <ProfileRow icon={<UserCircle className="h-4 w-4" />} label="Username" value={userProfile.username ? `@${userProfile.username}` : "—"} softText={softText} />
                   <ProfileRow icon={<Mail className="h-4 w-4" />} label="Email address" value={userProfile.email || "—"} softText={softText} />
                   <ProfileRow icon={<Smartphone className="h-4 w-4" />} label="Phone number" value={userProfile.phone || "—"} softText={softText} />
                   <ProfileRow icon={<Globe className="h-4 w-4" />} label="Country" value={userProfile.country || "—"} softText={softText} />
                   <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
-                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Active plan" value={activePlan ? `Premium · Plan ${activePlan.index + 1}` : "No active plan"} softText={softText} />
-                  <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Preferred currency" value={currency.code} softText={softText} />
+                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Active plan" value={activePlan ? `Premium · ${PREMIUM_PLANS[activePlan.index].name}` : "No active plan"} softText={softText} />
+                  <ProfileRow icon={<CreditCard className="h-4 w-4" />} label="Preferred currency" value={`${currency.code} (${currency.symbol.trim()})`} softText={softText} />
+                  <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Date joined" value={userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"} softText={softText} />
+                  <div className="flex items-center gap-3">
+                    <div className={`h-8 w-8 rounded-full grid place-items-center ${isDark ? "bg-white/10" : "bg-black/5"}`}>
+                      <Gift className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[11px] ${softText}`}>Referral code</p>
+                      <p className="font-black tracking-wide">{userProfile.referral_code || "—"}</p>
+                    </div>
+                    {userProfile.referral_code && (
+                      <button
+                        onClick={() => copyText(userProfile.referral_code, "ref")}
+                        className="inline-flex items-center gap-1 rounded-full bg-[#0e6b3f] text-white px-3 py-1.5 text-[11px] font-bold active:scale-95"
+                      >
+                        {copied === "ref" ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1566,7 +1638,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </div>
                   <div>
                     <p className="font-bold text-sm">Verified member</p>
-                    <p className={`text-[11px] ${softText}`}>Account created today</p>
+                    <p className={`text-[11px] ${softText}`}>
+                      {userProfile.created_at ? `Joined ${new Date(userProfile.created_at).toLocaleDateString()}` : "Account active"}
+                    </p>
                   </div>
                 </div>
               </div>
