@@ -174,9 +174,15 @@ function AuthPage() {
     }, { onConflict: "id" });
 
     setStep("verifying");
-    await new Promise((r) => setTimeout(r, 1800));
-    navigate({ to: "/" });
+    await new Promise((r) => setTimeout(r, 5000));
+    // Redirect admins to admin dashboard, others to home
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: data.user.id,
+      _role: "admin",
+    });
+    navigate({ to: isAdmin ? "/admin/dashboard" : "/" });
   }
+
 
 
   async function resend() {
@@ -225,26 +231,44 @@ function AuthPage() {
       await supabase.auth.signOut();
       return setError("Your account has been suspended. Please contact support for assistance.");
     }
-    const { data: isAdmin } = await supabase.rpc("has_role", {
-      _user_id: data.user.id,
-      _role: "admin",
+    // Persist form details so the profile lookups after OTP verify continue to work
+    if (!form.fullName) update("fullName", data.user.user_metadata?.full_name || "");
+    // Enforce OTP every sign-in: drop the password session, then send a fresh 6-digit code.
+    await supabase.auth.signOut();
+    const { error: otpErr } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
     });
-    if (isAdmin) {
-      navigate({ to: "/admin/dashboard" });
-      return;
+    if (otpErr) {
+      const m = (otpErr.message || "").toLowerCase();
+      if (m.includes("security purposes") || m.includes("rate limit")) {
+        setInfo(`We just sent a code to ${email}. Please check your inbox.`);
+        setCooldown(60);
+        setStep("otp");
+        return;
+      }
+      return setError(otpErr.message || "Couldn't send verification code. Try again.");
     }
-    navigate({ to: "/" });
+    setInfo(`We sent a 6-digit code to ${email}. Enter it below to continue.`);
+    setToken("");
+    setCooldown(60);
+    setStep("otp");
   }
+
 
 
   if (step === "verifying") {
     return (
-      <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-5">
+      <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-5 text-center">
         <h1 className="text-4xl font-extrabold text-white tracking-tight">FastCredit</h1>
         <Loader2 className="w-10 h-10 text-white/90 animate-spin mt-8" />
+        <p className="mt-6 text-white/95 text-base font-medium max-w-xs">
+          Verification successful. Redirecting to your dashboard…
+        </p>
       </div>
     );
   }
+
 
   if (step === "otp") {
 
