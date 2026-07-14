@@ -16,7 +16,8 @@ export const Route = createFileRoute("/_authenticated")({
       .maybeSingle();
     if (ban) {
       await supabase.auth.signOut();
-      throw redirect({ to: "/auth", search: { suspended: 1 } as never });
+      if (typeof window !== "undefined") window.location.replace("/auth?suspended=1");
+      throw redirect({ to: "/auth" });
     }
     return { user: data.user };
   },
