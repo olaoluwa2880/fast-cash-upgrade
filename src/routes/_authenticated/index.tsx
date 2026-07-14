@@ -958,7 +958,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                           <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
                         <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
-                          <p className="opacity-70">Total 14d</p>
+                          <p className="opacity-70">Total 7d</p>
                           <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
                         </div>
                       </div>
