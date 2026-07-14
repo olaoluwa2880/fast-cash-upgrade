@@ -91,8 +91,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Fastcreditglobal" },
       { name: "twitter:description", content: "FastCredit Global is a financial dashboard app for managing multiple currencies." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/cf87b5ea-2c4e-42bf-a374-0cc0085ca3df" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/cf87b5ea-2c4e-42bf-a374-0cc0085ca3df" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/bf59bda3-0cb0-4461-9905-f5868a8395f5" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/bf59bda3-0cb0-4461-9905-f5868a8395f5" },
     ],
     links: [
       {
