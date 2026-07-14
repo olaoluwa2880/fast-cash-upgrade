@@ -789,8 +789,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               <p className="text-[10px] opacity-70 relative">
                 {planActive
                   ? mineReady
-                    ? "Ready to mine now"
-                    : `Next mine in ${formatCountdown(nextMineAt - now)}`
+                    ? `Ready to mine — ${MAX_DAILY_MINES - minesUsedToday} tap${MAX_DAILY_MINES - minesUsedToday === 1 ? "" : "s"} left today`
+                    : `Mining will be available again in: ${formatCountdown(nextMineAt - now)}`
                   : "Activate a Premium plan to start mining"}
               </p>
             </div>
