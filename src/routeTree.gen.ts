@@ -20,6 +20,7 @@ import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCryptoWalletsRouteImport } from './routes/admin.crypto-wallets'
 import { Route as AdminCommunityRouteImport } from './routes/admin.community'
 import { Route as AdminBankDetailsRouteImport } from './routes/admin.bank-details'
+import { Route as AuthenticatedLegalIndexRouteImport } from './routes/_authenticated/legal.index'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 
@@ -77,6 +78,11 @@ const AdminBankDetailsRoute = AdminBankDetailsRouteImport.update({
   path: '/admin/bank-details',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedLegalIndexRoute = AuthenticatedLegalIndexRouteImport.update({
+  id: '/legal/',
+  path: '/legal/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
   id: '/lovable/email/auth/webhook',
   path: '/lovable/email/auth/webhook',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/legal': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/_authenticated/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/admin/support-settings'
     | '/admin/users'
     | '/admin/'
+    | '/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/'
     | '/admin'
+    | '/legal'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   id:
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/_authenticated/'
     | '/admin/'
+    | '/_authenticated/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesById: FileRoutesById
@@ -272,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBankDetailsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/legal/': {
+      id: '/_authenticated/legal/'
+      path: '/legal'
+      fullPath: '/legal/'
+      preLoaderRoute: typeof AuthenticatedLegalIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/lovable/email/auth/webhook': {
       id: '/lovable/email/auth/webhook'
       path: '/lovable/email/auth/webhook'
@@ -291,10 +310,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedLegalIndexRoute: typeof AuthenticatedLegalIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedLegalIndexRoute: AuthenticatedLegalIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
