@@ -732,6 +732,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const note = wdMethod === "crypto"
         ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
         : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
+      if (amtUsd > MAX_WITHDRAW_USD) {
+        push({ title: "Amount too high", message: `Maximum withdrawal amount is $${MAX_WITHDRAW_USD.toFixed(2)} per transaction.`, kind: "error" });
+        // Refund reservation-not-needed since we haven't debited yet.
+        setWdStep("success");
+        return;
+      }
       if (!(amtUsd > 0) || balanceUsd < amtUsd) {
         addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: "Insufficient balance for withdrawal" });
         push({ title: "Insufficient balance", message: "Not enough funds to complete this withdrawal.", kind: "error" });
