@@ -271,8 +271,7 @@ const CRYPTOCURRENCIES: { symbol: string; name: string; network: string; emoji: 
 const DAY = 24 * 60 * 60 * 1000;
 const MAX_DAILY_MINES = 2;
 const PLAN_DURATION = 7 * DAY;
-const MIN_WITHDRAW_USD = 1;
-const MAX_WITHDRAW_USD = 50;
+const MIN_WITHDRAW_USD = 50;
 
 type Txn = {
   id: string;
@@ -701,7 +700,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       return;
     }
     if (balanceUsd < MIN_WITHDRAW_USD) {
-      showToast(`Minimum withdrawal amount is $${MIN_WITHDRAW_USD}. Please continue mining until you reach the minimum withdrawal limit.`);
+      showToast(`Your balance must be at least $${MIN_WITHDRAW_USD} before you can make a withdrawal.`);
       return;
     }
     const preselect = BANKS_BY_CURRENCY[currency.code] ? currency.code : "NGN";
@@ -732,9 +731,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const note = wdMethod === "crypto"
         ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
         : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
-      if (amtUsd > MAX_WITHDRAW_USD) {
-        push({ title: "Amount too high", message: `Maximum withdrawal amount is $${MAX_WITHDRAW_USD.toFixed(2)} per transaction.`, kind: "error" });
-        // Refund reservation-not-needed since we haven't debited yet.
+      if (balanceUsd < MIN_WITHDRAW_USD) {
+        push({ title: "Balance too low", message: `Your balance must be at least $${MIN_WITHDRAW_USD} before you can make a withdrawal.`, kind: "error" });
         setWdStep("success");
         return;
       }
@@ -1522,7 +1520,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <input value={wdAmount} onChange={e => setWdAmount(e.target.value.replace(/[^0-9.]/g, ""))}
                       inputMode="decimal" placeholder={`0.00 ${currency.code}`}
                       className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
-                    <span className={`mt-1 block text-[10px] ${softText}`}>Available: {fmt(balanceUsd, 2)} · Max ${MAX_WITHDRAW_USD.toFixed(2)} per transaction</span>
+                    <span className={`mt-1 block text-[10px] ${softText}`}>Available: {fmt(balanceUsd, 2)} · Minimum balance ${MIN_WITHDRAW_USD} required</span>
                   </label>
 
                   <button
@@ -1613,7 +1611,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <input value={wdAmount} onChange={e => setWdAmount(e.target.value.replace(/[^0-9.]/g, ""))}
                       inputMode="decimal" placeholder="0.00"
                       className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
-                    <span className={`mt-1 block text-[10px] ${softText}`}>Available: ${balanceUsd.toFixed(2)} · Max ${MAX_WITHDRAW_USD.toFixed(2)} per transaction</span>
+                    <span className={`mt-1 block text-[10px] ${softText}`}>Available: ${balanceUsd.toFixed(2)} · Minimum balance ${MIN_WITHDRAW_USD} required</span>
                   </label>
 
                   <button
