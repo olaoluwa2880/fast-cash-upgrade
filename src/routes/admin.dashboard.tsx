@@ -149,7 +149,12 @@ function Dashboard() {
     if (table === "payments") {
       await supabase.from("payments").update({ ...reviewed, rejection_reason: reason || null }).eq("id", r.id);
     } else if (table === "withdrawals") {
-      await supabase.from("withdrawals").update(reviewed).eq("id", r.id);
+      // Atomic reject + refund reserved funds back to the user's wallet.
+      const { error: refundErr } = await supabase.rpc("refund_withdrawal", { p_id: r.id });
+      if (refundErr) {
+        // Fallback: at least mark rejected so it doesn't stay pending.
+        await supabase.from("withdrawals").update(reviewed).eq("id", r.id);
+      }
     } else {
       await supabase.from("upgrades").update(reviewed).eq("id", r.id);
     }
