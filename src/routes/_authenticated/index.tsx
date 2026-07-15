@@ -142,15 +142,16 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
 ];
 
 // Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day, 7 days).
+// Deposits are strictly monotonic so each higher plan requires a larger investment.
 const PREMIUM_PLANS = (() => {
   const base = [
-    { name: "Starter", invest: 12,   mineReward: 8.70 },   // 7d total ≈ $121.80
-    { name: "Plan 2",  invest: 25,   mineReward: 17.40 },  // 7d total ≈ $243.60
-    { name: "Plan 3",  invest: 50,   mineReward: 34.80 },  // 7d total ≈ $487.20
-    { name: "Plan 4",  invest: 100,  mineReward: 69.60 },  // 7d total ≈ $974.40
-    { name: "Plan 5",  invest: 200,  mineReward: 139.20 }, // 7d total ≈ $1,948.80
-    { name: "Plan 6",  invest: 500,  mineReward: 348.00 }, // 7d total ≈ $4,872
-    { name: "Plan 7",  invest: 1000, mineReward: 696.00 }, // 7d total ≈ $9,744
+    { name: "Plan 1", invest: 100,   mineReward: 69.60 },   // 7d total ≈ $974.40
+    { name: "Plan 2", invest: 250,   mineReward: 174.00 },  // 7d total ≈ $2,436
+    { name: "Plan 3", invest: 500,   mineReward: 348.00 },  // 7d total ≈ $4,872
+    { name: "Plan 4", invest: 1000,  mineReward: 696.00 },  // 7d total ≈ $9,744
+    { name: "Plan 5", invest: 2500,  mineReward: 1740.00 }, // 7d total ≈ $24,360
+    { name: "Plan 6", invest: 5000,  mineReward: 3480.00 }, // 7d total ≈ $48,720
+    { name: "Plan 7", invest: 10000, mineReward: 6960.00 }, // 7d total ≈ $97,440
   ];
   // 2 taps/day × 7 days = 14 total taps
   return base.map(p => {
@@ -342,16 +343,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     let loadedUid: string | null = null;
 
     async function loadUserState(uid: string) {
-      const { data: bal } = await supabase
-        .from("wallet_balances")
-        .select("balance_usd")
-        .eq("user_id", uid)
-        .maybeSingle();
+      const [{ data: bal }, { data: prof }] = await Promise.all([
+        supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle(),
+        supabase.from("profiles").select("welcome_bonus_claimed_at").eq("id", uid).maybeSingle(),
+      ]);
       // IMPORTANT: only overwrite balance when we successfully read a row.
       // Do NOT reset to 0 on a missing/failed read — that would wipe the
       // displayed balance on a transient network hiccup or auth race.
       if (!cancelled && bal && bal.balance_usd != null) {
         setBalanceUsd(Number(bal.balance_usd));
+      }
+      if (!cancelled && prof) {
+        setBonusClaimed(!!prof.welcome_bonus_claimed_at);
       }
       const [{ data: pays }, { data: wds }, { data: allClaims }] = await Promise.all([
         supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(50),
@@ -467,6 +470,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const nextMineAt = minesUsedToday >= MAX_DAILY_MINES && minesInWindow.length ? Math.min(...minesInWindow) + DAY : 0;
   const mineReady = planActive && minesUsedToday < MAX_DAILY_MINES;
   const currentPlan = activePlan ? PREMIUM_PLANS[activePlan.index] : null;
+  // Enforce "one pending deposit at a time" on the frontend as well.
+  const hasPendingDeposit = transactions.some(t => t.kind === "deposit" && t.status === "pending");
 
   const formatCountdown = (ms: number) => {
     if (ms <= 0) return "00:00:00";
@@ -478,15 +483,22 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const claimBonus = async () => {
-    if (bonusClaimed) return;
-    setBonusClaimed(true);
-    // Atomic + persistent server-side balance change.
-    const { data, error } = await supabase.rpc("adjust_wallet_balance", { p_delta: 2 });
-    if (error) {
-      setBonusClaimed(false);
-      push({ title: "Bonus failed", message: error.message, kind: "error" });
+    if (bonusClaimed) {
+      push({ title: "Welcome bonus already claimed", kind: "info" });
       return;
     }
+    // Atomic + one-time server-side claim. The DB function refuses a second call.
+    const { data, error } = await supabase.rpc("claim_welcome_bonus");
+    if (error) {
+      if (/already claimed/i.test(error.message)) {
+        setBonusClaimed(true);
+        push({ title: "Welcome bonus already claimed", kind: "info" });
+      } else {
+        push({ title: "Bonus failed", message: error.message, kind: "error" });
+      }
+      return;
+    }
+    setBonusClaimed(true);
     if (typeof data === "number") setBalanceUsd(data);
     addTxn({ kind: "bonus", amountUsd: 2, status: "credited", note: "Welcome bonus" });
     push({ title: "Welcome bonus credited", message: "+$2.00 added to your wallet", kind: "bonus" });
@@ -519,6 +531,22 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const activatePlan = () => {
+    if (hasPendingDeposit) {
+      push({
+        title: "Deposit pending review",
+        message: "Your payment request is still pending. Please wait until it has been approved or rejected before submitting another deposit.",
+        kind: "info",
+      });
+      return;
+    }
+    if (planActive && activePlan && selectedPlan <= activePlan.index) {
+      push({
+        title: "Plan already active",
+        message: `${PREMIUM_PLANS[activePlan.index].name} is your active plan. Choose a higher plan to upgrade.`,
+        kind: "info",
+      });
+      return;
+    }
     setPaymentStep("choose");
     setPaymentMethod(null);
     setReceiptFile(null);
@@ -537,6 +565,15 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const submitPayment = async () => {
+    if (hasPendingDeposit) {
+      setPaymentStep("choose");
+      push({
+        title: "Deposit pending review",
+        message: "Your payment request is still pending. Please wait until it has been approved or rejected before submitting another deposit.",
+        kind: "info",
+      });
+      return;
+    }
     setPaymentStep("processing");
     const amt = PREMIUM_PLANS[selectedPlan].invest;
     const methodLabel = paymentMethod === "crypto" ? "Crypto" : paymentMethod === "ngn" ? "NGN Bank Transfer" : "Card";
@@ -692,23 +729,46 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const note = wdMethod === "crypto"
         ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
         : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
-      if (balanceUsd >= amtUsd && amtUsd > 0) {
-        // Atomically debit the wallet in the DB. The RPC blocks overdrafts.
-        const { data: newBal, error } = await supabase.rpc("adjust_wallet_balance", { p_delta: -amtUsd });
-        if (error) {
-          addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: error.message });
-          push({ title: "Withdrawal failed", message: error.message, kind: "error" });
-        } else {
-          if (typeof newBal === "number") setBalanceUsd(newBal);
-          addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "approved", method, note });
-          push({ title: "Withdrawal submitted", message: `$${amtUsd.toFixed(2)} · ${method}`, kind: "wallet" });
-        }
-      } else {
+      if (!(amtUsd > 0) || balanceUsd < amtUsd) {
         addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: "Insufficient balance for withdrawal" });
         push({ title: "Insufficient balance", message: "Not enough funds to complete this withdrawal.", kind: "error" });
+        setWdStep("success");
+        return;
       }
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) {
+        push({ title: "Not signed in", kind: "error" });
+        setWdStep("success");
+        return;
+      }
+      // Reserve the funds first so the user cannot double-withdraw while pending.
+      const { data: newBal, error: debitErr } = await supabase.rpc("adjust_wallet_balance", { p_delta: -amtUsd });
+      if (debitErr) {
+        addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: debitErr.message });
+        push({ title: "Withdrawal failed", message: debitErr.message, kind: "error" });
+        setWdStep("success");
+        return;
+      }
+      if (typeof newBal === "number") setBalanceUsd(newBal);
+      // Record the request as PENDING — admin approves/rejects from the panel.
+      const { error: insErr } = await supabase.from("withdrawals").insert({
+        user_id: u.user.id,
+        amount: amtUsd,
+        currency: wdMethod === "crypto" ? "USD" : wdCurrencyKey,
+        wallet_address: wdMethod === "crypto" ? wdWalletAddress : null,
+        status: "pending",
+      });
+      if (insErr) {
+        // Roll back the reservation if we couldn't persist the request.
+        await supabase.rpc("adjust_wallet_balance", { p_delta: amtUsd });
+        push({ title: "Withdrawal failed", message: insErr.message, kind: "error" });
+        setWdStep("success");
+        return;
+      }
+      addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "pending", method, note: `${note} · awaiting admin review` });
+      push({ title: "Withdrawal submitted", message: `$${amtUsd.toFixed(2)} · pending admin review`, kind: "wallet" });
       setWdStep("success");
-    }, 2200);
+    }, 1200);
   };
 
 
@@ -832,11 +892,16 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             <div className="flex-1 min-w-0">
               <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Welcome bonus</p>
               <p className={`font-extrabold text-lg leading-tight ${isDark ? "text-white" : "text-[#0b1e1a]"}`}>{fmt(2, 2)} <span className="text-[11px] font-medium opacity-70">≈ $2 USD</span></p>
+              {bonusClaimed && (
+                <p className="text-[10px] text-emerald-500 font-semibold mt-0.5">Welcome bonus already claimed.</p>
+              )}
             </div>
             <button
               onClick={claimBonus}
               disabled={bonusClaimed}
-              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${bonusClaimed ? "bg-emerald-600/20 text-emerald-500" : "bg-emerald-500 text-white shadow-md active:scale-95"}`}
+              aria-disabled={bonusClaimed}
+              title={bonusClaimed ? "Welcome bonus already claimed." : "Claim your welcome bonus"}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${bonusClaimed ? "bg-emerald-600/20 text-emerald-500 cursor-not-allowed" : "bg-emerald-500 text-white shadow-md active:scale-95"}`}
             >
               {bonusClaimed ? "Claimed" : "Claim"}
             </button>
@@ -1004,44 +1069,77 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             <div className="p-5">
               <div className={`rounded-2xl p-4 ${isDark ? "bg-white/5" : "bg-amber-50"} border ${isDark ? "border-white/10" : "border-amber-200"}`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Starting investment</p>
-                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(12, currency.code === "USD" || currency.code === "EUR" || currency.code === "GBP" ? 2 : 0)}</p>
-                <p className={`mt-1 text-[11px] ${softText}`}>≈ $12 USD · Shown in {currency.code}</p>
+                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(PREMIUM_PLANS[0].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}</p>
+                <p className={`mt-1 text-[11px] ${softText}`}>≈ ${PREMIUM_PLANS[0].invest} USD · Shown in {currency.code}</p>
               </div>
+
+              {hasPendingDeposit && (
+                <div className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 text-amber-800 px-3 py-2 text-[11px] font-semibold">
+                  Your payment request is still pending. Please wait until it has been approved or rejected before submitting another deposit.
+                </div>
+              )}
 
               <p className={`mt-5 text-xs font-bold uppercase tracking-wide ${softText}`}>Choose a plan</p>
               <div className="mt-3 space-y-2">
                 {PREMIUM_PLANS.map((p, i) => {
                   const dec = ["USD", "EUR", "GBP"].includes(currency.code) ? 2 : 0;
                   const active = selectedPlan === i;
+                  const isCurrentActive = planActive && activePlan?.index === i;
+                  const isLowerThanActive = planActive && activePlan != null && i < activePlan.index;
+                  const locked = isCurrentActive || isLowerThanActive;
                   return (
                     <button
                       key={p.invest}
-                      onClick={() => setSelectedPlan(i)}
-                      className={`w-full text-left rounded-2xl p-4 border transition ${active ? "border-amber-500 bg-amber-50 text-[#0b1e1a] shadow-md" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                      onClick={() => { if (!locked) setSelectedPlan(i); }}
+                      disabled={locked}
+                      aria-disabled={locked}
+                      className={`w-full text-left rounded-2xl p-4 border transition ${
+                        locked
+                          ? isCurrentActive
+                            ? "border-emerald-500 bg-emerald-50 text-[#0b1e1a] shadow-sm cursor-not-allowed opacity-100"
+                            : "border-black/5 bg-black/[.03] opacity-60 cursor-not-allowed"
+                          : active
+                            ? "border-amber-500 bg-amber-50 text-[#0b1e1a] shadow-md"
+                            : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className={`h-8 w-8 rounded-full grid place-items-center ${active ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"}`}>
-                            {active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
+                          <div className={`h-8 w-8 rounded-full grid place-items-center ${isCurrentActive ? "bg-emerald-500 text-white" : active ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"}`}>
+                            {isCurrentActive ? <Check className="h-4 w-4" /> : active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
                           </div>
                           <div>
-                            <p className="font-extrabold">{p.name} · {fmt(p.invest, dec)}</p>
-                            <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>Deposit</p>
+                            <p className="font-extrabold flex items-center gap-2">
+                              {p.name} · {fmt(p.invest, dec)}
+                              {isCurrentActive && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wide px-2 py-0.5">
+                                  Active Plan
+                                </span>
+                              )}
+                              {isLowerThanActive && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-300 text-slate-700 text-[9px] font-black uppercase tracking-wide px-2 py-0.5">
+                                  Locked
+                                </span>
+                              )}
+                            </p>
+                            <p className={`text-[10px] ${active || isCurrentActive ? "text-[#0b1e1a]/60" : softText}`}>
+                              {isCurrentActive ? "Currently active — upgrade to a higher plan" : isLowerThanActive ? "Upgrades only — cannot downgrade" : "Deposit"}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-extrabold text-emerald-600">{fmt(p.mineReward, 2)}</p>
-                          <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>per mining tap</p>
+                          <p className={`text-[10px] ${active || isCurrentActive ? "text-[#0b1e1a]/60" : softText}`}>per mining tap</p>
                         </div>
                       </div>
-                      <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active ? "text-[#0b1e1a]/80" : softText}`}>
-                        <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
+                      <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active || isCurrentActive ? "text-[#0b1e1a]/80" : softText}`}>
+                        <div className={`rounded-lg px-2 py-1.5 ${active || isCurrentActive ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Per day (2 taps)</p>
-                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
+                          <p className={`font-bold ${active || isCurrentActive ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
-                        <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
+                        <div className={`rounded-lg px-2 py-1.5 ${active || isCurrentActive ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Total 7d</p>
-                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
+                          <p className={`font-bold ${active || isCurrentActive ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
                         </div>
                       </div>
                     </button>
@@ -1055,12 +1153,33 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <li>Mine twice per day — earnings credit instantly to your wallet.</li>
                   <li>Each plan runs for 7 days, then expires automatically.</li>
                   <li>Upgrading to a higher plan activates it immediately and reopens mining.</li>
+                  <li>Only one plan can be active at a time — you can only move to a higher plan.</li>
                 </ul>
               </div>
 
-              <button onClick={activatePlan} className="mt-4 w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95">
-                <Crown className="h-4 w-4" /> Activate for {fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}
-              </button>
+              {(() => {
+                const selectedLocked = planActive && activePlan != null && selectedPlan <= activePlan.index;
+                const disabled = hasPendingDeposit || selectedLocked;
+                const label = hasPendingDeposit
+                  ? "Deposit pending review"
+                  : selectedLocked
+                    ? "Choose a higher plan to upgrade"
+                    : `Activate for ${fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}`;
+                return (
+                  <button
+                    onClick={activatePlan}
+                    disabled={disabled}
+                    aria-disabled={disabled}
+                    className={`mt-4 w-full rounded-full py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 ${
+                      disabled
+                        ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                        : "bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500]"
+                    }`}
+                  >
+                    <Crown className="h-4 w-4" /> {label}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1571,7 +1690,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <p className={`text-xs ${softText}`}>
                     {wdMethod === "crypto" ? `${wdCrypto?.symbol} · ${wdWalletAddress.slice(0, 8)}…${wdWalletAddress.slice(-4)}` : `${wdBank} · ${wdAccountNumber}`}
                   </p>
-                  <p className={`text-xs ${softText}`}>You can download a receipt from History.</p>
+                  <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">Pending admin review</span>
+                  <p className={`text-xs ${softText}`}>Your request is queued for review. You'll be notified once it's approved or rejected.</p>
                   <button onClick={closeWithdraw} className="mt-3 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
                     Done
                   </button>

@@ -133,7 +133,7 @@ function Dashboard() {
         await notify(r.user_id, "Payment approved", `Your deposit of ${Number(r.amount).toFixed(2)} ${r.currency ?? "USD"} has been approved and credited to your wallet.`, "success");
       }
     } else if (table === "withdrawals") {
-      await notify(r.user_id, "Withdrawal approved", `Your withdrawal of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved.`, "success");
+      await notify(r.user_id, "Withdrawal completed", `Your withdrawal of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved and completed.`, "success");
     } else if (table === "upgrades") {
       await notify(r.user_id, "Upgrade approved", `Your plan upgrade has been approved.`, "success");
     }
@@ -149,7 +149,12 @@ function Dashboard() {
     if (table === "payments") {
       await supabase.from("payments").update({ ...reviewed, rejection_reason: reason || null }).eq("id", r.id);
     } else if (table === "withdrawals") {
-      await supabase.from("withdrawals").update(reviewed).eq("id", r.id);
+      // Atomic reject + refund reserved funds back to the user's wallet.
+      const { error: refundErr } = await supabase.rpc("refund_withdrawal", { p_id: r.id });
+      if (refundErr) {
+        // Fallback: at least mark rejected so it doesn't stay pending.
+        await supabase.from("withdrawals").update(reviewed).eq("id", r.id);
+      }
     } else {
       await supabase.from("upgrades").update(reviewed).eq("id", r.id);
     }
