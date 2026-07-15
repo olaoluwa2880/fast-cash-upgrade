@@ -531,6 +531,22 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const activatePlan = () => {
+    if (hasPendingDeposit) {
+      push({
+        title: "Deposit pending review",
+        message: "Your payment request is still pending. Please wait until it has been approved or rejected before submitting another deposit.",
+        kind: "info",
+      });
+      return;
+    }
+    if (planActive && activePlan && selectedPlan <= activePlan.index) {
+      push({
+        title: "Plan already active",
+        message: `${PREMIUM_PLANS[activePlan.index].name} is your active plan. Choose a higher plan to upgrade.`,
+        kind: "info",
+      });
+      return;
+    }
     setPaymentStep("choose");
     setPaymentMethod(null);
     setReceiptFile(null);
@@ -549,6 +565,15 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const submitPayment = async () => {
+    if (hasPendingDeposit) {
+      setPaymentStep("choose");
+      push({
+        title: "Deposit pending review",
+        message: "Your payment request is still pending. Please wait until it has been approved or rejected before submitting another deposit.",
+        kind: "info",
+      });
+      return;
+    }
     setPaymentStep("processing");
     const amt = PREMIUM_PLANS[selectedPlan].invest;
     const methodLabel = paymentMethod === "crypto" ? "Crypto" : paymentMethod === "ngn" ? "NGN Bank Transfer" : "Card";
