@@ -343,16 +343,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     let loadedUid: string | null = null;
 
     async function loadUserState(uid: string) {
-      const { data: bal } = await supabase
-        .from("wallet_balances")
-        .select("balance_usd")
-        .eq("user_id", uid)
-        .maybeSingle();
+      const [{ data: bal }, { data: prof }] = await Promise.all([
+        supabase.from("wallet_balances").select("balance_usd").eq("user_id", uid).maybeSingle(),
+        supabase.from("profiles").select("welcome_bonus_claimed_at").eq("id", uid).maybeSingle(),
+      ]);
       // IMPORTANT: only overwrite balance when we successfully read a row.
       // Do NOT reset to 0 on a missing/failed read — that would wipe the
       // displayed balance on a transient network hiccup or auth race.
       if (!cancelled && bal && bal.balance_usd != null) {
         setBalanceUsd(Number(bal.balance_usd));
+      }
+      if (!cancelled && prof) {
+        setBonusClaimed(!!prof.welcome_bonus_claimed_at);
       }
       const [{ data: pays }, { data: wds }, { data: allClaims }] = await Promise.all([
         supabase.from("payments").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(50),
