@@ -264,6 +264,7 @@ export type Database = {
           referral_code: string | null
           updated_at: string
           username: string | null
+          welcome_bonus_claimed_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -277,6 +278,7 @@ export type Database = {
           referral_code?: string | null
           updated_at?: string
           username?: string | null
+          welcome_bonus_claimed_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -290,6 +292,7 @@ export type Database = {
           referral_code?: string | null
           updated_at?: string
           username?: string | null
+          welcome_bonus_claimed_at?: string | null
         }
         Relationships: []
       }
@@ -470,6 +473,7 @@ export type Database = {
     }
     Functions: {
       adjust_wallet_balance: { Args: { p_delta: number }; Returns: number }
+      claim_welcome_bonus: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -477,6 +481,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      refund_withdrawal: { Args: { p_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
