@@ -272,6 +272,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const MAX_DAILY_MINES = 2;
 const PLAN_DURATION = 7 * DAY;
 const MIN_WITHDRAW_USD = 100;
+const MAX_WITHDRAW_USD = 50;
 
 type Txn = {
   id: string;
