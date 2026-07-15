@@ -1069,44 +1069,77 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             <div className="p-5">
               <div className={`rounded-2xl p-4 ${isDark ? "bg-white/5" : "bg-amber-50"} border ${isDark ? "border-white/10" : "border-amber-200"}`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Starting investment</p>
-                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(12, currency.code === "USD" || currency.code === "EUR" || currency.code === "GBP" ? 2 : 0)}</p>
-                <p className={`mt-1 text-[11px] ${softText}`}>≈ $12 USD · Shown in {currency.code}</p>
+                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(PREMIUM_PLANS[0].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}</p>
+                <p className={`mt-1 text-[11px] ${softText}`}>≈ ${PREMIUM_PLANS[0].invest} USD · Shown in {currency.code}</p>
               </div>
+
+              {hasPendingDeposit && (
+                <div className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 text-amber-800 px-3 py-2 text-[11px] font-semibold">
+                  Your payment request is still pending. Please wait until it has been approved or rejected before submitting another deposit.
+                </div>
+              )}
 
               <p className={`mt-5 text-xs font-bold uppercase tracking-wide ${softText}`}>Choose a plan</p>
               <div className="mt-3 space-y-2">
                 {PREMIUM_PLANS.map((p, i) => {
                   const dec = ["USD", "EUR", "GBP"].includes(currency.code) ? 2 : 0;
                   const active = selectedPlan === i;
+                  const isCurrentActive = planActive && activePlan?.index === i;
+                  const isLowerThanActive = planActive && activePlan != null && i < activePlan.index;
+                  const locked = isCurrentActive || isLowerThanActive;
                   return (
                     <button
                       key={p.invest}
-                      onClick={() => setSelectedPlan(i)}
-                      className={`w-full text-left rounded-2xl p-4 border transition ${active ? "border-amber-500 bg-amber-50 text-[#0b1e1a] shadow-md" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                      onClick={() => { if (!locked) setSelectedPlan(i); }}
+                      disabled={locked}
+                      aria-disabled={locked}
+                      className={`w-full text-left rounded-2xl p-4 border transition ${
+                        locked
+                          ? isCurrentActive
+                            ? "border-emerald-500 bg-emerald-50 text-[#0b1e1a] shadow-sm cursor-not-allowed opacity-100"
+                            : "border-black/5 bg-black/[.03] opacity-60 cursor-not-allowed"
+                          : active
+                            ? "border-amber-500 bg-amber-50 text-[#0b1e1a] shadow-md"
+                            : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className={`h-8 w-8 rounded-full grid place-items-center ${active ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"}`}>
-                            {active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
+                          <div className={`h-8 w-8 rounded-full grid place-items-center ${isCurrentActive ? "bg-emerald-500 text-white" : active ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"}`}>
+                            {isCurrentActive ? <Check className="h-4 w-4" /> : active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
                           </div>
                           <div>
-                            <p className="font-extrabold">{p.name} · {fmt(p.invest, dec)}</p>
-                            <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>Deposit</p>
+                            <p className="font-extrabold flex items-center gap-2">
+                              {p.name} · {fmt(p.invest, dec)}
+                              {isCurrentActive && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wide px-2 py-0.5">
+                                  Active Plan
+                                </span>
+                              )}
+                              {isLowerThanActive && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-300 text-slate-700 text-[9px] font-black uppercase tracking-wide px-2 py-0.5">
+                                  Locked
+                                </span>
+                              )}
+                            </p>
+                            <p className={`text-[10px] ${active || isCurrentActive ? "text-[#0b1e1a]/60" : softText}`}>
+                              {isCurrentActive ? "Currently active — upgrade to a higher plan" : isLowerThanActive ? "Upgrades only — cannot downgrade" : "Deposit"}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-extrabold text-emerald-600">{fmt(p.mineReward, 2)}</p>
-                          <p className={`text-[10px] ${active ? "text-[#0b1e1a]/60" : softText}`}>per mining tap</p>
+                          <p className={`text-[10px] ${active || isCurrentActive ? "text-[#0b1e1a]/60" : softText}`}>per mining tap</p>
                         </div>
                       </div>
-                      <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active ? "text-[#0b1e1a]/80" : softText}`}>
-                        <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
+                      <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active || isCurrentActive ? "text-[#0b1e1a]/80" : softText}`}>
+                        <div className={`rounded-lg px-2 py-1.5 ${active || isCurrentActive ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Per day (2 taps)</p>
-                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
+                          <p className={`font-bold ${active || isCurrentActive ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
-                        <div className={`rounded-lg px-2 py-1.5 ${active ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
+                        <div className={`rounded-lg px-2 py-1.5 ${active || isCurrentActive ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Total 7d</p>
-                          <p className={`font-bold ${active ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
+                          <p className={`font-bold ${active || isCurrentActive ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
                         </div>
                       </div>
                     </button>
@@ -1120,12 +1153,33 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <li>Mine twice per day — earnings credit instantly to your wallet.</li>
                   <li>Each plan runs for 7 days, then expires automatically.</li>
                   <li>Upgrading to a higher plan activates it immediately and reopens mining.</li>
+                  <li>Only one plan can be active at a time — you can only move to a higher plan.</li>
                 </ul>
               </div>
 
-              <button onClick={activatePlan} className="mt-4 w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95">
-                <Crown className="h-4 w-4" /> Activate for {fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}
-              </button>
+              {(() => {
+                const selectedLocked = planActive && activePlan != null && selectedPlan <= activePlan.index;
+                const disabled = hasPendingDeposit || selectedLocked;
+                const label = hasPendingDeposit
+                  ? "Deposit pending review"
+                  : selectedLocked
+                    ? "Choose a higher plan to upgrade"
+                    : `Activate for ${fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}`;
+                return (
+                  <button
+                    onClick={activatePlan}
+                    disabled={disabled}
+                    aria-disabled={disabled}
+                    className={`mt-4 w-full rounded-full py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 ${
+                      disabled
+                        ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                        : "bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500]"
+                    }`}
+                  >
+                    <Crown className="h-4 w-4" /> {label}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
