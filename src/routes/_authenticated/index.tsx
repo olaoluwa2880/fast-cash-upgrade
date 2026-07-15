@@ -1690,7 +1690,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <p className={`text-xs ${softText}`}>
                     {wdMethod === "crypto" ? `${wdCrypto?.symbol} · ${wdWalletAddress.slice(0, 8)}…${wdWalletAddress.slice(-4)}` : `${wdBank} · ${wdAccountNumber}`}
                   </p>
-                  <p className={`text-xs ${softText}`}>You can download a receipt from History.</p>
+                  <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">Pending admin review</span>
+                  <p className={`text-xs ${softText}`}>Your request is queued for review. You'll be notified once it's approved or rejected.</p>
                   <button onClick={closeWithdraw} className="mt-3 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
                     Done
                   </button>
