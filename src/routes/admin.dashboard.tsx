@@ -133,7 +133,7 @@ function Dashboard() {
         await notify(r.user_id, "Payment approved", `Your deposit of ${Number(r.amount).toFixed(2)} ${r.currency ?? "USD"} has been approved and credited to your wallet.`, "success");
       }
     } else if (table === "withdrawals") {
-      await notify(r.user_id, "Withdrawal approved", `Your withdrawal of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved.`, "success");
+      await notify(r.user_id, "Withdrawal completed", `Your withdrawal of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved and completed.`, "success");
     } else if (table === "upgrades") {
       await notify(r.user_id, "Upgrade approved", `Your plan upgrade has been approved.`, "success");
     }
