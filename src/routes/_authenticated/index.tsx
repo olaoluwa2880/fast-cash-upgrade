@@ -142,15 +142,16 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
 ];
 
 // Premium plan tiers. mineReward = USD credited per mining tap (2 taps / day, 7 days).
+// Deposits are strictly monotonic so each higher plan requires a larger investment.
 const PREMIUM_PLANS = (() => {
   const base = [
-    { name: "Starter", invest: 12,   mineReward: 8.70 },   // 7d total ≈ $121.80
-    { name: "Plan 2",  invest: 25,   mineReward: 17.40 },  // 7d total ≈ $243.60
-    { name: "Plan 3",  invest: 50,   mineReward: 34.80 },  // 7d total ≈ $487.20
-    { name: "Plan 4",  invest: 100,  mineReward: 69.60 },  // 7d total ≈ $974.40
-    { name: "Plan 5",  invest: 200,  mineReward: 139.20 }, // 7d total ≈ $1,948.80
-    { name: "Plan 6",  invest: 500,  mineReward: 348.00 }, // 7d total ≈ $4,872
-    { name: "Plan 7",  invest: 1000, mineReward: 696.00 }, // 7d total ≈ $9,744
+    { name: "Plan 1", invest: 100,   mineReward: 69.60 },   // 7d total ≈ $974.40
+    { name: "Plan 2", invest: 250,   mineReward: 174.00 },  // 7d total ≈ $2,436
+    { name: "Plan 3", invest: 500,   mineReward: 348.00 },  // 7d total ≈ $4,872
+    { name: "Plan 4", invest: 1000,  mineReward: 696.00 },  // 7d total ≈ $9,744
+    { name: "Plan 5", invest: 2500,  mineReward: 1740.00 }, // 7d total ≈ $24,360
+    { name: "Plan 6", invest: 5000,  mineReward: 3480.00 }, // 7d total ≈ $48,720
+    { name: "Plan 7", invest: 10000, mineReward: 6960.00 }, // 7d total ≈ $97,440
   ];
   // 2 taps/day × 7 days = 14 total taps
   return base.map(p => {
