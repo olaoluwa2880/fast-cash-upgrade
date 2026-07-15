@@ -145,14 +145,15 @@ const CATEGORIES: { icon: typeof Users; label: string; key: string }[] = [
 // Deposits are strictly monotonic so each higher plan requires a larger investment.
 const PREMIUM_PLANS = (() => {
   const base = [
-    { name: "Plan 1", invest: 15,   mineReward: 10 },
-    { name: "Plan 2", invest: 22,   mineReward: 15 },
-    { name: "Plan 3", invest: 100,  mineReward: 70 },
-    { name: "Plan 4", invest: 310,  mineReward: 220 },
-    { name: "Plan 5", invest: 650,  mineReward: 450 },
-    { name: "Plan 6", invest: 1500, mineReward: 1000 },
-    { name: "Plan 7", invest: 2000, mineReward: 1350 },
-    { name: "Plan 8", invest: 2200, mineReward: 1500 },
+    { name: "Plan 1", invest: 10,    mineReward: 3 },
+    { name: "Plan 2", invest: 20,    mineReward: 5 },
+    { name: "Plan 3", invest: 30,    mineReward: 8 },
+    { name: "Plan 4", invest: 100,   mineReward: 10 },
+    { name: "Plan 5", invest: 310,   mineReward: 25 },
+    { name: "Plan 6", invest: 650,   mineReward: 120 },
+    { name: "Plan 7", invest: 1500,  mineReward: 210 },
+    { name: "Plan 8", invest: 2000,  mineReward: 350 },
+    { name: "Plan 9", invest: 2200,  mineReward: 500 },
   ];
   // 2 taps/day × 7 days = 14 total taps
   return base.map(p => {
