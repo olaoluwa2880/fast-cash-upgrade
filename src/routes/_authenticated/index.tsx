@@ -892,11 +892,16 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             <div className="flex-1 min-w-0">
               <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Welcome bonus</p>
               <p className={`font-extrabold text-lg leading-tight ${isDark ? "text-white" : "text-[#0b1e1a]"}`}>{fmt(2, 2)} <span className="text-[11px] font-medium opacity-70">≈ $2 USD</span></p>
+              {bonusClaimed && (
+                <p className="text-[10px] text-emerald-500 font-semibold mt-0.5">Welcome bonus already claimed.</p>
+              )}
             </div>
             <button
               onClick={claimBonus}
               disabled={bonusClaimed}
-              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${bonusClaimed ? "bg-emerald-600/20 text-emerald-500" : "bg-emerald-500 text-white shadow-md active:scale-95"}`}
+              aria-disabled={bonusClaimed}
+              title={bonusClaimed ? "Welcome bonus already claimed." : "Claim your welcome bonus"}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${bonusClaimed ? "bg-emerald-600/20 text-emerald-500 cursor-not-allowed" : "bg-emerald-500 text-white shadow-md active:scale-95"}`}
             >
               {bonusClaimed ? "Claimed" : "Claim"}
             </button>
