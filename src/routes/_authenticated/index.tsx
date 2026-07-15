@@ -1613,7 +1613,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <input value={wdAmount} onChange={e => setWdAmount(e.target.value.replace(/[^0-9.]/g, ""))}
                       inputMode="decimal" placeholder="0.00"
                       className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
-                    <span className={`mt-1 block text-[10px] ${softText}`}>Available: ${balanceUsd.toFixed(2)}</span>
+                    <span className={`mt-1 block text-[10px] ${softText}`}>Available: ${balanceUsd.toFixed(2)} · Max ${MAX_WITHDRAW_USD.toFixed(2)} per transaction</span>
                   </label>
 
                   <button
