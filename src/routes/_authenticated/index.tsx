@@ -470,6 +470,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const nextMineAt = minesUsedToday >= MAX_DAILY_MINES && minesInWindow.length ? Math.min(...minesInWindow) + DAY : 0;
   const mineReady = planActive && minesUsedToday < MAX_DAILY_MINES;
   const currentPlan = activePlan ? PREMIUM_PLANS[activePlan.index] : null;
+  // Enforce "one pending deposit at a time" on the frontend as well.
+  const hasPendingDeposit = transactions.some(t => t.kind === "deposit" && t.status === "pending");
 
   const formatCountdown = (ms: number) => {
     if (ms <= 0) return "00:00:00";
@@ -481,15 +483,22 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const claimBonus = async () => {
-    if (bonusClaimed) return;
-    setBonusClaimed(true);
-    // Atomic + persistent server-side balance change.
-    const { data, error } = await supabase.rpc("adjust_wallet_balance", { p_delta: 2 });
-    if (error) {
-      setBonusClaimed(false);
-      push({ title: "Bonus failed", message: error.message, kind: "error" });
+    if (bonusClaimed) {
+      push({ title: "Welcome bonus already claimed", kind: "info" });
       return;
     }
+    // Atomic + one-time server-side claim. The DB function refuses a second call.
+    const { data, error } = await supabase.rpc("claim_welcome_bonus");
+    if (error) {
+      if (/already claimed/i.test(error.message)) {
+        setBonusClaimed(true);
+        push({ title: "Welcome bonus already claimed", kind: "info" });
+      } else {
+        push({ title: "Bonus failed", message: error.message, kind: "error" });
+      }
+      return;
+    }
+    setBonusClaimed(true);
     if (typeof data === "number") setBalanceUsd(data);
     addTxn({ kind: "bonus", amountUsd: 2, status: "credited", note: "Welcome bonus" });
     push({ title: "Welcome bonus credited", message: "+$2.00 added to your wallet", kind: "bonus" });
