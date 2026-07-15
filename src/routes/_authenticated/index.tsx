@@ -729,23 +729,46 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const note = wdMethod === "crypto"
         ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
         : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
-      if (balanceUsd >= amtUsd && amtUsd > 0) {
-        // Atomically debit the wallet in the DB. The RPC blocks overdrafts.
-        const { data: newBal, error } = await supabase.rpc("adjust_wallet_balance", { p_delta: -amtUsd });
-        if (error) {
-          addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: error.message });
-          push({ title: "Withdrawal failed", message: error.message, kind: "error" });
-        } else {
-          if (typeof newBal === "number") setBalanceUsd(newBal);
-          addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "approved", method, note });
-          push({ title: "Withdrawal submitted", message: `$${amtUsd.toFixed(2)} · ${method}`, kind: "wallet" });
-        }
-      } else {
+      if (!(amtUsd > 0) || balanceUsd < amtUsd) {
         addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: "Insufficient balance for withdrawal" });
         push({ title: "Insufficient balance", message: "Not enough funds to complete this withdrawal.", kind: "error" });
+        setWdStep("success");
+        return;
       }
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) {
+        push({ title: "Not signed in", kind: "error" });
+        setWdStep("success");
+        return;
+      }
+      // Reserve the funds first so the user cannot double-withdraw while pending.
+      const { data: newBal, error: debitErr } = await supabase.rpc("adjust_wallet_balance", { p_delta: -amtUsd });
+      if (debitErr) {
+        addTxn({ kind: "declined", amountUsd: amtUsd, status: "declined", method, note: debitErr.message });
+        push({ title: "Withdrawal failed", message: debitErr.message, kind: "error" });
+        setWdStep("success");
+        return;
+      }
+      if (typeof newBal === "number") setBalanceUsd(newBal);
+      // Record the request as PENDING — admin approves/rejects from the panel.
+      const { error: insErr } = await supabase.from("withdrawals").insert({
+        user_id: u.user.id,
+        amount: amtUsd,
+        currency: wdMethod === "crypto" ? "USD" : wdCurrencyKey,
+        wallet_address: wdMethod === "crypto" ? wdWalletAddress : null,
+        status: "pending",
+      });
+      if (insErr) {
+        // Roll back the reservation if we couldn't persist the request.
+        await supabase.rpc("adjust_wallet_balance", { p_delta: amtUsd });
+        push({ title: "Withdrawal failed", message: insErr.message, kind: "error" });
+        setWdStep("success");
+        return;
+      }
+      addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "pending", method, note: `${note} · awaiting admin review` });
+      push({ title: "Withdrawal submitted", message: `$${amtUsd.toFixed(2)} · pending admin review`, kind: "wallet" });
       setWdStep("success");
-    }, 2200);
+    }, 1200);
   };
 
 
