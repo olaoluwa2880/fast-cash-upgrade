@@ -153,6 +153,14 @@ function RootComponent() {
   );
 }
 
+function ToasterMount() {
+  const [Toaster, setToaster] = useState<React.ComponentType<{ position?: string; richColors?: boolean }> | null>(null);
+  useEffect(() => {
+    import("sonner").then((m) => setToaster(() => m.Toaster));
+  }, []);
+  return Toaster ? <Toaster position="top-center" richColors /> : null;
+}
+
 function InstallPromptMount() {
   const [Comp, setComp] = useState<React.ComponentType | null>(null);
   useEffect(() => {
