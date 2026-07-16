@@ -321,6 +321,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const showToast = (msg: string, kind: "info" | "success" | "error" | "wallet" | "reward" | "bonus" = "info") => {
     push({ title: msg, kind });
   };
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("You have been logged out successfully.");
+    navigate({ to: "/auth" });
+  };
   const [openWithdraw, setOpenWithdraw] = useState(false);
   const [wdStep, setWdStep] = useState<"method" | "country" | "bank" | "details" | "crypto" | "cryptoDetails" | "review" | "processing" | "success">("method");
   const [wdMethod, setWdMethod] = useState<"bank" | "crypto" | null>(null);
