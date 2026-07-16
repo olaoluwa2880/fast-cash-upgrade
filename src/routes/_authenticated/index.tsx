@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
   Moon, Sun, Bell, ChevronDown, ArrowDownLeft, ArrowUpRight, Crown,
@@ -7,10 +7,12 @@ import {
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
   Globe, Smartphone, CreditCard, MessageCircle, Send, Phone, ExternalLink,
+  LogOut,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
+import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/_authenticated/")({
