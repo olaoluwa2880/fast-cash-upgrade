@@ -1863,6 +1863,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </div>
                 </div>
               </div>
+
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 rounded-3xl p-4 font-bold text-sm bg-red-500/10 text-red-600 hover:bg-red-500/15 active:scale-[.98] transition"
+              >
+                <LogOut className="h-4 w-4" /> Log out
+              </button>
             </div>
           </div>
         </div>
