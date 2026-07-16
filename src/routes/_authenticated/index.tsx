@@ -287,6 +287,7 @@ type Txn = {
 };
 
 function Dashboard({ userProfile }: { userProfile: UserProfile }) {
+  const navigate = useNavigate();
   const userEmail = userProfile.email;
   const settings = useSiteSettings();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
