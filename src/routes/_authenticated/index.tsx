@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
   Moon, Sun, Bell, ChevronDown, ArrowDownLeft, ArrowUpRight, Crown,
@@ -7,10 +7,12 @@ import {
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
   Globe, Smartphone, CreditCard, MessageCircle, Send, Phone, ExternalLink,
+  LogOut,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
+import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -285,6 +287,7 @@ type Txn = {
 };
 
 function Dashboard({ userProfile }: { userProfile: UserProfile }) {
+  const navigate = useNavigate();
   const userEmail = userProfile.email;
   const settings = useSiteSettings();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
@@ -317,6 +320,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const { push } = usePush();
   const showToast = (msg: string, kind: "info" | "success" | "error" | "wallet" | "reward" | "bonus" = "info") => {
     push({ title: msg, kind });
+  };
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("You have been logged out successfully.");
+    navigate({ to: "/auth" });
   };
   const [openWithdraw, setOpenWithdraw] = useState(false);
   const [wdStep, setWdStep] = useState<"method" | "country" | "bank" | "details" | "crypto" | "cryptoDetails" | "review" | "processing" | "success">("method");
@@ -1855,6 +1863,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </div>
                 </div>
               </div>
+
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 rounded-3xl p-4 font-bold text-sm bg-red-500/10 text-red-600 hover:bg-red-500/15 active:scale-[.98] transition"
+              >
+                <LogOut className="h-4 w-4" /> Log out
+              </button>
             </div>
           </div>
         </div>
