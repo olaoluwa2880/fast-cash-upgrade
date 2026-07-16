@@ -147,6 +147,7 @@ function RootComponent() {
       <PushProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <ToasterMount />
         <InstallPromptMount />
       </PushProvider>
     </QueryClientProvider>
@@ -154,7 +155,7 @@ function RootComponent() {
 }
 
 function ToasterMount() {
-  const [Toaster, setToaster] = useState<React.ComponentType<{ position?: string; richColors?: boolean }> | null>(null);
+  const [Toaster, setToaster] = useState<React.ElementType | null>(null);
   useEffect(() => {
     import("sonner").then((m) => setToaster(() => m.Toaster));
   }, []);
