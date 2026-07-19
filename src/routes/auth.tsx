@@ -82,19 +82,27 @@ function AuthPage() {
     return null;
   }
 
+  async function sendCode(email: string) {
+    const res = (await requestOtpFn({ data: { email } })) as { cooldownSeconds?: number };
+    setCooldown(res.cooldownSeconds ?? 60);
+    setInfo(`We sent a 6-digit code to ${email}. It expires in 5 minutes.`);
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setInfo(null);
     const v = validate();
     if (v) return setError(v);
-    if (step === "creating") return; // guard against double-submit
+    if (step === "creating") return;
     setStep("creating");
-    const email = form.email.trim();
+    const email = form.email.trim().toLowerCase();
+
+    // Create the account (auto-confirmed on the backend). Password stays in state
+    // and is used to establish the session AFTER OTP verification.
     const { data, error } = await supabase.auth.signUp({
       email,
       password: form.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth`,
         data: {
           full_name: form.fullName.trim(),
           phone: form.phone.trim(),
@@ -103,162 +111,110 @@ function AuthPage() {
       },
     });
 
-    if (error) {
+    // If Supabase returned a session (auto-confirm), drop it — we require OTP first.
+    if (data?.session) await supabase.auth.signOut();
+
+    const identities = (data?.user as { identities?: unknown[] } | null)?.identities;
+    const alreadyRegistered =
+      (error && /already|registered|exists/i.test(error.message || "")) ||
+      (Array.isArray(identities) && identities.length === 0);
+
+    if (error && !alreadyRegistered) {
       setStep("register");
       const msg = (error.message || "").toLowerCase();
-      if (msg.includes("security purposes") || msg.includes("rate limit") || msg.includes("only request this after")) {
-        // Silently proceed to OTP screen — a code was very likely already sent
-        setInfo(`We sent a 6-digit code to ${email}. Please check your inbox.`);
-        setCooldown(60);
-        setStep("otp");
-        return;
-      }
-      if (msg.includes("already registered") || msg.includes("already exists") || msg.includes("user already")) {
-        const { error: otpErr } = await supabase.auth.signInWithOtp({
-          email,
-          options: { shouldCreateUser: false },
-        });
-        if (otpErr) return setError("This email is already registered. Please try signing in instead.");
-        setInfo(`This email is already registered. We sent a sign-in code to ${email}.`);
-        setCooldown(60);
-        setStep("otp");
-        return;
-      }
       if (msg.includes("password")) return setError("Please choose a stronger password (at least 8 characters).");
       if (msg.includes("email") && msg.includes("invalid")) return setError("Please enter a valid email address.");
-      return setError("We couldn't create your account. Please try again in a moment.");
+      return setError("We couldn't create your account. Please try again.");
     }
 
-    // Detect "user already registered" (obfuscated response)
-    const identities = (data.user as { identities?: unknown[] } | null)?.identities;
-    if (Array.isArray(identities) && identities.length === 0) {
-      const { error: otpErr } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
-      });
-      if (otpErr) {
-        setStep("register");
-        return setError("This email is already registered. Please try signing in instead.");
-      }
-      setInfo(`This email is already registered. We sent a sign-in code to ${email}.`);
-      setCooldown(60);
+    setMode(alreadyRegistered ? "login" : "signup");
+    try {
+      await sendCode(email);
       setStep("otp");
-      return;
+    } catch (err) {
+      setStep("register");
+      setError((err as Error).message || "Could not send verification code.");
     }
-
-    setInfo(`We sent a 6-digit code to ${email}. Please check your inbox.`);
-    setCooldown(60);
-    setStep("otp");
-  }
-
-
-  async function handleVerify(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (token.trim().length < 6) return setError("Enter the 6-digit code.");
-    console.log("[auth] verifyOtp start", { email: form.email.trim() });
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: form.email.trim(),
-      token: token.trim(),
-      type: "email",
-    });
-    console.log("[auth] verifyOtp result", { data, error });
-    if (error || !data.user) {
-      const msg = (error?.message || "").toLowerCase();
-      if (msg.includes("expired")) return setError("Your verification code has expired. Please request a new code.");
-      if (msg.includes("invalid")) return setError("The verification code is incorrect. Please try again.");
-      return setError(error?.message || "Verification failed. Please try again.");
-    }
-    // Persist profile details
-    await supabase.from("profiles").upsert({
-      id: data.user.id,
-      email: form.email.trim(),
-      full_name: form.fullName.trim(),
-      phone: form.phone.trim(),
-      country: form.country,
-    }, { onConflict: "id" });
-
-    setStep("verifying");
-    await new Promise((r) => setTimeout(r, 5000));
-    // Redirect admins to admin dashboard, others to home
-    const { data: isAdmin } = await supabase.rpc("has_role", {
-      _user_id: data.user.id,
-      _role: "admin",
-    });
-    navigate({ to: isAdmin ? "/admin/dashboard" : "/" });
-  }
-
-
-
-  async function resend() {
-    if (cooldown > 0) return;
-    setError(null); setInfo(null);
-    const email = form.email.trim();
-    console.log("[auth] resend start", { email });
-    // Try resending the signup confirmation. If the user is already confirmed
-    // or resend is rate-limited, fall back to signInWithOtp.
-    const { error } = await supabase.auth.resend({ type: "signup", email });
-    console.log("[auth] resend result", { error });
-    if (error) {
-      const { error: otpErr } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
-      });
-      console.log("[auth] resend->signInWithOtp result", { otpErr });
-      if (otpErr) return setError(`Couldn't resend code: ${otpErr.message}`);
-    }
-    setInfo("A new code was sent.");
-    setCooldown(60);
   }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setInfo(null);
-    const email = form.email.trim();
+    const email = form.email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Enter a valid email address.");
     if (!form.password) return setError("Enter your password.");
+
+    // Verify credentials, then immediately sign out — we require OTP before granting a session.
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: form.password });
     if (error || !data.session) {
       const msg = (error?.message || "").toLowerCase();
       if (msg.includes("invalid")) return setError("Invalid email or password.");
-      if (msg.includes("not confirmed") || msg.includes("confirm")) {
-        setInfo(`Please verify your email. We can send a new code to ${email}.`);
-        const { error: otpErr } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
-        if (!otpErr) { setStep("otp"); setCooldown(60); }
-        return;
-      }
       return setError(error?.message || "Login failed.");
     }
-    // Block suspended accounts
     const { data: ban } = await supabase
       .from("user_bans").select("user_id").eq("user_id", data.user.id).maybeSingle();
-    if (ban) {
-      await supabase.auth.signOut();
-      return setError("Your account has been suspended. Please contact support for assistance.");
-    }
-    // Persist form details so the profile lookups after OTP verify continue to work
-    if (!form.fullName) update("fullName", data.user.user_metadata?.full_name || "");
-    // Enforce OTP every sign-in: drop the password session, then send a fresh 6-digit code.
     await supabase.auth.signOut();
-    const { error: otpErr } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: false },
-    });
-    if (otpErr) {
-      const m = (otpErr.message || "").toLowerCase();
-      if (m.includes("security purposes") || m.includes("rate limit")) {
-        setInfo(`We just sent a code to ${email}. Please check your inbox.`);
-        setCooldown(60);
-        setStep("otp");
-        return;
-      }
-      return setError(otpErr.message || "Couldn't send verification code. Try again.");
+    if (ban) return setError("Your account has been suspended. Please contact support for assistance.");
+
+    setMode("login");
+    try {
+      await sendCode(email);
+      setToken("");
+      setStep("otp");
+    } catch (err) {
+      setError((err as Error).message || "Could not send verification code.");
     }
-    setInfo(`We sent a 6-digit code to ${email}. Enter it below to continue.`);
-    setToken("");
-    setCooldown(60);
-    setStep("otp");
   }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (token.trim().length < 6) return setError("Enter the 6-digit code.");
+    const email = form.email.trim().toLowerCase();
+
+    try {
+      await verifyOtpFn({ data: { email, code: token.trim() } });
+    } catch (err) {
+      return setError((err as Error).message || "Verification failed. Please try again.");
+    }
+
+    // OTP verified — establish the actual session with the password stored in state.
+    const { data: signIn, error: signInErr } = await supabase.auth.signInWithPassword({
+      email, password: form.password,
+    });
+    if (signInErr || !signIn.session) {
+      return setError("Could not sign you in. Please try logging in again.");
+    }
+
+    if (mode === "signup") {
+      await supabase.from("profiles").upsert({
+        id: signIn.user.id,
+        email,
+        full_name: form.fullName.trim(),
+        phone: form.phone.trim(),
+        country: form.country,
+      }, { onConflict: "id" });
+    }
+
+    setStep("verifying");
+    await new Promise((r) => setTimeout(r, 1500));
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: signIn.user.id,
+      _role: "admin",
+    });
+    navigate({ to: isAdmin ? "/admin/dashboard" : "/" });
+  }
+
+  async function resend() {
+    if (cooldown > 0) return;
+    setError(null); setInfo(null);
+    try {
+      await sendCode(form.email.trim().toLowerCase());
+    } catch (err) {
+      setError((err as Error).message || "Could not resend code.");
+    }
+  }
+
 
 
 
