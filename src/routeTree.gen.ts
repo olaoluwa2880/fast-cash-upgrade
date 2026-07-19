@@ -17,6 +17,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSupportSettingsRouteImport } from './routes/admin.support-settings'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLegalSettingsRouteImport } from './routes/admin.legal-settings'
+import { Route as AdminEmailStatusRouteImport } from './routes/admin.email-status'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCryptoWalletsRouteImport } from './routes/admin.crypto-wallets'
 import { Route as AdminCommunityRouteImport } from './routes/admin.community'
@@ -63,6 +64,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const AdminLegalSettingsRoute = AdminLegalSettingsRouteImport.update({
   id: '/admin/legal-settings',
   path: '/admin/legal-settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEmailStatusRoute = AdminEmailStatusRouteImport.update({
+  id: '/admin/email-status',
+  path: '/admin/email-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/admin/community': typeof AdminCommunityRoute
   '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/email-status': typeof AdminEmailStatusRoute
   '/admin/legal-settings': typeof AdminLegalSettingsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/admin/community': typeof AdminCommunityRoute
   '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/email-status': typeof AdminEmailStatusRoute
   '/admin/legal-settings': typeof AdminLegalSettingsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/admin/community': typeof AdminCommunityRoute
   '/admin/crypto-wallets': typeof AdminCryptoWalletsRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/email-status': typeof AdminEmailStatusRoute
   '/admin/legal-settings': typeof AdminLegalSettingsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/admin/community'
     | '/admin/crypto-wallets'
     | '/admin/dashboard'
+    | '/admin/email-status'
     | '/admin/legal-settings'
     | '/admin/login'
     | '/admin/support-settings'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/admin/community'
     | '/admin/crypto-wallets'
     | '/admin/dashboard'
+    | '/admin/email-status'
     | '/admin/legal-settings'
     | '/admin/login'
     | '/admin/support-settings'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/admin/community'
     | '/admin/crypto-wallets'
     | '/admin/dashboard'
+    | '/admin/email-status'
     | '/admin/legal-settings'
     | '/admin/login'
     | '/admin/support-settings'
@@ -221,6 +233,7 @@ export interface RootRouteChildren {
   AdminCommunityRoute: typeof AdminCommunityRoute
   AdminCryptoWalletsRoute: typeof AdminCryptoWalletsRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminEmailStatusRoute: typeof AdminEmailStatusRoute
   AdminLegalSettingsRoute: typeof AdminLegalSettingsRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSupportSettingsRoute: typeof AdminSupportSettingsRoute
@@ -286,6 +299,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/legal-settings'
       fullPath: '/admin/legal-settings'
       preLoaderRoute: typeof AdminLegalSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/email-status': {
+      id: '/admin/email-status'
+      path: '/admin/email-status'
+      fullPath: '/admin/email-status'
+      preLoaderRoute: typeof AdminEmailStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/dashboard': {
@@ -369,6 +389,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminCommunityRoute: AdminCommunityRoute,
   AdminCryptoWalletsRoute: AdminCryptoWalletsRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminEmailStatusRoute: AdminEmailStatusRoute,
   AdminLegalSettingsRoute: AdminLegalSettingsRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminSupportSettingsRoute: AdminSupportSettingsRoute,
@@ -380,13 +401,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
