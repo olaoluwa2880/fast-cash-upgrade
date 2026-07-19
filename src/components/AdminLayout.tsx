@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LogOut, RefreshCw, Shield, LayoutDashboard, Users, Landmark, Bitcoin, LifeBuoy, MessagesSquare, ScrollText } from "lucide-react";
+import { LogOut, RefreshCw, Shield, LayoutDashboard, Users, Landmark, Bitcoin, LifeBuoy, MessagesSquare, ScrollText, MailCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -127,6 +127,7 @@ function AdminNav() {
     { to: "/admin/support-settings", label: "Support", icon: LifeBuoy },
     { to: "/admin/community", label: "Community", icon: MessagesSquare },
     { to: "/admin/legal-settings", label: "Legal", icon: ScrollText },
+    { to: "/admin/email-status", label: "Email", icon: MailCheck },
   ] as const;
   return (
     <nav className="px-5 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
