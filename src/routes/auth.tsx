@@ -35,6 +35,9 @@ function AuthPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [mode, setMode] = useState<"signup" | "login">("signup");
+  const requestOtpFn = useServerFn(requestOtp);
+  const verifyOtpFn = useServerFn(verifyOtp);
 
   useEffect(() => {
     // Show suspended banner if redirected here after a ban
