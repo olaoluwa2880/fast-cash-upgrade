@@ -62,30 +62,34 @@ export const requestOtp = createServerFn({ method: "POST" })
     });
     if (insErr) throw new Error("Could not create verification code.");
 
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("Email service is not configured.");
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: "FastCredit <onboarding@resend.dev>",
-        to: [data.email],
-        subject: `Your FastCredit code: ${code}`,
-        html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px">
-          <h2 style="color:#047857;margin:0 0 8px">Verify your sign-in</h2>
-          <p style="color:#334155;font-size:14px;line-height:1.5">Use the code below to continue. It expires in 5 minutes.</p>
-          <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#0f172a;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;text-align:center;margin:16px 0">${code}</div>
-          <p style="color:#64748b;font-size:12px">If you didn't request this, you can safely ignore this email.</p>
-        </div>`,
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      console.error("[resend] send failed", res.status, body);
-      throw new Error(`Could not send verification email (${res.status}).`);
+
+    const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px">
+      <h2 style="color:#047857;margin:0 0 8px">Verify your sign-in</h2>
+      <p style="color:#334155;font-size:14px;line-height:1.5">Use the code below to continue. It expires in 5 minutes.</p>
+      <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#0f172a;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;text-align:center;margin:16px 0">${code}</div>
+      <p style="color:#64748b;font-size:12px">If you didn't request this, you can safely ignore this email.</p>
+    </div>`;
+    const text = `Your FastCredit verification code is ${code}. It expires in 5 minutes.`;
+
+    try {
+      const { sendLovableEmail } = await import("@lovable.dev/email-js");
+      await sendLovableEmail(
+        {
+          to: data.email,
+          from: "FastCredit Global <noreply@fastcreditglobal.com>",
+          sender_domain: "notify.fastcreditglobal.com",
+          subject: `Your FastCredit code: ${code}`,
+          html,
+          text,
+          purpose: "otp_login",
+        },
+        { apiKey },
+      );
+    } catch (e: any) {
+      console.error("[otp] send failed", e?.status, e?.code, e?.message);
+      throw new Error(`Could not send verification email: ${e?.message ?? "unknown error"}`);
     }
 
     return { sent: true, cooldownSeconds: 60, expiresInSeconds: 300 };
