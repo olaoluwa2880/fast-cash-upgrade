@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { requestOtp, verifyOtp } from "@/lib/otp.functions";
 import { User, Phone, Globe, Mail, Lock, Loader2, ArrowLeft, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
