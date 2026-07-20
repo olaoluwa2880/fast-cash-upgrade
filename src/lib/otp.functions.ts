@@ -72,22 +72,32 @@ export const requestOtp = createServerFn({ method: "POST" })
     </div>`;
     const text = `Your FastCredit verification code is ${code}. It expires in 5 minutes.`;
 
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("Email service is not configured.");
+
     try {
-      const result = await sendLovableEmail({
-        from: "FastCredit Global <noreply@notify.fastcreditglobal.com>",
-        to: data.email,
-        subject: `Your FastCredit code: ${code}`,
-        html,
-        text,
-      });
-      if (!result.sent) {
-        console.error(`[otp] lovable email not sent: ${result.reason}`);
-        throw new Error(`Could not send verification email: ${result.reason}`);
+      const result = await sendLovableEmail(
+        {
+          from: "FastCredit Global <noreply@notify.fastcreditglobal.com>",
+          sender_domain: "notify.fastcreditglobal.com",
+          to: data.email,
+          subject: `Your FastCredit code: ${code}`,
+          html,
+          text,
+          purpose: "transactional",
+          idempotency_key: code_hash,
+        },
+        { apiKey },
+      );
+      if (!result.success) {
+        console.error(`[otp] lovable email not sent:`, result);
+        throw new Error(`Could not send verification email: ${result.status ?? "unknown"}`);
       }
     } catch (e: any) {
       console.error(`[otp] lovable email error:`, e);
       throw new Error(e?.message || "Could not send verification email.");
     }
+
 
 
     return { sent: true, cooldownSeconds: 60, expiresInSeconds: 300 };
