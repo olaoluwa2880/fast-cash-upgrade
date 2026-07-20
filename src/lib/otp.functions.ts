@@ -75,6 +75,7 @@ export const requestOtp = createServerFn({ method: "POST" })
 
     try {
       const { sendLovableEmail } = await import("@lovable.dev/email-js");
+      const { randomUUID } = await import("crypto");
       await sendLovableEmail(
         {
           to: data.email,
@@ -84,7 +85,9 @@ export const requestOtp = createServerFn({ method: "POST" })
           html,
           text,
           purpose: "otp_login",
-        },
+          idempotency_key: `otp_${data.email}_${Date.now()}_${randomUUID()}`,
+          run_id: randomUUID(),
+        } as any,
         { apiKey },
       );
     } catch (e: any) {
