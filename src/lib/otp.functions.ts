@@ -84,7 +84,7 @@ export const requestOtp = createServerFn({ method: "POST" })
           subject: `Your FastCredit code: ${code}`,
           html,
           text,
-          purpose: "otp_login",
+          purpose: "transactional",
           idempotency_key: `otp_${data.email}_${Date.now()}_${randomUUID()}`,
           run_id: randomUUID(),
         } as any,
