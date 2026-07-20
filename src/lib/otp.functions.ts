@@ -62,9 +62,7 @@ export const requestOtp = createServerFn({ method: "POST" })
     });
     if (insErr) throw new Error("Could not create verification code.");
 
-    const lovableKey = process.env.LOVABLE_API_KEY;
-    const resendKey = process.env.RESEND_API_KEY;
-    if (!lovableKey || !resendKey) throw new Error("Email service is not configured.");
+    const { sendLovableEmail } = await import("@lovable.dev/email-js");
 
     const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px">
       <h2 style="color:#047857;margin:0 0 8px">Verify your sign-in</h2>
@@ -74,26 +72,23 @@ export const requestOtp = createServerFn({ method: "POST" })
     </div>`;
     const text = `Your FastCredit verification code is ${code}. It expires in 5 minutes.`;
 
-    const resp = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": resendKey,
-      },
-      body: JSON.stringify({
-        from: "FastCredit Global <noreply@fastcreditglobal.com>",
-        to: [data.email],
+    try {
+      const result = await sendLovableEmail({
+        from: "FastCredit Global <noreply@notify.fastcreditglobal.com>",
+        to: data.email,
         subject: `Your FastCredit code: ${code}`,
         html,
         text,
-      }),
-    });
-    if (!resp.ok) {
-      const body = await resp.text();
-      console.error(`[otp] resend send failed [${resp.status}]: ${body}`);
-      throw new Error(`Could not send verification email [${resp.status}]: ${body}`);
+      });
+      if (!result.sent) {
+        console.error(`[otp] lovable email not sent: ${result.reason}`);
+        throw new Error(`Could not send verification email: ${result.reason}`);
+      }
+    } catch (e: any) {
+      console.error(`[otp] lovable email error:`, e);
+      throw new Error(e?.message || "Could not send verification email.");
     }
+
 
     return { sent: true, cooldownSeconds: 60, expiresInSeconds: 300 };
   });
