@@ -3,7 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/AdminLayout";
 import { getOtpEmailStatus } from "@/lib/email-status.functions";
-import { CheckCircle2, AlertTriangle, XCircle, RefreshCw, MailCheck, ShieldCheck, ShieldAlert } from "lucide-react";
+import { getDomainStatus, type DnsCheck } from "@/lib/domain-status.functions";
+import { CheckCircle2, AlertTriangle, XCircle, RefreshCw, MailCheck, ShieldCheck, ShieldAlert, Globe } from "lucide-react";
 
 export const Route = createFileRoute("/admin/email-status")({
   component: EmailStatusPage,
@@ -12,9 +13,15 @@ export const Route = createFileRoute("/admin/email-status")({
 
 function EmailStatusPage() {
   const fn = useServerFn(getOtpEmailStatus);
+  const domainFn = useServerFn(getDomainStatus);
   const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ["otp-email-status"],
     queryFn: () => fn(),
+    refetchInterval: 60_000,
+  });
+  const domain = useQuery({
+    queryKey: ["otp-domain-status"],
+    queryFn: () => domainFn(),
     refetchInterval: 60_000,
   });
 
@@ -27,12 +34,18 @@ function EmailStatusPage() {
             <p className="text-xs text-slate-500">Live health of the sender domain and OTP delivery.</p>
           </div>
           <button
-            onClick={() => refetch()}
+            onClick={() => { refetch(); domain.refetch(); }}
             className="h-9 px-3 rounded-full bg-white/80 border border-white shadow-sm flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:bg-white"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+            <RefreshCw className={`h-3.5 w-3.5 ${(isFetching || domain.isFetching) ? "animate-spin" : ""}`} /> Refresh
           </button>
         </div>
+
+        <DomainVerificationCard
+          loading={domain.isLoading}
+          error={domain.error ? (domain.error as Error).message : undefined}
+          data={domain.data}
+        />
 
         {isLoading && <div className="rounded-2xl bg-white/70 border border-white p-6 text-sm text-slate-500">Checking…</div>}
         {error && <ErrorCard message={(error as Error).message} />}
@@ -51,6 +64,91 @@ function EmailStatusPage() {
         )}
       </div>
     </AdminLayout>
+  );
+}
+
+function DomainVerificationCard({
+  loading,
+  error,
+  data,
+}: {
+  loading: boolean;
+  error?: string;
+  data?: Awaited<ReturnType<typeof getDomainStatus>>;
+}) {
+  if (loading) return <div className="rounded-2xl bg-white/70 border border-white p-6 text-sm text-slate-500">Checking DNS…</div>;
+  if (error) return <ErrorCard message={error} />;
+  if (!data) return null;
+
+  const tone =
+    data.overall === "active"
+      ? { bg: "bg-emerald-500", label: "Active" }
+      : data.overall === "failed"
+      ? { bg: "bg-red-500", label: "Failed" }
+      : { bg: "bg-amber-500", label: "Pending" };
+
+  return (
+    <div className="rounded-3xl bg-white/80 backdrop-blur border border-white p-5 shadow-sm space-y-4">
+      <div className="flex items-center gap-3">
+        <div className={`h-12 w-12 rounded-2xl ${tone.bg} flex items-center justify-center text-white shadow`}>
+          <Globe className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-bold">Sender domain</div>
+            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full text-white ${tone.bg}`}>{tone.label}</span>
+          </div>
+          <div className="text-xs text-slate-500 truncate">{data.senderDomain}</div>
+          <div className="text-xs text-slate-700 mt-1">{data.summary}</div>
+        </div>
+      </div>
+
+      {data.failureReason && (
+        <div className="rounded-xl bg-red-50 border border-red-100 p-3 text-xs text-red-700 flex gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div><span className="font-semibold">Failure reason:</span> {data.failureReason}</div>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {data.checks.map((c) => <DnsCheckRow key={c.name} check={c} />)}
+      </div>
+      <p className="text-[11px] text-slate-400">DNS checked {new Date(data.checkedAt).toLocaleString()}</p>
+    </div>
+  );
+}
+
+function DnsCheckRow({ check }: { check: DnsCheck }) {
+  const Icon = check.ok ? CheckCircle2 : XCircle;
+  const tone = check.ok ? "text-emerald-600" : "text-red-600";
+  return (
+    <div className="rounded-xl border border-slate-100 bg-white/70 p-3">
+      <div className="flex items-center gap-2">
+        <Icon className={`h-4 w-4 ${tone}`} />
+        <div className="text-xs font-semibold text-slate-800 flex-1">{check.name}</div>
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{check.type}</span>
+      </div>
+      <div className="mt-2 text-[11px] text-slate-500 font-mono break-all">Host: {check.host}</div>
+      <div className="mt-1 text-[11px]">
+        <div className="text-slate-500">Expected:</div>
+        <ul className="font-mono break-all text-slate-700">
+          {check.expected.map((v) => <li key={v}>• {v}</li>)}
+        </ul>
+      </div>
+      <div className="mt-1 text-[11px]">
+        <div className="text-slate-500">Found:</div>
+        {check.found.length === 0 ? (
+          <div className="font-mono text-red-600">— none —</div>
+        ) : (
+          <ul className="font-mono break-all text-slate-700">
+            {check.found.map((v, i) => <li key={i}>• {v}</li>)}
+          </ul>
+        )}
+      </div>
+      {check.note && (
+        <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-2">{check.note}</div>
+      )}
+    </div>
   );
 }
 
