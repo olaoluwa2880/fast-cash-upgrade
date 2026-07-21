@@ -13,6 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { COUNTRIES, BANKS_BY_COUNTRY, type Bank } from "@/lib/banks-data";
+import { getBanksForCountry } from "@/lib/banks.functions";
 
 
 export const Route = createFileRoute("/_authenticated/")({
