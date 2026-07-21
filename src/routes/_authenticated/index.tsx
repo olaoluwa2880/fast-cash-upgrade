@@ -173,77 +173,16 @@ const PAYMENT_METHODS = [
   { id: "card", label: "Add your Card", desc: "Visa, Mastercard, Verve", emoji: "💳" },
 ];
 
-// Country → bank lists for Withdraw flow. Keyed by currency code so the currency
-// switcher and profile country selectors line up automatically.
-const BANKS_BY_CURRENCY: Record<string, { country: string; flag: string; banks: string[] }> = {
-  NGN: {
-    country: "Nigeria", flag: "🇳🇬",
-    banks: [
-      "Access Bank", "Citibank Nigeria", "Ecobank Nigeria", "Fidelity Bank",
-      "First Bank of Nigeria", "First City Monument Bank (FCMB)", "Globus Bank",
-      "Guaranty Trust Bank (GTBank)", "Heritage Bank", "Jaiz Bank", "Keystone Bank",
-      "Kuda Bank", "Lotus Bank", "Opay", "Palmpay", "Parallex Bank", "Polaris Bank",
-      "Premium Trust Bank", "Providus Bank", "Rand Merchant Bank", "Signature Bank",
-      "Stanbic IBTC Bank", "Standard Chartered Nigeria", "Sterling Bank",
-      "SunTrust Bank", "TAJ Bank", "Titan Trust Bank", "Union Bank of Nigeria",
-      "United Bank for Africa (UBA)", "Unity Bank", "VFD Bank", "Wema Bank",
-      "Zenith Bank", "Coronation Merchant Bank", "Nova Merchant Bank",
-    ],
-  },
-  CFA: {
-    country: "Cameroon", flag: "🇨🇲",
-    banks: [
-      "Afriland First Bank", "BICEC", "Commercial Bank of Cameroon (CBC)",
-      "Ecobank Cameroun", "Standard Chartered Bank Cameroon",
-      "Société Générale Cameroun (SGC)", "UBA Cameroun", "BGFI Bank Cameroun",
-      "Citibank Cameroon", "Access Bank Cameroon", "Attijariwafa Bank (SCB)",
-      "CCA Bank", "La Régionale", "Union Bank of Cameroon",
-      "National Financial Credit Bank (NFC)",
-    ],
-  },
-  ZAR: {
-    country: "South Africa", flag: "🇿🇦",
-    banks: [
-      "Standard Bank", "ABSA Bank", "First National Bank (FNB)", "Nedbank",
-      "Capitec Bank", "Investec", "African Bank", "Discovery Bank",
-      "TymeBank", "Bidvest Bank",
-    ],
-  },
-  GHS: {
-    country: "Ghana", flag: "🇬🇭",
-    banks: [
-      "Ghana Commercial Bank (GCB)", "Ecobank Ghana", "Absa Bank Ghana",
-      "Standard Chartered Ghana", "Zenith Bank Ghana", "Fidelity Bank Ghana",
-      "CalBank", "Access Bank Ghana", "Stanbic Bank Ghana",
-      "Republic Bank Ghana", "UBA Ghana", "Consolidated Bank Ghana",
-      "ADB Bank", "Prudential Bank",
-    ],
-  },
-  USD: {
-    country: "United States", flag: "🇺🇸",
-    banks: [
-      "JPMorgan Chase", "Bank of America", "Wells Fargo", "Citibank",
-      "U.S. Bank", "PNC Bank", "Truist Bank", "Goldman Sachs Bank",
-      "Capital One", "TD Bank",
-    ],
-  },
-  GBP: {
-    country: "United Kingdom", flag: "🇬🇧",
-    banks: [
-      "Barclays", "HSBC UK", "Lloyds Bank", "NatWest", "Santander UK",
-      "Standard Chartered UK", "Nationwide", "Metro Bank", "Monzo",
-      "Starling Bank", "Revolut",
-    ],
-  },
-  EUR: {
-    country: "Eurozone", flag: "🇪🇺",
-    banks: [
-      "Deutsche Bank", "BNP Paribas", "Société Générale", "ING Bank",
-      "Santander", "UniCredit", "Rabobank", "Commerzbank", "KBC Bank",
-      "Intesa Sanpaolo", "Crédit Agricole", "ABN AMRO",
-    ],
-  },
-};
+// Country + bank data is centralised in `@/lib/banks-data` and can be
+// hot-swapped with live provider data via `getBanksForCountry`.
+const COUNTRY_BY_CODE: Record<string, (typeof COUNTRIES)[number]> = Object.fromEntries(
+  COUNTRIES.map((c) => [c.code, c]),
+);
+const COUNTRY_BY_CURRENCY: Record<string, (typeof COUNTRIES)[number]> = COUNTRIES.reduce((acc, c) => {
+  if (!acc[c.currency]) acc[c.currency] = c;
+  return acc;
+}, {} as Record<string, (typeof COUNTRIES)[number]>);
+
 
 const CRYPTOCURRENCIES: { symbol: string; name: string; network: string; emoji: string }[] = [
   { symbol: "BTC", name: "Bitcoin", network: "Bitcoin", emoji: "₿" },
