@@ -291,25 +291,25 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   // function tries a live provider first; on any error we fall back to the
   // bundled dataset so the UI is never empty.
   const fetchBanks = useServerFn(getBanksForCountry);
+  const loadBanks = async (country: string, { silent = false } = {}) => {
+    if (!silent) setWdBanksLoading(true);
+    setWdBankSearch("");
+    try {
+      const res = await fetchBanks({ data: { country } });
+      setWdBanksList(res.banks);
+      setWdBanksSource(res.source);
+    } catch {
+      setWdBanksList(BANKS_BY_COUNTRY[country] ?? []);
+      setWdBanksSource("static");
+    } finally {
+      if (!silent) setWdBanksLoading(false);
+    }
+  };
   useEffect(() => {
     if (!openWithdraw || wdMethod !== "bank" || wdStep !== "bank") return;
-    let cancelled = false;
-    setWdBanksLoading(true);
-    setWdBankSearch("");
-    fetchBanks({ data: { country: wdCountry } })
-      .then((res) => {
-        if (cancelled) return;
-        setWdBanksList(res.banks);
-        setWdBanksSource(res.source);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setWdBanksList(BANKS_BY_COUNTRY[wdCountry] ?? []);
-        setWdBanksSource("static");
-      })
-      .finally(() => { if (!cancelled) setWdBanksLoading(false); });
-    return () => { cancelled = true; };
-  }, [openWithdraw, wdMethod, wdStep, wdCountry, fetchBanks]);
+    loadBanks(wdCountry);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openWithdraw, wdMethod, wdStep, wdCountry]);
 
 
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
