@@ -1482,7 +1482,17 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                         <span className="ml-1 opacity-70">· {COUNTRY_BY_CODE[wdCountry].flag} {COUNTRY_BY_CODE[wdCountry].name}</span>
                       )}
                     </p>
-                    <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => loadBanks(wdCountry)}
+                        disabled={wdBanksLoading}
+                        className="text-[11px] font-bold text-[#0e6b3f] disabled:opacity-50 flex items-center gap-1"
+                      >
+                        <RefreshCw className={`h-3 w-3 ${wdBanksLoading ? "animate-spin" : ""}`} />
+                        Refresh
+                      </button>
+                      <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
+                    </div>
                   </div>
                   <label className="block">
                     <input
