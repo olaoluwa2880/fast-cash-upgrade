@@ -678,7 +678,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const submitWithdraw = () => {
     setWdStep("processing");
     const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (wdMethod === "crypto" ? 1 : (currency.rate || 1));
-    const bankInfo = BANKS_BY_CURRENCY[wdCurrencyKey];
+    const countryInfo = COUNTRY_BY_CODE[wdCountry];
     setTimeout(async () => {
       const method = wdMethod === "crypto"
         ? `${wdCrypto?.name} (${wdCrypto?.symbol}) · ${wdCrypto?.network}`
