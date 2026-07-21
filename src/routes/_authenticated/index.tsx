@@ -287,6 +287,31 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [congrats, setCongrats] = useState<null | { title: string; body: string }>(null);
 
+  // Load bank list for the selected country when the bank step is open. Server
+  // function tries a live provider first; on any error we fall back to the
+  // bundled dataset so the UI is never empty.
+  const fetchBanks = useServerFn(getBanksForCountry);
+  useEffect(() => {
+    if (!openWithdraw || wdMethod !== "bank" || wdStep !== "bank") return;
+    let cancelled = false;
+    setWdBanksLoading(true);
+    setWdBankSearch("");
+    fetchBanks({ data: { country: wdCountry } })
+      .then((res) => {
+        if (cancelled) return;
+        setWdBanksList(res.banks);
+        setWdBanksSource(res.source);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setWdBanksList(BANKS_BY_COUNTRY[wdCountry] ?? []);
+        setWdBanksSource("static");
+      })
+      .finally(() => { if (!cancelled) setWdBanksLoading(false); });
+    return () => { cancelled = true; };
+  }, [openWithdraw, wdMethod, wdStep, wdCountry, fetchBanks]);
+
+
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
     setTransactions(prev => [{ ...t, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now() }, ...prev]);
 
