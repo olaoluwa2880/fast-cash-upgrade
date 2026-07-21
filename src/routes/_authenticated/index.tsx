@@ -271,7 +271,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [openWithdraw, setOpenWithdraw] = useState(false);
   const [wdStep, setWdStep] = useState<"method" | "country" | "bank" | "details" | "crypto" | "cryptoDetails" | "review" | "processing" | "success">("method");
   const [wdMethod, setWdMethod] = useState<"bank" | "crypto" | null>(null);
-  const [wdCurrencyKey, setWdCurrencyKey] = useState<string>("NGN");
+  const [wdCountry, setWdCountry] = useState<string>("NG");
+  const [wdCountrySearch, setWdCountrySearch] = useState("");
+  const [wdBankSearch, setWdBankSearch] = useState("");
+  const [wdBanksList, setWdBanksList] = useState<Bank[]>([]);
+  const [wdBanksLoading, setWdBanksLoading] = useState(false);
+  const [wdBanksSource, setWdBanksSource] = useState<"flutterwave" | "static" | null>(null);
   const [wdBank, setWdBank] = useState<string>("");
   const [wdAccountNumber, setWdAccountNumber] = useState("");
   const [wdAccountName, setWdAccountName] = useState("");
