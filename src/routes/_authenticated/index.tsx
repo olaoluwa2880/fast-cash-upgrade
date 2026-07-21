@@ -653,9 +653,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       showToast(`Your balance must be at least $${MIN_WITHDRAW_USD} before you can make a withdrawal.`);
       return;
     }
-    const preselect = BANKS_BY_CURRENCY[currency.code] ? currency.code : "NGN";
+    const preselect = COUNTRY_BY_CURRENCY[currency.code]?.code ?? "NG";
     setWdMethod(null);
-    setWdCurrencyKey(preselect);
+    setWdCountry(preselect);
     setWdBank("");
     setWdAccountNumber("");
     setWdAccountName("");
