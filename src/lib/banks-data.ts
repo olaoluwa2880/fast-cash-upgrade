@@ -167,7 +167,9 @@ export const BANKS_BY_COUNTRY: Record<string, Bank[]> = {
     { name: "Republic Bank Ghana" }, { name: "UBA Ghana" }, { name: "Consolidated Bank Ghana" },
     { name: "ADB Bank" }, { name: "Prudential Bank" }, { name: "Societe Generale Ghana" },
     { name: "First Atlantic Bank" }, { name: "Bank of Africa Ghana" }, { name: "GT Bank Ghana" },
+    { name: "Bank Transfer" }, { name: "MTN MoMo" }, { name: "Telecel Cash" }, { name: "AT Money" },
   ],
+
   KE: [
     { name: "KCB Bank" }, { name: "Equity Bank" }, { name: "Co-operative Bank" }, { name: "Absa Bank Kenya" },
     { name: "Standard Chartered Kenya" }, { name: "Stanbic Bank Kenya" }, { name: "NCBA Bank" },
