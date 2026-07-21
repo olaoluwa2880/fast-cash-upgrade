@@ -1538,7 +1538,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <div className="min-w-0">
                       <p className={`text-[10px] uppercase font-bold ${softText}`}>Selected bank</p>
                       <p className="font-black text-sm truncate">{wdBank}</p>
-                      <p className={`text-[10px] ${softText}`}>{BANKS_BY_CURRENCY[wdCurrencyKey]?.flag} {BANKS_BY_CURRENCY[wdCurrencyKey]?.country}</p>
+                      <p className={`text-[10px] ${softText}`}>{COUNTRY_BY_CODE[wdCountry]?.flag} {COUNTRY_BY_CODE[wdCountry]?.name}</p>
                     </div>
                     <button onClick={() => setWdStep("bank")} className="text-[11px] font-bold text-[#0e6b3f] shrink-0">Change</button>
                   </div>
