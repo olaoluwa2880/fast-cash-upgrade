@@ -716,7 +716,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const { error: insErr } = await supabase.from("withdrawals").insert({
         user_id: u.user.id,
         amount: amtUsd,
-        currency: wdMethod === "crypto" ? "USD" : wdCurrencyKey,
+        currency: wdMethod === "crypto" ? "USD" : (COUNTRY_BY_CODE[wdCountry]?.currency ?? "USD"),
         wallet_address: wdMethod === "crypto" ? wdWalletAddress : null,
         status: "pending",
       });
