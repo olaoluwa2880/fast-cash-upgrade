@@ -167,7 +167,9 @@ export const BANKS_BY_COUNTRY: Record<string, Bank[]> = {
     { name: "Republic Bank Ghana" }, { name: "UBA Ghana" }, { name: "Consolidated Bank Ghana" },
     { name: "ADB Bank" }, { name: "Prudential Bank" }, { name: "Societe Generale Ghana" },
     { name: "First Atlantic Bank" }, { name: "Bank of Africa Ghana" }, { name: "GT Bank Ghana" },
+    { name: "Bank Transfer" }, { name: "MTN MoMo" }, { name: "Telecel Cash" }, { name: "AT Money" },
   ],
+
   KE: [
     { name: "KCB Bank" }, { name: "Equity Bank" }, { name: "Co-operative Bank" }, { name: "Absa Bank Kenya" },
     { name: "Standard Chartered Kenya" }, { name: "Stanbic Bank Kenya" }, { name: "NCBA Bank" },
@@ -178,7 +180,9 @@ export const BANKS_BY_COUNTRY: Record<string, Bank[]> = {
     { name: "Standard Bank" }, { name: "ABSA Bank" }, { name: "First National Bank (FNB)" }, { name: "Nedbank" },
     { name: "Capitec Bank" }, { name: "Investec" }, { name: "African Bank" }, { name: "Discovery Bank" },
     { name: "TymeBank" }, { name: "Bidvest Bank" }, { name: "Bank Zero" }, { name: "Sasfin Bank" },
+    { name: "MTN MoMo" }, { name: "FNB eWallet" },
   ],
+
   UG: [
     { name: "Stanbic Bank Uganda" }, { name: "Centenary Bank" }, { name: "Absa Bank Uganda" },
     { name: "Standard Chartered Uganda" }, { name: "DFCU Bank" }, { name: "Equity Bank Uganda" },
@@ -202,7 +206,9 @@ export const BANKS_BY_COUNTRY: Record<string, Bank[]> = {
     { name: "Citibank Cameroon" }, { name: "Access Bank Cameroon" }, { name: "Attijariwafa Bank (SCB)" },
     { name: "CCA Bank" }, { name: "La Régionale" }, { name: "Union Bank of Cameroon" },
     { name: "National Financial Credit Bank (NFC)" },
+    { name: "MTN Mobile Money (MTN MoMo)" }, { name: "Orange Money" },
   ],
+
   CI: [
     { name: "Société Générale Côte d'Ivoire" }, { name: "Ecobank Côte d'Ivoire" }, { name: "SIB" },
     { name: "NSIA Banque" }, { name: "UBA Côte d'Ivoire" }, { name: "BOA Côte d'Ivoire" },
