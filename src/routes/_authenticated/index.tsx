@@ -7,7 +7,7 @@ import {
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
   Globe, Smartphone, CreditCard, MessageCircle, Send, Phone, ExternalLink,
-  LogOut,
+  LogOut, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
