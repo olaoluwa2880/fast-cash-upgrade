@@ -1421,27 +1421,47 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your country</p>
                     <button onClick={() => setWdStep("method")} className="text-[11px] font-bold text-[#0e6b3f]">Back</button>
                   </div>
-                  <p className={`text-[11px] ${softText}`}>We'll show the banks supported in your country for withdrawal.</p>
-                  <div className="mt-3 space-y-2">
-                    {Object.entries(BANKS_BY_CURRENCY).map(([key, info]) => {
-                      const isActive = wdCurrencyKey === key;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => { setWdCurrencyKey(key); setWdBank(""); setWdStep("bank"); }}
-                          className={`w-full flex items-center justify-between rounded-2xl border p-3 text-left active:scale-[0.98] transition ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-2xl shrink-0">{info.flag}</span>
-                            <div className="min-w-0">
-                              <p className="font-bold text-sm truncate">{info.country}</p>
-                              <p className={`text-[11px] ${softText}`}>{info.banks.length} banks · {key}</p>
+                  <p className={`text-[11px] ${softText}`}>Search any country. We'll load the banks supported for withdrawal there.</p>
+                  <label className="block mt-2">
+                    <input
+                      value={wdCountrySearch}
+                      onChange={(e) => setWdCountrySearch(e.target.value)}
+                      placeholder="Search country or currency (e.g. Nigeria, USD)"
+                      className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-black/10"}`}
+                    />
+                  </label>
+                  <div className="mt-2 max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
+                    {(() => {
+                      const q = wdCountrySearch.trim().toLowerCase();
+                      const list = q
+                        ? COUNTRIES.filter(c =>
+                            c.name.toLowerCase().includes(q) ||
+                            c.code.toLowerCase().includes(q) ||
+                            c.currency.toLowerCase().includes(q))
+                        : COUNTRIES;
+                      if (list.length === 0) {
+                        return <p className={`text-xs ${softText} py-4 text-center`}>No countries match "{wdCountrySearch}"</p>;
+                      }
+                      return list.map((info) => {
+                        const isActive = wdCountry === info.code;
+                        return (
+                          <button
+                            key={info.code}
+                            onClick={() => { setWdCountry(info.code); setWdBank(""); setWdBanksList([]); setWdStep("bank"); }}
+                            className={`w-full flex items-center justify-between rounded-2xl border p-3 text-left active:scale-[0.98] transition ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="text-2xl shrink-0">{info.flag}</span>
+                              <div className="min-w-0">
+                                <p className="font-bold text-sm truncate">{info.name}</p>
+                                <p className={`text-[11px] ${softText}`}>{info.code} · {info.currency}</p>
+                              </div>
                             </div>
-                          </div>
-                          <ArrowUpRight className="h-4 w-4 opacity-60 shrink-0" />
-                        </button>
-                      );
-                    })}
+                            <ArrowUpRight className="h-4 w-4 opacity-60 shrink-0" />
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )}
@@ -1449,26 +1469,68 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               {wdStep === "bank" && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your bank</p>
+                    <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>
+                      Select your bank
+                      {COUNTRY_BY_CODE[wdCountry] && (
+                        <span className="ml-1 opacity-70">· {COUNTRY_BY_CODE[wdCountry].flag} {COUNTRY_BY_CODE[wdCountry].name}</span>
+                      )}
+                    </p>
                     <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
                   </div>
-                  <div className="mt-2 space-y-1.5 pr-1">
-                    {BANKS_BY_CURRENCY[wdCurrencyKey]?.banks.map(b => {
-                      const isActive = wdBank === b;
-                      return (
+                  <label className="block">
+                    <input
+                      value={wdBankSearch}
+                      onChange={(e) => setWdBankSearch(e.target.value)}
+                      placeholder="Search bank"
+                      className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-black/10"}`}
+                    />
+                  </label>
+                  {wdBanksSource === "flutterwave" && (
+                    <p className="text-[10px] text-emerald-600 font-semibold">Live list from payment provider</p>
+                  )}
+                  <div className="mt-2 max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
+                    {wdBanksLoading && (
+                      <p className={`text-xs ${softText} py-4 text-center`}>Loading banks…</p>
+                    )}
+                    {!wdBanksLoading && wdBanksList.length === 0 && (
+                      <div className="py-6 text-center space-y-2">
+                        <p className={`text-xs ${softText}`}>
+                          No banks bundled for {COUNTRY_BY_CODE[wdCountry]?.name ?? wdCountry} yet.
+                        </p>
                         <button
-                          key={b}
-                          onClick={() => { setWdBank(b); setWdStep("details"); }}
-                          className={`w-full flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                          onClick={() => { setWdBank("Other bank"); setWdStep("details"); }}
+                          className="text-xs font-bold text-[#0e6b3f] underline"
                         >
-                          <span className="font-semibold text-sm truncate">{b}</span>
-                          <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 shrink-0" />
+                          Enter my bank manually
                         </button>
-                      );
-                    })}
+                      </div>
+                    )}
+                    {!wdBanksLoading && (() => {
+                      const q = wdBankSearch.trim().toLowerCase();
+                      const list = q
+                        ? wdBanksList.filter((b) => b.name.toLowerCase().includes(q))
+                        : wdBanksList;
+                      if (q && list.length === 0) {
+                        return <p className={`text-xs ${softText} py-4 text-center`}>No banks match "{wdBankSearch}"</p>;
+                      }
+                      return list.map((b) => {
+                        const isActive = wdBank === b.name;
+                        return (
+                          <button
+                            key={`${b.name}-${b.code ?? ""}`}
+                            onClick={() => { setWdBank(b.name); setWdStep("details"); }}
+                            className={`w-full flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                          >
+                            <span className="font-semibold text-sm truncate">{b.name}</span>
+                            <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 shrink-0" />
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )}
+
 
               {wdStep === "details" && (
                 <div className="space-y-3">
