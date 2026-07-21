@@ -13,6 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { COUNTRIES, BANKS_BY_COUNTRY, type Bank } from "@/lib/banks-data";
+import { getBanksForCountry } from "@/lib/banks.functions";
 
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -170,77 +173,16 @@ const PAYMENT_METHODS = [
   { id: "card", label: "Add your Card", desc: "Visa, Mastercard, Verve", emoji: "💳" },
 ];
 
-// Country → bank lists for Withdraw flow. Keyed by currency code so the currency
-// switcher and profile country selectors line up automatically.
-const BANKS_BY_CURRENCY: Record<string, { country: string; flag: string; banks: string[] }> = {
-  NGN: {
-    country: "Nigeria", flag: "🇳🇬",
-    banks: [
-      "Access Bank", "Citibank Nigeria", "Ecobank Nigeria", "Fidelity Bank",
-      "First Bank of Nigeria", "First City Monument Bank (FCMB)", "Globus Bank",
-      "Guaranty Trust Bank (GTBank)", "Heritage Bank", "Jaiz Bank", "Keystone Bank",
-      "Kuda Bank", "Lotus Bank", "Opay", "Palmpay", "Parallex Bank", "Polaris Bank",
-      "Premium Trust Bank", "Providus Bank", "Rand Merchant Bank", "Signature Bank",
-      "Stanbic IBTC Bank", "Standard Chartered Nigeria", "Sterling Bank",
-      "SunTrust Bank", "TAJ Bank", "Titan Trust Bank", "Union Bank of Nigeria",
-      "United Bank for Africa (UBA)", "Unity Bank", "VFD Bank", "Wema Bank",
-      "Zenith Bank", "Coronation Merchant Bank", "Nova Merchant Bank",
-    ],
-  },
-  CFA: {
-    country: "Cameroon", flag: "🇨🇲",
-    banks: [
-      "Afriland First Bank", "BICEC", "Commercial Bank of Cameroon (CBC)",
-      "Ecobank Cameroun", "Standard Chartered Bank Cameroon",
-      "Société Générale Cameroun (SGC)", "UBA Cameroun", "BGFI Bank Cameroun",
-      "Citibank Cameroon", "Access Bank Cameroon", "Attijariwafa Bank (SCB)",
-      "CCA Bank", "La Régionale", "Union Bank of Cameroon",
-      "National Financial Credit Bank (NFC)",
-    ],
-  },
-  ZAR: {
-    country: "South Africa", flag: "🇿🇦",
-    banks: [
-      "Standard Bank", "ABSA Bank", "First National Bank (FNB)", "Nedbank",
-      "Capitec Bank", "Investec", "African Bank", "Discovery Bank",
-      "TymeBank", "Bidvest Bank",
-    ],
-  },
-  GHS: {
-    country: "Ghana", flag: "🇬🇭",
-    banks: [
-      "Ghana Commercial Bank (GCB)", "Ecobank Ghana", "Absa Bank Ghana",
-      "Standard Chartered Ghana", "Zenith Bank Ghana", "Fidelity Bank Ghana",
-      "CalBank", "Access Bank Ghana", "Stanbic Bank Ghana",
-      "Republic Bank Ghana", "UBA Ghana", "Consolidated Bank Ghana",
-      "ADB Bank", "Prudential Bank",
-    ],
-  },
-  USD: {
-    country: "United States", flag: "🇺🇸",
-    banks: [
-      "JPMorgan Chase", "Bank of America", "Wells Fargo", "Citibank",
-      "U.S. Bank", "PNC Bank", "Truist Bank", "Goldman Sachs Bank",
-      "Capital One", "TD Bank",
-    ],
-  },
-  GBP: {
-    country: "United Kingdom", flag: "🇬🇧",
-    banks: [
-      "Barclays", "HSBC UK", "Lloyds Bank", "NatWest", "Santander UK",
-      "Standard Chartered UK", "Nationwide", "Metro Bank", "Monzo",
-      "Starling Bank", "Revolut",
-    ],
-  },
-  EUR: {
-    country: "Eurozone", flag: "🇪🇺",
-    banks: [
-      "Deutsche Bank", "BNP Paribas", "Société Générale", "ING Bank",
-      "Santander", "UniCredit", "Rabobank", "Commerzbank", "KBC Bank",
-      "Intesa Sanpaolo", "Crédit Agricole", "ABN AMRO",
-    ],
-  },
-};
+// Country + bank data is centralised in `@/lib/banks-data` and can be
+// hot-swapped with live provider data via `getBanksForCountry`.
+const COUNTRY_BY_CODE: Record<string, (typeof COUNTRIES)[number]> = Object.fromEntries(
+  COUNTRIES.map((c) => [c.code, c]),
+);
+const COUNTRY_BY_CURRENCY: Record<string, (typeof COUNTRIES)[number]> = COUNTRIES.reduce((acc, c) => {
+  if (!acc[c.currency]) acc[c.currency] = c;
+  return acc;
+}, {} as Record<string, (typeof COUNTRIES)[number]>);
+
 
 const CRYPTOCURRENCIES: { symbol: string; name: string; network: string; emoji: string }[] = [
   { symbol: "BTC", name: "Bitcoin", network: "Bitcoin", emoji: "₿" },
@@ -329,7 +271,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [openWithdraw, setOpenWithdraw] = useState(false);
   const [wdStep, setWdStep] = useState<"method" | "country" | "bank" | "details" | "crypto" | "cryptoDetails" | "review" | "processing" | "success">("method");
   const [wdMethod, setWdMethod] = useState<"bank" | "crypto" | null>(null);
-  const [wdCurrencyKey, setWdCurrencyKey] = useState<string>("NGN");
+  const [wdCountry, setWdCountry] = useState<string>("NG");
+  const [wdCountrySearch, setWdCountrySearch] = useState("");
+  const [wdBankSearch, setWdBankSearch] = useState("");
+  const [wdBanksList, setWdBanksList] = useState<Bank[]>([]);
+  const [wdBanksLoading, setWdBanksLoading] = useState(false);
+  const [wdBanksSource, setWdBanksSource] = useState<"flutterwave" | "static" | null>(null);
   const [wdBank, setWdBank] = useState<string>("");
   const [wdAccountNumber, setWdAccountNumber] = useState("");
   const [wdAccountName, setWdAccountName] = useState("");
@@ -339,6 +286,31 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [wdWalletAddress, setWdWalletAddress] = useState("");
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [congrats, setCongrats] = useState<null | { title: string; body: string }>(null);
+
+  // Load bank list for the selected country when the bank step is open. Server
+  // function tries a live provider first; on any error we fall back to the
+  // bundled dataset so the UI is never empty.
+  const fetchBanks = useServerFn(getBanksForCountry);
+  useEffect(() => {
+    if (!openWithdraw || wdMethod !== "bank" || wdStep !== "bank") return;
+    let cancelled = false;
+    setWdBanksLoading(true);
+    setWdBankSearch("");
+    fetchBanks({ data: { country: wdCountry } })
+      .then((res) => {
+        if (cancelled) return;
+        setWdBanksList(res.banks);
+        setWdBanksSource(res.source);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setWdBanksList(BANKS_BY_COUNTRY[wdCountry] ?? []);
+        setWdBanksSource("static");
+      })
+      .finally(() => { if (!cancelled) setWdBanksLoading(false); });
+    return () => { cancelled = true; };
+  }, [openWithdraw, wdMethod, wdStep, wdCountry, fetchBanks]);
+
 
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
     setTransactions(prev => [{ ...t, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: Date.now() }, ...prev]);
@@ -711,9 +683,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       showToast(`Your balance must be at least $${MIN_WITHDRAW_USD} before you can make a withdrawal.`);
       return;
     }
-    const preselect = BANKS_BY_CURRENCY[currency.code] ? currency.code : "NGN";
+    const preselect = COUNTRY_BY_CURRENCY[currency.code]?.code ?? "NG";
     setWdMethod(null);
-    setWdCurrencyKey(preselect);
+    setWdCountry(preselect);
     setWdBank("");
     setWdAccountNumber("");
     setWdAccountName("");
@@ -731,11 +703,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const submitWithdraw = () => {
     setWdStep("processing");
     const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (wdMethod === "crypto" ? 1 : (currency.rate || 1));
-    const bankInfo = BANKS_BY_CURRENCY[wdCurrencyKey];
+    const countryInfo = COUNTRY_BY_CODE[wdCountry];
     setTimeout(async () => {
       const method = wdMethod === "crypto"
         ? `${wdCrypto?.name} (${wdCrypto?.symbol}) · ${wdCrypto?.network}`
-        : `${bankInfo?.country} · ${wdBank}`;
+        : `${countryInfo?.name ?? wdCountry} · ${wdBank}`;
       const note = wdMethod === "crypto"
         ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
         : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
@@ -769,7 +741,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const { error: insErr } = await supabase.from("withdrawals").insert({
         user_id: u.user.id,
         amount: amtUsd,
-        currency: wdMethod === "crypto" ? "USD" : wdCurrencyKey,
+        currency: wdMethod === "crypto" ? "USD" : (COUNTRY_BY_CODE[wdCountry]?.currency ?? "USD"),
         wallet_address: wdMethod === "crypto" ? wdWalletAddress : null,
         status: "pending",
       });
@@ -1405,8 +1377,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <ArrowUpRight className="h-4 w-4 shrink-0" />
                 <p className="font-black text-base truncate">
                   Withdraw
-                  {wdMethod === "bank" && wdStep !== "method" && wdStep !== "country" && BANKS_BY_CURRENCY[wdCurrencyKey] && (
-                    <span className="ml-2 text-xs opacity-80">· {BANKS_BY_CURRENCY[wdCurrencyKey].flag} {BANKS_BY_CURRENCY[wdCurrencyKey].country}</span>
+                  {wdMethod === "bank" && wdStep !== "method" && wdStep !== "country" && COUNTRY_BY_CODE[wdCountry] && (
+                    <span className="ml-2 text-xs opacity-80">· {COUNTRY_BY_CODE[wdCountry].flag} {COUNTRY_BY_CODE[wdCountry].name}</span>
                   )}
                   {wdMethod === "crypto" && wdCrypto && (
                     <span className="ml-2 text-xs opacity-80">· {wdCrypto.symbol}</span>
@@ -1449,27 +1421,47 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your country</p>
                     <button onClick={() => setWdStep("method")} className="text-[11px] font-bold text-[#0e6b3f]">Back</button>
                   </div>
-                  <p className={`text-[11px] ${softText}`}>We'll show the banks supported in your country for withdrawal.</p>
-                  <div className="mt-3 space-y-2">
-                    {Object.entries(BANKS_BY_CURRENCY).map(([key, info]) => {
-                      const isActive = wdCurrencyKey === key;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => { setWdCurrencyKey(key); setWdBank(""); setWdStep("bank"); }}
-                          className={`w-full flex items-center justify-between rounded-2xl border p-3 text-left active:scale-[0.98] transition ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-2xl shrink-0">{info.flag}</span>
-                            <div className="min-w-0">
-                              <p className="font-bold text-sm truncate">{info.country}</p>
-                              <p className={`text-[11px] ${softText}`}>{info.banks.length} banks · {key}</p>
+                  <p className={`text-[11px] ${softText}`}>Search any country. We'll load the banks supported for withdrawal there.</p>
+                  <label className="block mt-2">
+                    <input
+                      value={wdCountrySearch}
+                      onChange={(e) => setWdCountrySearch(e.target.value)}
+                      placeholder="Search country or currency (e.g. Nigeria, USD)"
+                      className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-black/10"}`}
+                    />
+                  </label>
+                  <div className="mt-2 max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
+                    {(() => {
+                      const q = wdCountrySearch.trim().toLowerCase();
+                      const list = q
+                        ? COUNTRIES.filter(c =>
+                            c.name.toLowerCase().includes(q) ||
+                            c.code.toLowerCase().includes(q) ||
+                            c.currency.toLowerCase().includes(q))
+                        : COUNTRIES;
+                      if (list.length === 0) {
+                        return <p className={`text-xs ${softText} py-4 text-center`}>No countries match "{wdCountrySearch}"</p>;
+                      }
+                      return list.map((info) => {
+                        const isActive = wdCountry === info.code;
+                        return (
+                          <button
+                            key={info.code}
+                            onClick={() => { setWdCountry(info.code); setWdBank(""); setWdBanksList([]); setWdStep("bank"); }}
+                            className={`w-full flex items-center justify-between rounded-2xl border p-3 text-left active:scale-[0.98] transition ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="text-2xl shrink-0">{info.flag}</span>
+                              <div className="min-w-0">
+                                <p className="font-bold text-sm truncate">{info.name}</p>
+                                <p className={`text-[11px] ${softText}`}>{info.code} · {info.currency}</p>
+                              </div>
                             </div>
-                          </div>
-                          <ArrowUpRight className="h-4 w-4 opacity-60 shrink-0" />
-                        </button>
-                      );
-                    })}
+                            <ArrowUpRight className="h-4 w-4 opacity-60 shrink-0" />
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )}
@@ -1477,26 +1469,68 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               {wdStep === "bank" && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your bank</p>
+                    <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>
+                      Select your bank
+                      {COUNTRY_BY_CODE[wdCountry] && (
+                        <span className="ml-1 opacity-70">· {COUNTRY_BY_CODE[wdCountry].flag} {COUNTRY_BY_CODE[wdCountry].name}</span>
+                      )}
+                    </p>
                     <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
                   </div>
-                  <div className="mt-2 space-y-1.5 pr-1">
-                    {BANKS_BY_CURRENCY[wdCurrencyKey]?.banks.map(b => {
-                      const isActive = wdBank === b;
-                      return (
+                  <label className="block">
+                    <input
+                      value={wdBankSearch}
+                      onChange={(e) => setWdBankSearch(e.target.value)}
+                      placeholder="Search bank"
+                      className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-black/10"}`}
+                    />
+                  </label>
+                  {wdBanksSource === "flutterwave" && (
+                    <p className="text-[10px] text-emerald-600 font-semibold">Live list from payment provider</p>
+                  )}
+                  <div className="mt-2 max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
+                    {wdBanksLoading && (
+                      <p className={`text-xs ${softText} py-4 text-center`}>Loading banks…</p>
+                    )}
+                    {!wdBanksLoading && wdBanksList.length === 0 && (
+                      <div className="py-6 text-center space-y-2">
+                        <p className={`text-xs ${softText}`}>
+                          No banks bundled for {COUNTRY_BY_CODE[wdCountry]?.name ?? wdCountry} yet.
+                        </p>
                         <button
-                          key={b}
-                          onClick={() => { setWdBank(b); setWdStep("details"); }}
-                          className={`w-full flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                          onClick={() => { setWdBank("Other bank"); setWdStep("details"); }}
+                          className="text-xs font-bold text-[#0e6b3f] underline"
                         >
-                          <span className="font-semibold text-sm truncate">{b}</span>
-                          <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 shrink-0" />
+                          Enter my bank manually
                         </button>
-                      );
-                    })}
+                      </div>
+                    )}
+                    {!wdBanksLoading && (() => {
+                      const q = wdBankSearch.trim().toLowerCase();
+                      const list = q
+                        ? wdBanksList.filter((b) => b.name.toLowerCase().includes(q))
+                        : wdBanksList;
+                      if (q && list.length === 0) {
+                        return <p className={`text-xs ${softText} py-4 text-center`}>No banks match "{wdBankSearch}"</p>;
+                      }
+                      return list.map((b) => {
+                        const isActive = wdBank === b.name;
+                        return (
+                          <button
+                            key={`${b.name}-${b.code ?? ""}`}
+                            onClick={() => { setWdBank(b.name); setWdStep("details"); }}
+                            className={`w-full flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                          >
+                            <span className="font-semibold text-sm truncate">{b.name}</span>
+                            <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 shrink-0" />
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )}
+
 
               {wdStep === "details" && (
                 <div className="space-y-3">
@@ -1504,7 +1538,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <div className="min-w-0">
                       <p className={`text-[10px] uppercase font-bold ${softText}`}>Selected bank</p>
                       <p className="font-black text-sm truncate">{wdBank}</p>
-                      <p className={`text-[10px] ${softText}`}>{BANKS_BY_CURRENCY[wdCurrencyKey]?.flag} {BANKS_BY_CURRENCY[wdCurrencyKey]?.country}</p>
+                      <p className={`text-[10px] ${softText}`}>{COUNTRY_BY_CODE[wdCountry]?.flag} {COUNTRY_BY_CODE[wdCountry]?.name}</p>
                     </div>
                     <button onClick={() => setWdStep("bank")} className="text-[11px] font-bold text-[#0e6b3f] shrink-0">Change</button>
                   </div>
