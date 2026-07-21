@@ -1463,6 +1463,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       });
                     })()}
                   </div>
+                  <button
+                    onClick={() => { setWdBank(""); setWdStep("bank"); }}
+                    className={`w-full flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold active:scale-[0.98] transition ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh banks for {COUNTRY_BY_CODE[wdCountry]?.name ?? wdCountry}
+                  </button>
                 </div>
               )}
 
