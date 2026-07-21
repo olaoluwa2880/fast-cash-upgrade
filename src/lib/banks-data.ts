@@ -180,7 +180,9 @@ export const BANKS_BY_COUNTRY: Record<string, Bank[]> = {
     { name: "Standard Bank" }, { name: "ABSA Bank" }, { name: "First National Bank (FNB)" }, { name: "Nedbank" },
     { name: "Capitec Bank" }, { name: "Investec" }, { name: "African Bank" }, { name: "Discovery Bank" },
     { name: "TymeBank" }, { name: "Bidvest Bank" }, { name: "Bank Zero" }, { name: "Sasfin Bank" },
+    { name: "MTN MoMo" }, { name: "FNB eWallet" },
   ],
+
   UG: [
     { name: "Stanbic Bank Uganda" }, { name: "Centenary Bank" }, { name: "Absa Bank Uganda" },
     { name: "Standard Chartered Uganda" }, { name: "DFCU Bank" }, { name: "Equity Bank Uganda" },
