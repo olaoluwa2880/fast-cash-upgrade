@@ -7,7 +7,7 @@ import {
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
   Globe, Smartphone, CreditCard, MessageCircle, Send, Phone, ExternalLink,
-  LogOut,
+  LogOut, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
@@ -291,25 +291,25 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   // function tries a live provider first; on any error we fall back to the
   // bundled dataset so the UI is never empty.
   const fetchBanks = useServerFn(getBanksForCountry);
+  const loadBanks = async (country: string, { silent = false } = {}) => {
+    if (!silent) setWdBanksLoading(true);
+    setWdBankSearch("");
+    try {
+      const res = await fetchBanks({ data: { country } });
+      setWdBanksList(res.banks);
+      setWdBanksSource(res.source);
+    } catch {
+      setWdBanksList(BANKS_BY_COUNTRY[country] ?? []);
+      setWdBanksSource("static");
+    } finally {
+      if (!silent) setWdBanksLoading(false);
+    }
+  };
   useEffect(() => {
     if (!openWithdraw || wdMethod !== "bank" || wdStep !== "bank") return;
-    let cancelled = false;
-    setWdBanksLoading(true);
-    setWdBankSearch("");
-    fetchBanks({ data: { country: wdCountry } })
-      .then((res) => {
-        if (cancelled) return;
-        setWdBanksList(res.banks);
-        setWdBanksSource(res.source);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setWdBanksList(BANKS_BY_COUNTRY[wdCountry] ?? []);
-        setWdBanksSource("static");
-      })
-      .finally(() => { if (!cancelled) setWdBanksLoading(false); });
-    return () => { cancelled = true; };
-  }, [openWithdraw, wdMethod, wdStep, wdCountry, fetchBanks]);
+    loadBanks(wdCountry);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openWithdraw, wdMethod, wdStep, wdCountry]);
 
 
   const addTxn = (t: Omit<Txn, "id" | "at">) =>
@@ -1463,6 +1463,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       });
                     })()}
                   </div>
+                  <button
+                    onClick={() => { setWdBank(""); setWdStep("bank"); }}
+                    className={`w-full flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold active:scale-[0.98] transition ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh banks for {COUNTRY_BY_CODE[wdCountry]?.name ?? wdCountry}
+                  </button>
                 </div>
               )}
 
@@ -1475,7 +1482,17 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                         <span className="ml-1 opacity-70">· {COUNTRY_BY_CODE[wdCountry].flag} {COUNTRY_BY_CODE[wdCountry].name}</span>
                       )}
                     </p>
-                    <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => loadBanks(wdCountry)}
+                        disabled={wdBanksLoading}
+                        className="text-[11px] font-bold text-[#0e6b3f] disabled:opacity-50 flex items-center gap-1"
+                      >
+                        <RefreshCw className={`h-3 w-3 ${wdBanksLoading ? "animate-spin" : ""}`} />
+                        Refresh
+                      </button>
+                      <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
+                    </div>
                   </div>
                   <label className="block">
                     <input
