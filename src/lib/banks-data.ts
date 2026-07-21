@@ -206,7 +206,9 @@ export const BANKS_BY_COUNTRY: Record<string, Bank[]> = {
     { name: "Citibank Cameroon" }, { name: "Access Bank Cameroon" }, { name: "Attijariwafa Bank (SCB)" },
     { name: "CCA Bank" }, { name: "La Régionale" }, { name: "Union Bank of Cameroon" },
     { name: "National Financial Credit Bank (NFC)" },
+    { name: "MTN Mobile Money (MTN MoMo)" }, { name: "Orange Money" },
   ],
+
   CI: [
     { name: "Société Générale Côte d'Ivoire" }, { name: "Ecobank Côte d'Ivoire" }, { name: "SIB" },
     { name: "NSIA Banque" }, { name: "UBA Côte d'Ivoire" }, { name: "BOA Côte d'Ivoire" },
