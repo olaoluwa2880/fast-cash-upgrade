@@ -682,7 +682,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setTimeout(async () => {
       const method = wdMethod === "crypto"
         ? `${wdCrypto?.name} (${wdCrypto?.symbol}) · ${wdCrypto?.network}`
-        : `${bankInfo?.country} · ${wdBank}`;
+        : `${countryInfo?.name ?? wdCountry} · ${wdBank}`;
       const note = wdMethod === "crypto"
         ? `To wallet ${wdWalletAddress.slice(0, 10)}…${wdWalletAddress.slice(-6)}`
         : `To ${wdAccountName || "account"} · ${wdAccountNumber}`;
