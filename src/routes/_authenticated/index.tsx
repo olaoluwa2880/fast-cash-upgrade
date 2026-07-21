@@ -1377,8 +1377,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <ArrowUpRight className="h-4 w-4 shrink-0" />
                 <p className="font-black text-base truncate">
                   Withdraw
-                  {wdMethod === "bank" && wdStep !== "method" && wdStep !== "country" && BANKS_BY_CURRENCY[wdCurrencyKey] && (
-                    <span className="ml-2 text-xs opacity-80">· {BANKS_BY_CURRENCY[wdCurrencyKey].flag} {BANKS_BY_CURRENCY[wdCurrencyKey].country}</span>
+                  {wdMethod === "bank" && wdStep !== "method" && wdStep !== "country" && COUNTRY_BY_CODE[wdCountry] && (
+                    <span className="ml-2 text-xs opacity-80">· {COUNTRY_BY_CODE[wdCountry].flag} {COUNTRY_BY_CODE[wdCountry].name}</span>
                   )}
                   {wdMethod === "crypto" && wdCrypto && (
                     <span className="ml-2 text-xs opacity-80">· {wdCrypto.symbol}</span>
