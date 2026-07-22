@@ -593,6 +593,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         body: `Your deposit of $${amt.toFixed(2)} via ${methodLabel} is pending review.`,
         url: "/", tag: "deposit-submitted",
       } }).catch(() => {});
+      sendTransactionEmail({ data: {
+        kind: "deposit", event: "submitted", amount: amt, currency: "USD",
+      } }).catch(() => {});
     } catch (e) {
       setPaymentStep("pending");
       showToast(`Could not submit: ${(e as Error).message}`);
