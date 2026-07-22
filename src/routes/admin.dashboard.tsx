@@ -111,6 +111,13 @@ function Dashboard() {
     } catch (e) { console.error("push send failed", e); }
   }
 
+  async function emailTxn(userId: string, kind: "deposit" | "withdrawal", event: "approved" | "rejected", amount: number, currency: string, reason?: string) {
+    try {
+      const { sendTransactionEmail } = await import("@/lib/notifications.functions");
+      await sendTransactionEmail({ data: { userId, kind, event, amount, currency, reason } });
+    } catch (e) { console.error("email send failed", e); }
+  }
+
   async function creditBalance(userId: string, amount: number) {
     const { data: existing } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", userId).maybeSingle();
     const current = Number(existing?.balance_usd ?? 0);
@@ -131,13 +138,16 @@ function Dashboard() {
         // Mining plan upgrade — activate plan, do NOT credit balance
         await supabase.from("payments").update({ credited: true }).eq("id", r.id);
         await notify(r.user_id, "🎉 Mining plan upgrade approved", "Congratulations! Your mining plan upgrade has been approved successfully. You can now start mining.", "success");
+        await emailTxn(r.user_id, "deposit", "approved", Number(r.amount), r.currency ?? "USD");
       } else {
         await creditBalance(r.user_id, Number(r.amount));
         await supabase.from("payments").update({ credited: true }).eq("id", r.id);
         await notify(r.user_id, "Payment approved", `Your deposit of ${Number(r.amount).toFixed(2)} ${r.currency ?? "USD"} has been approved and credited to your wallet.`, "success");
+        await emailTxn(r.user_id, "deposit", "approved", Number(r.amount), r.currency ?? "USD");
       }
     } else if (table === "withdrawals") {
       await notify(r.user_id, "Withdrawal completed", `Your withdrawal of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved and completed.`, "success");
+      await emailTxn(r.user_id, "withdrawal", "approved", Number(r.amount ?? 0), r.currency ?? "USD");
     } else if (table === "upgrades") {
       await notify(r.user_id, "Upgrade approved", `Your plan upgrade has been approved.`, "success");
     }
@@ -163,10 +173,14 @@ function Dashboard() {
       await supabase.from("upgrades").update(reviewed).eq("id", r.id);
     }
     await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
+    if (table === "payments" || table === "withdrawals") {
+      await emailTxn(r.user_id, table === "payments" ? "deposit" : "withdrawal", "rejected", Number(r.amount ?? 0), r.currency ?? "USD", reason || undefined);
+    }
 
     setBusy(null);
     await Promise.all([load(), refresh()]);
   }
+
 
   async function banUser(userId: string) {
     setBusy(userId);
