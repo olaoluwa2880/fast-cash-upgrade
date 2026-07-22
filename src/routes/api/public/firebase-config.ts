@@ -1,0 +1,24 @@
+import { createFileRoute } from "@tanstack/react-router";
+
+// Public Firebase Web config. These identifiers are safe to expose to the browser;
+// access is still controlled by Firebase Security Rules and the VAPID key.
+export const Route = createFileRoute("/api/public/firebase-config")({
+  server: {
+    handlers: {
+      GET: async () => {
+        const cfg = {
+          apiKey: process.env.FIREBASE_API_KEY ?? "",
+          authDomain: process.env.FIREBASE_AUTH_DOMAIN ?? "",
+          projectId: process.env.FIREBASE_PROJECT_ID ?? "",
+          storageBucket: process.env.FIREBASE_STORAGE_BUCKET ?? "",
+          messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID ?? "",
+          appId: process.env.FIREBASE_APP_ID ?? "",
+          vapidKey: process.env.FIREBASE_VAPID_PUBLIC_KEY ?? "",
+        };
+        return new Response(JSON.stringify(cfg), {
+          headers: { "content-type": "application/json", "cache-control": "public, max-age=300" },
+        });
+      },
+    },
+  },
+});
