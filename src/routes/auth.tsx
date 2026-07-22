@@ -215,7 +215,7 @@ function AuthPage() {
   // ---- Shared premium shell ----
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <div
-      className="min-h-[100dvh] flex items-center justify-center px-5 py-10 relative overflow-hidden"
+      className="min-h-[100svh] w-full flex items-start sm:items-center justify-center px-5 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:py-10 relative overflow-x-hidden"
       style={{ backgroundColor: BG }}
     >
       {/* Ambient gold glow */}
