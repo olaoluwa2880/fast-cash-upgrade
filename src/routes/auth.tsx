@@ -3,14 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { requestOtp, verifyOtp } from "@/lib/otp.functions";
-import { User, Phone, Globe, Mail, Lock, Loader2, ArrowLeft, ShieldCheck } from "lucide-react";
+import { User, Phone, Globe, Mail, Lock, Loader2, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Create your account · Sanad" },
-      { name: "description", content: "Register with your details to get started." },
+      { title: "Sign in · FastCredit" },
+      { name: "description", content: "Access your FastCredit premium account." },
     ],
   }),
   component: AuthPage,
@@ -23,6 +23,10 @@ const COUNTRIES = [
 ];
 
 type Step = "register" | "creating" | "otp" | "verifying" | "login";
+
+// Premium dark tokens — matches dashboard
+const GOLD = "#D4AF37";
+const BG = "#0D0D0D";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -40,7 +44,6 @@ function AuthPage() {
   const verifyOtpFn = useServerFn(verifyOtp);
 
   useEffect(() => {
-    // Show suspended banner if redirected here after a ban
     if (typeof window !== "undefined" && window.location.search.includes("suspended=1")) {
       setError("Your account has been suspended. Please contact support for assistance.");
     }
@@ -60,7 +63,6 @@ function AuthPage() {
       navigate({ to: isAdmin ? "/admin/dashboard" : "/" });
     });
   }, [navigate]);
-
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -97,8 +99,6 @@ function AuthPage() {
     setStep("creating");
     const email = form.email.trim().toLowerCase();
 
-    // Create the account (auto-confirmed on the backend). Password stays in state
-    // and is used to establish the session AFTER OTP verification.
     const { data, error } = await supabase.auth.signUp({
       email,
       password: form.password,
@@ -111,7 +111,6 @@ function AuthPage() {
       },
     });
 
-    // If Supabase returned a session (auto-confirm), drop it — we require OTP first.
     if (data?.session) await supabase.auth.signOut();
 
     const identities = (data?.user as { identities?: unknown[] } | null)?.identities;
@@ -144,7 +143,6 @@ function AuthPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Enter a valid email address.");
     if (!form.password) return setError("Enter your password.");
 
-    // Verify credentials, then immediately sign out — we require OTP before granting a session.
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: form.password });
     if (error || !data.session) {
       const msg = (error?.message || "").toLowerCase();
@@ -178,7 +176,6 @@ function AuthPage() {
       return setError((err as Error).message || "Verification failed. Please try again.");
     }
 
-    // OTP verified — establish the actual session with the password stored in state.
     const { data: signIn, error: signInErr } = await supabase.auth.signInWithPassword({
       email, password: form.password,
     });
@@ -215,204 +212,241 @@ function AuthPage() {
     }
   }
 
+  // ---- Shared premium shell ----
+  const Shell = ({ children }: { children: React.ReactNode }) => (
+    <div
+      className="min-h-[100dvh] flex items-center justify-center px-5 py-10 relative overflow-hidden"
+      style={{ backgroundColor: BG }}
+    >
+      {/* Ambient gold glow */}
+      <div
+        className="absolute -top-40 -left-40 w-[420px] h-[420px] rounded-full blur-3xl opacity-20 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }}
+      />
+      <div
+        className="absolute -bottom-40 -right-40 w-[420px] h-[420px] rounded-full blur-3xl opacity-15 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }}
+      />
+      <div className="w-full max-w-sm relative z-10 animate-fade-in">{children}</div>
+    </div>
+  );
 
-
+  const BrandMark = ({ subtitle }: { subtitle: string }) => (
+    <div className="text-center mb-8">
+      <div
+        className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 shadow-2xl"
+        style={{
+          background: `linear-gradient(135deg, ${GOLD} 0%, #B8912E 100%)`,
+          boxShadow: `0 20px 40px -12px ${GOLD}66`,
+        }}
+      >
+        <Sparkles className="w-8 h-8 text-black" strokeWidth={2.5} />
+      </div>
+      <h1 className="text-3xl font-black text-white tracking-tight" style={{ letterSpacing: "-0.02em" }}>
+        Fast<span style={{ color: GOLD }}>Credit</span>
+      </h1>
+      <p className="text-xs text-white/50 mt-2 font-medium">{subtitle}</p>
+    </div>
+  );
 
   if (step === "verifying") {
     return (
-      <div className="min-h-[100dvh] bg-emerald-700 flex flex-col items-center justify-center px-5 text-center">
-        <h1 className="text-4xl font-extrabold text-white tracking-tight">FastCredit</h1>
-        <Loader2 className="w-10 h-10 text-white/90 animate-spin mt-8" />
-        <p className="mt-6 text-white/95 text-base font-medium max-w-xs">
-          Verification successful. Redirecting to your dashboard…
-        </p>
-      </div>
-    );
-  }
-
-
-  if (step === "otp") {
-
-    return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-4">
-              <ShieldCheck className="w-7 h-7" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Verify your email</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Enter the 6-digit code sent to <span className="font-medium text-gray-700">{form.email}</span>
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 p-6">
-            <form onSubmit={handleVerify} className="space-y-4">
-              <OtpBoxes value={token} onChange={setToken} />
-              {info && <p className="text-xs text-emerald-600 text-center">{info}</p>}
-              {error && <p className="text-xs text-red-600 text-center">{error}</p>}
-              <button
-                type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition"
-              >
-                Verify
-              </button>
-              <div className="flex items-center justify-between text-xs pt-1">
-                <button
-                  type="button"
-                  onClick={() => { setStep("register"); setToken(""); setError(null); setInfo(null); }}
-                  className="text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-3 h-3" /> Back
-                </button>
-                <button
-                  type="button"
-                  onClick={resend}
-                  disabled={cooldown > 0}
-                  className="text-emerald-600 hover:text-emerald-700 font-medium disabled:text-gray-400"
-                >
-                  {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "login") {
-    return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-6">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-4">
-              <ShieldCheck className="w-7 h-7" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-            <p className="text-sm text-gray-500 mt-1">Log in with your email and password.</p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 p-6">
-            <form onSubmit={handleLogin} className="space-y-3">
-              <Field icon={<Mail className="w-4 h-4" />} label="Email address">
-                <input type="email" autoComplete="email" value={form.email}
-                  onChange={(e) => update("email", e.target.value)}
-                  placeholder="you@example.com" className={inputCls} required />
-              </Field>
-              <Field icon={<Lock className="w-4 h-4" />} label="Password">
-                <input type="password" autoComplete="current-password" value={form.password}
-                  onChange={(e) => update("password", e.target.value)}
-                  placeholder="Your password" className={inputCls} required />
-              </Field>
-
-              {info && <p className="text-xs text-emerald-600">{info}</p>}
-              {error && <p className="text-xs text-red-600">{error}</p>}
-
-              <button type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition mt-2">
-                Login
-              </button>
-            </form>
-          </div>
-
-          <p className="text-sm text-center text-gray-600 mt-5">
-            New here?{" "}
-            <button
-              type="button"
-              onClick={() => { setError(null); setInfo(null); setStep("register"); }}
-              className="text-emerald-600 hover:text-emerald-700 font-semibold"
-            >
-              Create an account
-            </button>
+      <div
+        className="min-h-[100dvh] flex flex-col items-center justify-center px-5 text-center relative overflow-hidden"
+        style={{ backgroundColor: BG }}
+      >
+        <div
+          className="absolute inset-0 opacity-20 pointer-events-none"
+          style={{ background: `radial-gradient(circle at center, ${GOLD} 0%, transparent 60%)` }}
+        />
+        <div className="relative z-10">
+          <h1 className="text-4xl font-black text-white tracking-tight">
+            Fast<span style={{ color: GOLD }}>Credit</span>
+          </h1>
+          <Loader2 className="w-10 h-10 animate-spin mt-8 mx-auto" style={{ color: GOLD }} />
+          <p className="mt-6 text-white/80 text-sm font-medium max-w-xs">
+            Verification successful. Redirecting to your dashboard…
           </p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-emerald-50 via-white to-white flex items-center justify-center px-5 py-10">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-6">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-4">
-            <User className="w-7 h-7" />
+  if (step === "otp") {
+    return (
+      <Shell>
+        <BrandMark subtitle="Verify your identity" />
+        <div
+          className="rounded-3xl p-6 backdrop-blur-xl"
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 20px 60px -20px rgba(0,0,0,0.8)",
+          }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <ShieldCheck className="w-4 h-4" style={{ color: GOLD }} />
+            <span className="text-xs text-white/60">
+              Code sent to <span className="text-white font-medium">{form.email}</span>
+            </span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-          <p className="text-sm text-gray-500 mt-1">Fill in your details to get started.</p>
+          <form onSubmit={handleVerify} className="space-y-4">
+            <OtpBoxes value={token} onChange={setToken} />
+            {info && <p className="text-xs text-center" style={{ color: GOLD }}>{info}</p>}
+            {error && <p className="text-xs text-red-400 text-center">{error}</p>}
+            <button type="submit" className={primaryBtn}>Verify & Continue</button>
+            <div className="flex items-center justify-between text-xs pt-1">
+              <button
+                type="button"
+                onClick={() => { setStep("register"); setToken(""); setError(null); setInfo(null); }}
+                className="text-white/50 hover:text-white/80 inline-flex items-center gap-1 transition"
+              >
+                <ArrowLeft className="w-3 h-3" /> Back
+              </button>
+              <button
+                type="button"
+                onClick={resend}
+                disabled={cooldown > 0}
+                className="font-medium disabled:text-white/30 transition"
+                style={{ color: cooldown > 0 ? undefined : GOLD }}
+              >
+                {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
+              </button>
+            </div>
+          </form>
         </div>
+      </Shell>
+    );
+  }
 
-        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 p-6">
-          <form onSubmit={handleCreate} className="space-y-3">
-            <Field icon={<User className="w-4 h-4" />} label="Full name">
-              <input value={form.fullName} onChange={(e) => update("fullName", e.target.value)}
-                placeholder="Jane Doe" className={inputCls} required />
-            </Field>
-            <Field icon={<Phone className="w-4 h-4" />} label="Phone number">
-              <input value={form.phone} onChange={(e) => update("phone", e.target.value)}
-                inputMode="tel" placeholder="+234 800 000 0000" className={inputCls} required />
-            </Field>
-            <Field icon={<Globe className="w-4 h-4" />} label="Country">
-              <select value={form.country} onChange={(e) => update("country", e.target.value)}
-                className={`${inputCls} appearance-none bg-white`} required>
-                <option value="">Select country</option>
-                {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </Field>
+  if (step === "login") {
+    return (
+      <Shell>
+        <BrandMark subtitle="Welcome back to premium banking" />
+        <div
+          className="rounded-3xl p-6 backdrop-blur-xl"
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 20px 60px -20px rgba(0,0,0,0.8)",
+          }}
+        >
+          <form onSubmit={handleLogin} className="space-y-4">
             <Field icon={<Mail className="w-4 h-4" />} label="Email address">
               <input type="email" autoComplete="email" value={form.email}
                 onChange={(e) => update("email", e.target.value)}
                 placeholder="you@example.com" className={inputCls} required />
             </Field>
             <Field icon={<Lock className="w-4 h-4" />} label="Password">
-              <input type="password" autoComplete="new-password" value={form.password}
+              <input type="password" autoComplete="current-password" value={form.password}
                 onChange={(e) => update("password", e.target.value)}
-                placeholder="At least 8 characters" className={inputCls} required />
-            </Field>
-            <Field icon={<Lock className="w-4 h-4" />} label="Confirm password">
-              <input type="password" autoComplete="new-password" value={form.confirm}
-                onChange={(e) => update("confirm", e.target.value)}
-                placeholder="Repeat password" className={inputCls} required />
+                placeholder="Your password" className={inputCls} required />
             </Field>
 
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {info && <p className="text-xs" style={{ color: GOLD }}>{info}</p>}
+            {error && <p className="text-xs text-red-400">{error}</p>}
 
-            <button type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition mt-2">
-              Create Account
-            </button>
+            <button type="submit" className={primaryBtn}>Login</button>
           </form>
         </div>
 
-
-        <p className="text-sm text-center text-gray-600 mt-5">
-          Already have an account?{" "}
+        <p className="text-sm text-center text-white/50 mt-6">
+          New to FastCredit?{" "}
           <button
             type="button"
-            onClick={() => { setError(null); setInfo(null); setStep("login"); }}
-            className="text-emerald-600 hover:text-emerald-700 font-semibold"
+            onClick={() => { setError(null); setInfo(null); setStep("register"); }}
+            className="font-semibold hover:opacity-80 transition"
+            style={{ color: GOLD }}
           >
-            Login
+            Create an account
           </button>
         </p>
+      </Shell>
+    );
+  }
 
-        <p className="text-[11px] text-center text-gray-400 mt-3">
-          By continuing you agree to our Terms & Privacy Policy.
-        </p>
+  return (
+    <Shell>
+      <BrandMark subtitle="Create your premium account" />
+      <div
+        className="rounded-3xl p-6 backdrop-blur-xl"
+        style={{
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 20px 60px -20px rgba(0,0,0,0.8)",
+        }}
+      >
+        <form onSubmit={handleCreate} className="space-y-3">
+          <Field icon={<User className="w-4 h-4" />} label="Full name">
+            <input value={form.fullName} onChange={(e) => update("fullName", e.target.value)}
+              placeholder="Jane Doe" className={inputCls} required />
+          </Field>
+          <Field icon={<Phone className="w-4 h-4" />} label="Phone number">
+            <input value={form.phone} onChange={(e) => update("phone", e.target.value)}
+              inputMode="tel" placeholder="+234 800 000 0000" className={inputCls} required />
+          </Field>
+          <Field icon={<Globe className="w-4 h-4" />} label="Country">
+            <select value={form.country} onChange={(e) => update("country", e.target.value)}
+              className={`${inputCls} appearance-none`} required>
+              <option value="" className="bg-neutral-900">Select country</option>
+              {COUNTRIES.map((c) => <option key={c} value={c} className="bg-neutral-900">{c}</option>)}
+            </select>
+          </Field>
+          <Field icon={<Mail className="w-4 h-4" />} label="Email address">
+            <input type="email" autoComplete="email" value={form.email}
+              onChange={(e) => update("email", e.target.value)}
+              placeholder="you@example.com" className={inputCls} required />
+          </Field>
+          <Field icon={<Lock className="w-4 h-4" />} label="Password">
+            <input type="password" autoComplete="new-password" value={form.password}
+              onChange={(e) => update("password", e.target.value)}
+              placeholder="At least 8 characters" className={inputCls} required />
+          </Field>
+          <Field icon={<Lock className="w-4 h-4" />} label="Confirm password">
+            <input type="password" autoComplete="new-password" value={form.confirm}
+              onChange={(e) => update("confirm", e.target.value)}
+              placeholder="Repeat password" className={inputCls} required />
+          </Field>
+
+          {error && <p className="text-xs text-red-400">{error}</p>}
+
+          <button type="submit" className={`${primaryBtn} mt-2`}>Create Account</button>
+        </form>
       </div>
-    </div>
+
+      <p className="text-sm text-center text-white/50 mt-6">
+        Already have an account?{" "}
+        <button
+          type="button"
+          onClick={() => { setError(null); setInfo(null); setStep("login"); }}
+          className="font-semibold hover:opacity-80 transition"
+          style={{ color: GOLD }}
+        >
+          Login
+        </button>
+      </p>
+
+      <p className="text-[11px] text-center text-white/30 mt-3">
+        By continuing you agree to our Terms & Privacy Policy.
+      </p>
+    </Shell>
   );
 }
 
 const inputCls =
-  "w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm";
+  "w-full pl-9 pr-3 py-2.5 rounded-xl outline-none text-sm text-white placeholder:text-white/30 transition " +
+  "bg-white/[0.03] border border-white/10 focus:border-[#D4AF37]/60 focus:bg-white/[0.06] focus:ring-2 focus:ring-[#D4AF37]/20";
+
+const primaryBtn =
+  "w-full font-semibold py-3 rounded-xl transition-all text-black shadow-lg " +
+  "hover:brightness-110 active:scale-[0.98] bg-gradient-to-r from-[#D4AF37] to-[#B8912E] shadow-[#D4AF37]/30";
 
 function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium text-gray-600">{label}</span>
-      <div className="mt-1 relative">
-        <span className="text-gray-400 absolute left-3 top-1/2 -translate-y-1/2">{icon}</span>
+      <span className="text-[11px] font-medium text-white/60 uppercase tracking-wider">{label}</span>
+      <div className="mt-1.5 relative">
+        <span className="text-white/40 absolute left-3 top-1/2 -translate-y-1/2">{icon}</span>
         {children}
       </div>
     </label>
@@ -446,7 +480,7 @@ function OtpBoxes({ value, onChange }: { value: string; onChange: (v: string) =>
           }}
           inputMode="numeric"
           maxLength={1}
-          className="w-11 h-12 text-center text-lg font-bold rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+          className="w-11 h-13 text-center text-lg font-bold rounded-xl outline-none text-white bg-white/[0.03] border border-white/10 focus:border-[#D4AF37]/60 focus:ring-2 focus:ring-[#D4AF37]/20 py-3"
         />
       ))}
     </div>
