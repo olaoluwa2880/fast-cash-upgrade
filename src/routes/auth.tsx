@@ -335,12 +335,12 @@ function AuthPage() {
             <Field icon={<Mail className="w-4 h-4" />} label="Email address">
               <input type="email" autoComplete="email" value={form.email}
                 onChange={(e) => update("email", e.target.value)}
-                placeholder="you@example.com" className={inputCls} required />
+                placeholder="you@example.com" className={inputCls} style={inputStyle} required />
             </Field>
             <Field icon={<Lock className="w-4 h-4" />} label="Password">
               <input type="password" autoComplete="current-password" value={form.password}
                 onChange={(e) => update("password", e.target.value)}
-                placeholder="Your password" className={inputCls} required />
+                placeholder="Your password" className={inputCls} style={inputStyle} required />
             </Field>
 
             {info && <p className="text-xs" style={{ color: GOLD }}>{info}</p>}
@@ -379,15 +379,15 @@ function AuthPage() {
         <form onSubmit={handleCreate} className="space-y-3">
           <Field icon={<User className="w-4 h-4" />} label="Full name">
             <input value={form.fullName} onChange={(e) => update("fullName", e.target.value)}
-              placeholder="Jane Doe" className={inputCls} required />
+              placeholder="Jane Doe" className={inputCls} style={inputStyle} required />
           </Field>
           <Field icon={<Phone className="w-4 h-4" />} label="Phone number">
             <input value={form.phone} onChange={(e) => update("phone", e.target.value)}
-              inputMode="tel" placeholder="+234 800 000 0000" className={inputCls} required />
+              inputMode="tel" placeholder="+234 800 000 0000" className={inputCls} style={inputStyle} required />
           </Field>
           <Field icon={<Globe className="w-4 h-4" />} label="Country">
             <select value={form.country} onChange={(e) => update("country", e.target.value)}
-              className={`${inputCls} appearance-none`} required>
+              className={`${inputCls} appearance-none`} style={inputStyle} required>
               <option value="" className="bg-neutral-900">Select country</option>
               {COUNTRIES.map((c) => <option key={c} value={c} className="bg-neutral-900">{c}</option>)}
             </select>
@@ -395,17 +395,17 @@ function AuthPage() {
           <Field icon={<Mail className="w-4 h-4" />} label="Email address">
             <input type="email" autoComplete="email" value={form.email}
               onChange={(e) => update("email", e.target.value)}
-              placeholder="you@example.com" className={inputCls} required />
+              placeholder="you@example.com" className={inputCls} style={inputStyle} required />
           </Field>
           <Field icon={<Lock className="w-4 h-4" />} label="Password">
             <input type="password" autoComplete="new-password" value={form.password}
               onChange={(e) => update("password", e.target.value)}
-              placeholder="At least 8 characters" className={inputCls} required />
+              placeholder="At least 8 characters" className={inputCls} style={inputStyle} required />
           </Field>
           <Field icon={<Lock className="w-4 h-4" />} label="Confirm password">
             <input type="password" autoComplete="new-password" value={form.confirm}
               onChange={(e) => update("confirm", e.target.value)}
-              placeholder="Repeat password" className={inputCls} required />
+              placeholder="Repeat password" className={inputCls} style={inputStyle} required />
           </Field>
 
           {error && <p className="text-xs text-red-400">{error}</p>}
