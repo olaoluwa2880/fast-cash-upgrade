@@ -7,7 +7,8 @@ import {
   Sparkles, Pickaxe, Zap, Pause, Copy, Upload, LifeBuoy, Clock,
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
   Globe, Smartphone, CreditCard, MessageCircle, Send, Phone, ExternalLink,
-  LogOut, RefreshCw,
+  LogOut, RefreshCw, Coins, UserPlus, ArrowLeftRight, Settings as SettingsIcon,
+  ArrowRight, ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
@@ -111,13 +112,16 @@ function Root() {
 
 function Splash() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0e6b3f]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="text-white text-4xl font-black tracking-tight">FastCredit</div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#0D0D0D]">
+      <div className="flex flex-col items-center gap-5">
+        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#F4CF5B] via-[#D4AF37] to-[#8a6b1e] grid place-items-center shadow-[0_0_40px_rgba(212,175,55,0.4)]">
+          <Crown className="h-8 w-8 text-[#0D0D0D]" />
+        </div>
+        <div className="text-white text-3xl font-black tracking-tight">FastCredit</div>
         <div className="flex gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce [animation-delay:-0.3s]" />
-          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce [animation-delay:-0.15s]" />
-          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce" />
+          <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-bounce [animation-delay:-0.3s]" />
+          <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-bounce [animation-delay:-0.15s]" />
+          <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-bounce" />
         </div>
       </div>
     </div>
@@ -771,270 +775,326 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const bal = fmtBalance(balanceUsd);
-  const isDark = dark;
 
-  const bg = isDark ? "bg-[#0a1410]" : "bg-[#e8f5ec]";
-  const card = isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]";
-  const softText = isDark ? "text-white/60" : "text-[#0b1e1a]/60";
-  const chipBg = isDark ? "bg-white/10" : "bg-white";
+  // Nicegram Premium-inspired dark theme — locked regardless of `dark` toggle.
+  const isDark = true;
+  const card = "bg-[#141414] text-white border border-white/5";
+  const softText = "text-white/50";
+  void isDark; void dark;
+
+  const shortcuts: { icon: typeof Wallet; label: string; onClick: () => void }[] = [
+    { icon: Wallet, label: "Wallet", onClick: () => setOpenCategory("savings") },
+    { icon: ArrowDownLeft, label: "Deposit", onClick: () => setOpenPremium(true) },
+    { icon: ArrowUpRight, label: "Withdraw", onClick: openWithdrawFlow },
+    { icon: Send, label: "Transfer", onClick: () => setOpenCategory("payments") },
+    { icon: Download, label: "Request", onClick: () => setOpenCategory("payments") },
+    { icon: ArrowLeftRight, label: "Exchange", onClick: () => setOpenCur(true) },
+    { icon: Gift, label: "Rewards", onClick: () => setOpenCategory("donation") },
+    { icon: UserPlus, label: "Referral", onClick: () => setOpenProfile(true) },
+    { icon: Users, label: "Community", onClick: () => setOpenCategory("community") },
+    { icon: Clock, label: "History", onClick: () => setOpenCategory("history") },
+    { icon: LifeBuoy, label: "Support", onClick: () => setOpenCategory("support") },
+    { icon: SettingsIcon, label: "Settings", onClick: () => setOpenProfile(true) },
+  ];
+
+  const initials = (userProfile.name || userProfile.username || userProfile.email || "F")
+    .split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase();
+  const shortId = ((userProfile.referral_code || userProfile.email || "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 8) || "FC000000").toUpperCase();
+  const progressPct = Math.min(100, Math.round((balanceUsd / Math.max(50, MIN_WITHDRAW_USD)) * 100));
 
   return (
-    <div className={`min-h-screen w-full ${bg} transition-colors`}>
-      <div className="mx-auto max-w-[440px] pb-28">
-        {/* Green header */}
-        <div className="rounded-b-[28px] bg-gradient-to-b from-[#0f7a47] to-[#0a5a34] text-white px-5 pt-10 pb-6 relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
-          <div className="absolute right-10 top-32 h-24 w-24 rounded-full bg-white/5" />
+    <div className="min-h-screen w-full bg-[#0D0D0D] text-white transition-colors">
+      {/* Ambient gold glow */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-72 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(212,175,55,0.18),transparent_70%)]" />
 
-          <div className="flex items-start justify-between">
-            <button onClick={() => setOpenProfile(true)} className="flex items-center gap-3 text-left active:scale-95 transition">
-              <div className="h-9 w-9 rounded-xl bg-white/15 grid place-items-center font-black overflow-hidden">
-                {userProfile.avatar_url
-                  ? <img src={userProfile.avatar_url} alt="" className="h-full w-full object-cover" />
-                  : (userProfile.name || userProfile.username || userProfile.email || "F")[0].toUpperCase()}
-              </div>
-              <div>
-                <p className="text-[11px] opacity-80">Good morning!</p>
-                <p className="font-bold leading-tight">{userProfile.name || userProfile.username || "FastCredit user"}</p>
-              </div>
-            </button>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setDark(d => !d)} className="h-10 w-10 grid place-items-center rounded-full bg-white/15 backdrop-blur">
-                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
-              <button className="h-10 w-10 grid place-items-center rounded-full bg-white/15 backdrop-blur relative">
-                <Bell className="h-4 w-4" />
-                <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-emerald-300" />
-              </button>
-            </div>
-          </div>
+      <div className="relative mx-auto max-w-[440px] px-4 pt-6 pb-32">
 
-          <p className="mt-6 text-sm opacity-80">Total Balance</p>
-          <div className="mt-1 flex items-end justify-between gap-2">
-            <div className="flex items-end">
-              <span className="text-5xl font-extrabold tracking-tight">{bal.int}</span>
-              <span className="text-2xl font-bold opacity-80">.{bal.dec}</span>
-            </div>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <button onClick={() => setOpenProfile(true)} className="flex items-center gap-3 text-left active:scale-95 transition">
             <div className="relative">
-              <button onClick={() => setOpenCur(o => !o)} className="rounded-full bg-white/15 backdrop-blur px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
-                {currency.code} <ChevronDown className="h-3 w-3" />
-              </button>
-              {openCur && (
-                <div className="absolute right-0 mt-2 w-32 rounded-xl bg-white text-[#0b1e1a] shadow-xl z-20 overflow-hidden">
-                  {CURRENCIES.map(c => (
-                    <button key={c.code} onClick={() => { changeCurrency(c); setOpenCur(false); }}
-                      className={`w-full px-3 py-2 text-left text-xs hover:bg-black/5 ${c.code === currency.code ? "font-bold text-emerald-600" : ""}`}>
-                      {c.symbol} {c.code}
-                    </button>
-                  ))}
+              <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#F4CF5B] via-[#D4AF37] to-[#8a6b1e] p-[2px] shadow-[0_0_20px_rgba(212,175,55,0.35)]">
+                <div className="h-full w-full rounded-[14px] bg-[#141414] grid place-items-center font-black text-[#D4AF37] overflow-hidden">
+                  {userProfile.avatar_url
+                    ? <img src={userProfile.avatar_url} alt="" className="h-full w-full object-cover rounded-[14px]" />
+                    : initials || "F"}
                 </div>
-              )}
+              </div>
+              <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[#D4AF37] grid place-items-center ring-2 ring-[#0D0D0D]">
+                <Crown className="h-2.5 w-2.5 text-[#0D0D0D]" />
+              </span>
             </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="mt-6 flex items-center gap-2">
-            <button className="flex-1 flex items-center justify-center gap-2 rounded-full bg-white/10 border border-white/15 py-3 text-sm font-semibold">
-              <ArrowDownLeft className="h-4 w-4" /> Request
-            </button>
-            <button onClick={openWithdrawFlow} className="flex-1 flex items-center justify-center gap-2 rounded-full bg-white text-[#0e6b3f] py-3 text-sm font-bold shadow-lg active:scale-95">
-              <ArrowUpRight className="h-4 w-4" /> Withdraw
-            </button>
-            <button className="flex items-center justify-center gap-1 rounded-full bg-white/10 border border-white/15 py-3 px-3 text-xs font-semibold">
-              <Crown className="h-4 w-4" />
-            </button>
-          </div>
-          <button onClick={() => setOpenPremium(true)} className="mt-2 w-full rounded-full bg-amber-400 text-[#3a2500] py-2.5 text-xs font-bold flex items-center justify-center gap-1.5">
-            <Crown className="h-3.5 w-3.5" /> Upgrade to Premium
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-widest text-white/50">FastCredit Support</p>
+              <p className="font-bold leading-tight truncate">{userProfile.name || userProfile.username || "FastCredit user"}</p>
+              <p className="text-[10px] text-white/40 font-mono">ID · {shortId}</p>
+            </div>
           </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-full bg-white/[0.06] border border-white/10 px-2.5 py-1.5 backdrop-blur">
+              <UserPlus className="h-3 w-3 text-[#D4AF37]" />
+              <span className="text-[11px] font-bold tabular-nums">0</span>
+            </div>
+            <div className="flex items-center gap-1 rounded-full bg-white/[0.06] border border-white/10 px-2.5 py-1.5 backdrop-blur">
+              <Coins className="h-3 w-3 text-[#D4AF37]" />
+              <span className="text-[11px] font-bold tabular-nums">{Math.floor(balanceUsd)}</span>
+            </div>
+            <button className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 backdrop-blur relative">
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
+            </button>
+          </div>
         </div>
 
-        {/* Categories */}
-        <section className={`mx-4 mt-4 rounded-3xl ${card} p-5 shadow-sm`}>
-          <h2 className="font-bold text-lg">Categories</h2>
-          <div className="mt-4 grid grid-cols-4 gap-3">
-            {CATEGORIES.map(({ icon: Icon, label, key }) => (
-              <button key={label} onClick={() => setOpenCategory(key)} className="flex flex-col items-center gap-2 active:scale-95 transition">
-                <div className={`h-14 w-14 rounded-2xl ${chipBg} ${isDark ? "" : "shadow-[0_4px_12px_rgba(14,107,63,0.08)]"} grid place-items-center`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <span className={`text-[11px] ${softText}`}>{label}</span>
-              </button>
-            ))}
-            <Link to="/legal" className="flex flex-col items-center gap-2 active:scale-95 transition">
-              <div className={`h-14 w-14 rounded-2xl ${chipBg} ${isDark ? "" : "shadow-[0_4px_12px_rgba(14,107,63,0.08)]"} grid place-items-center`}>
-                <span className="text-lg">📄</span>
-              </div>
-              <span className={`text-[11px] ${softText}`}>Legal</span>
-            </Link>
-          </div>
-        </section>
+        {/* Premium Balance Card */}
+        <section className="mt-6 relative rounded-[24px] p-[1px] bg-gradient-to-br from-[#D4AF37]/60 via-white/5 to-transparent shadow-[0_20px_60px_-20px_rgba(212,175,55,0.35)]">
+          <div className="rounded-[23px] bg-gradient-to-br from-[#181512] via-[#0F0F0F] to-[#0D0D0D] p-5 relative overflow-hidden">
+            <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.25),transparent_65%)]" />
+            <div className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.12),transparent_70%)]" />
 
-        {/* Welcome Bonus */}
-        <section className="mx-4 mt-4">
-          <div className={`rounded-3xl p-4 flex items-center gap-3 shadow-sm ${isDark ? "bg-gradient-to-r from-emerald-900/60 to-emerald-800/40 border border-emerald-500/20" : "bg-gradient-to-r from-emerald-50 to-lime-50 border border-emerald-200"}`}>
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center text-white shadow-lg shrink-0">
-              <Sparkles className="h-6 w-6" />
+            <div className="flex items-center justify-between relative">
+              <p className="text-[11px] uppercase tracking-widest text-white/50">Total Balance</p>
+              <div className="relative">
+                <button onClick={() => setOpenCur(o => !o)} className="rounded-full bg-white/[0.08] border border-white/10 px-3 py-1.5 text-[11px] font-bold flex items-center gap-1 backdrop-blur">
+                  {currency.code} <ChevronDown className="h-3 w-3" />
+                </button>
+                {openCur && (
+                  <div className="absolute right-0 mt-2 w-36 rounded-2xl bg-[#151515] border border-white/10 shadow-2xl z-30 overflow-hidden">
+                    {CURRENCIES.map(c => (
+                      <button key={c.code} onClick={() => { changeCurrency(c); setOpenCur(false); }}
+                        className={`w-full px-3 py-2 text-left text-xs hover:bg-white/5 ${c.code === currency.code ? "font-bold text-[#D4AF37]" : "text-white/80"}`}>
+                        {c.symbol} {c.code}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Welcome bonus</p>
-              <p className={`font-extrabold text-lg leading-tight ${isDark ? "text-white" : "text-[#0b1e1a]"}`}>{fmt(2, 2)} <span className="text-[11px] font-medium opacity-70">≈ $2 USD</span></p>
-              {bonusClaimed && (
-                <p className="text-[10px] text-emerald-500 font-semibold mt-0.5">Welcome bonus already claimed.</p>
-              )}
+
+            <div className="mt-2 flex items-end relative">
+              <span className="text-[42px] leading-none font-extrabold tracking-tight bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">{bal.int}</span>
+              <span className="text-2xl font-bold text-white/60">.{bal.dec}</span>
             </div>
+
+            <div className="mt-5 flex items-center gap-2 relative">
+              <button className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-white/[0.06] border border-white/10 py-3 text-sm font-semibold backdrop-blur active:scale-95 transition">
+                <ArrowDownLeft className="h-4 w-4" /> Request
+              </button>
+              <button onClick={openWithdrawFlow} className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-white/[0.06] border border-white/10 py-3 text-sm font-semibold backdrop-blur active:scale-95 transition">
+                <ArrowUpRight className="h-4 w-4" /> Withdraw
+              </button>
+            </div>
+
             <button
-              onClick={claimBonus}
-              disabled={bonusClaimed}
-              aria-disabled={bonusClaimed}
-              title={bonusClaimed ? "Welcome bonus already claimed." : "Claim your welcome bonus"}
-              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold ${bonusClaimed ? "bg-emerald-600/20 text-emerald-500 cursor-not-allowed" : "bg-emerald-500 text-white shadow-md active:scale-95"}`}
+              onClick={() => setOpenPremium(true)}
+              className="mt-3 relative w-full rounded-2xl py-3.5 text-sm font-black text-[#2a1c00] bg-gradient-to-r from-[#F4CF5B] via-[#D4AF37] to-[#B8871A] shadow-[0_10px_30px_-8px_rgba(212,175,55,0.55)] flex items-center justify-center gap-2 active:scale-[0.98] transition overflow-hidden group"
             >
-              {bonusClaimed ? "Claimed" : "Claim"}
+              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-full transition-transform duration-1000" />
+              <Crown className="h-4 w-4 relative" /> <span className="relative">Upgrade to FastCredit Premium</span>
             </button>
           </div>
         </section>
 
-        {/* Mining */}
-        <section className="mx-4 mt-4">
-          <div className={`rounded-3xl overflow-hidden shadow-sm ${card}`}>
-            <div className="p-5 bg-gradient-to-br from-[#0e6b3f] to-[#0a4a2c] text-white relative">
-              <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/5" />
+        {/* Reward Campaign Banner */}
+        <button onClick={() => setOpenCategory("donation")} className="mt-4 w-full text-left group">
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#B8871A] via-[#D4AF37] to-[#F4CF5B] p-4 shadow-[0_10px_30px_-10px_rgba(212,175,55,0.5)]">
+            <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top_right,white,transparent_60%)]" />
+            <Coins className="absolute -right-2 top-2 h-16 w-16 text-white/20 animate-bounce [animation-duration:3s]" />
+            <Coins className="absolute right-10 bottom-1 h-8 w-8 text-white/25 animate-bounce [animation-duration:2s] [animation-delay:-0.5s]" />
+            <div className="relative flex items-center gap-3">
+              <div className="h-11 w-11 rounded-xl bg-[#0D0D0D]/25 backdrop-blur grid place-items-center">
+                <Gift className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] uppercase tracking-widest text-[#2a1c00]/70 font-bold">Limited Time</p>
+                <p className="font-black text-[#2a1c00] leading-tight">Join FastCredit Reward Campaign</p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-[#2a1c00] group-hover:translate-x-1 transition" />
+            </div>
+          </div>
+        </button>
+
+        {/* Promotional Card — FastCredit Premium */}
+        <button onClick={() => setOpenPremium(true)} className="mt-3 w-full text-left group">
+          <div className="rounded-2xl p-[1px] bg-gradient-to-br from-[#D4AF37]/40 via-white/5 to-transparent">
+            <div className="rounded-[15px] bg-[#141414] p-4 flex items-center gap-3 relative overflow-hidden">
+              <div className="absolute -right-8 -bottom-8 h-28 w-28 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.15),transparent_70%)]" />
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#F4CF5B] to-[#B8871A] grid place-items-center shadow-lg shrink-0">
+                <ShieldCheck className="h-6 w-6 text-[#0D0D0D]" />
+              </div>
+              <div className="flex-1 min-w-0 relative">
+                <p className="font-bold text-white leading-tight">FastCredit Premium</p>
+                <p className="text-[11px] text-white/50 leading-tight mt-0.5">Secure Global Financial Services</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-[#D4AF37] group-hover:translate-x-1 transition" />
+            </div>
+          </div>
+        </button>
+
+        {/* Progress Section */}
+        <section className="mt-4 rounded-2xl bg-[#141414] border border-white/5 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crown className="h-4 w-4 text-[#D4AF37]" />
+              <p className="font-bold text-sm">Get FastCredit Premium</p>
+            </div>
+            <span className="text-[11px] font-bold text-[#D4AF37] tabular-nums">{progressPct}%</span>
+          </div>
+          <div className="mt-3 h-2 rounded-full bg-white/[0.06] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#B8871A] via-[#D4AF37] to-[#F4CF5B] shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all duration-700"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <p className="mt-2 text-[10px] text-white/40">Reach ${MIN_WITHDRAW_USD} to unlock full premium withdrawal privileges.</p>
+        </section>
+
+        {/* Feature Cards */}
+        <section className="mt-4 grid grid-cols-3 gap-2.5">
+          {[
+            { icon: ArrowDownLeft, label: "Deposit Funds", onClick: () => setOpenPremium(true) },
+            { icon: ArrowUpRight, label: "Withdraw Funds", onClick: openWithdrawFlow },
+            { icon: Users, label: "Join Community", onClick: () => setOpenCategory("community") },
+          ].map(({ icon: Icon, label, onClick }) => (
+            <button
+              key={label}
+              onClick={onClick}
+              className="rounded-2xl bg-[#141414] border border-white/5 p-4 flex flex-col items-center gap-2 active:scale-95 hover:border-[#D4AF37]/30 transition"
+            >
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#D4AF37]/25 to-[#D4AF37]/5 border border-[#D4AF37]/20 grid place-items-center">
+                <Icon className="h-5 w-5 text-[#D4AF37]" />
+              </div>
+              <span className="text-[11px] font-semibold text-center leading-tight">{label}</span>
+            </button>
+          ))}
+        </section>
+
+        {/* Services Section */}
+        <section className="mt-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="font-bold text-base">FastCredit Services</p>
+              <p className="text-[11px] text-white/40">Global Financial Platform</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2.5">
+            {shortcuts.map(({ icon: Icon, label, onClick }) => (
+              <button
+                key={label}
+                onClick={onClick}
+                className="rounded-2xl bg-[#141414] border border-white/5 aspect-square flex flex-col items-center justify-center gap-1.5 active:scale-95 hover:border-[#D4AF37]/30 hover:bg-[#181818] transition shadow-[0_4px_15px_-8px_rgba(0,0,0,0.5)]"
+              >
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-transparent grid place-items-center">
+                  <Icon className="h-4 w-4 text-[#D4AF37]" />
+                </div>
+                <span className="text-[10px] font-semibold text-white/80">{label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Mining panel — kept for functionality, restyled */}
+        {(planActive || planExpired) && (
+          <section className="mt-5 rounded-2xl bg-[#141414] border border-white/5 overflow-hidden">
+            <div className="p-4 relative">
+              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.15),transparent_70%)]" />
               <div className="flex items-center justify-between relative">
                 <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-xl bg-white/15 grid place-items-center">
-                    <Pickaxe className="h-5 w-5" />
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#D4AF37]/25 to-transparent border border-[#D4AF37]/20 grid place-items-center">
+                    <Pickaxe className="h-5 w-5 text-[#D4AF37]" />
                   </div>
                   <div>
                     <p className="font-bold leading-tight">Premium Mining</p>
-                    <p className="text-[11px] opacity-80 flex items-center gap-1">
-                      <span className={`h-1.5 w-1.5 rounded-full ${planActive ? "bg-emerald-300 animate-pulse" : planExpired ? "bg-red-300" : "bg-white/40"}`} />
+                    <p className="text-[10px] text-white/50 flex items-center gap-1">
+                      <span className={`h-1.5 w-1.5 rounded-full ${planActive ? "bg-[#D4AF37] animate-pulse" : "bg-red-400"}`} />
                       {planActive
-                        ? `${currentPlan?.name} · Active · ${formatCountdown(planExpiresAt - now)} left`
-                        : planExpired
-                          ? "Plan expired"
-                          : "No active plan"}
+                        ? `${currentPlan?.name} · ${formatCountdown(planExpiresAt - now)} left`
+                        : "Plan expired"}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] opacity-70 uppercase">Reward</p>
-                  <p className="text-sm font-bold flex items-center gap-1 justify-end">
-                    <Zap className="h-3 w-3" /> {currentPlan ? fmt(currentPlan.mineReward, 2) : "—"}
-                  </p>
+                  <p className="text-[10px] text-white/40 uppercase">Reward</p>
+                  <p className="text-sm font-bold text-[#D4AF37]">{currentPlan ? fmt(currentPlan.mineReward, 2) : "—"}</p>
                 </div>
               </div>
-              <p className="mt-4 text-[11px] opacity-80 relative">Next mine reward</p>
-              <p className="mt-0.5 text-3xl font-extrabold tracking-tight relative">
-                {currentPlan ? fmt(currentPlan.mineReward, 2) : fmt(0, 2)}
-              </p>
-              <p className="text-[10px] opacity-70 relative">
-                {planActive
-                  ? mineReady
-                    ? `Ready to mine — ${MAX_DAILY_MINES - minesUsedToday} tap${MAX_DAILY_MINES - minesUsedToday === 1 ? "" : "s"} left today`
-                    : `Mining will be available again in: ${formatCountdown(nextMineAt - now)}`
-                  : planExpired
-                    ? "Your plan has expired. Please renew or upgrade your plan to continue mining."
-                    : "Activate a Premium plan to start mining"}
-              </p>
-            </div>
-            <div className="p-4">
               <button
                 onClick={planActive ? mine : () => setOpenPremium(true)}
                 disabled={planActive && !mineReady}
-                className={`w-full flex items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold shadow-md ${
+                className={`mt-4 w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition ${
                   !planActive
-                    ? "bg-amber-500 text-[#3a2500]"
+                    ? "bg-gradient-to-r from-[#F4CF5B] via-[#D4AF37] to-[#B8871A] text-[#2a1c00]"
                     : mineReady
-                    ? "bg-emerald-500 text-white active:scale-95"
-                    : "bg-black/10 text-[#0b1e1a]/50"
+                    ? "bg-gradient-to-r from-[#F4CF5B] via-[#D4AF37] to-[#B8871A] text-[#2a1c00] active:scale-95"
+                    : "bg-white/[0.06] text-white/40 border border-white/5"
                 }`}
               >
                 {!planActive ? (
-                  <><Crown className="h-4 w-4" /> {planExpired ? "Renew or Upgrade Plan" : "Activate Premium to Mine"}</>
+                  <><Crown className="h-4 w-4" /> {planExpired ? "Renew Plan" : "Activate Premium"}</>
                 ) : mineReady ? (
                   <><Pickaxe className="h-4 w-4" /> Mine {currentPlan ? fmt(currentPlan.mineReward, 2) : ""}</>
                 ) : (
                   <><Pause className="h-4 w-4" /> Cooldown {formatCountdown(nextMineAt - now)}</>
                 )}
               </button>
-              <p className={`mt-2 text-center text-[10px] ${softText}`}>
-                Mine up to {MAX_DAILY_MINES}× per day · Higher plan = higher reward · {MAX_DAILY_MINES - minesUsedToday} left today
-              </p>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-
-
-        {/* Great Deals */}
-        <section className="mt-5 pl-4">
-          <h2 className={`font-bold text-lg ${isDark ? "text-white" : "text-[#0b1e1a]"}`}>Great Deals</h2>
-          <div className="mt-3 flex gap-3 overflow-x-auto pr-4 pb-2 [&::-webkit-scrollbar]:hidden">
-            {[0, 1].map(i => (
-              <article key={i} className={`min-w-[85%] rounded-3xl ${card} p-4 shadow-sm`}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-bold">Long-term earning</p>
-                    <p className={`text-[11px] ${softText}`}>10 months • Investment</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className={`h-8 w-8 rounded-full ${isDark ? "bg-white/10" : "bg-[#f2f5f3]"} grid place-items-center`}>
-                      <Heart className="h-3.5 w-3.5" />
-                    </button>
-                    <button className={`h-8 w-8 rounded-full ${isDark ? "bg-white/10" : "bg-[#f2f5f3]"} grid place-items-center`}>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <p className={softText}>Amount</p>
-                    <p className="font-bold text-sm">{fmt(5000)}</p>
-                  </div>
-                  <div>
-                    <p className={softText}>Monthly payment</p>
-                    <p className="font-bold text-sm">{fmt(500)}</p>
-                  </div>
-                  <div>
-                    <p className={softText}>Duration</p>
-                    <p className="font-bold text-sm">10 Month</p>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="h-2 flex-1 rounded-full bg-gradient-to-r from-lime-300 to-lime-500" />
-                  <div className="h-2 flex-1 rounded-full bg-gradient-to-r from-emerald-300 to-emerald-500" />
-                  <div className={`h-2 flex-1 rounded-full ${isDark ? "bg-white/10" : "bg-[#eef1ef]"} overflow-hidden`}>
-                    <div className="h-full w-full bg-[repeating-linear-gradient(45deg,transparent_0_4px,rgba(0,0,0,0.08)_4px_8px)]" />
-                  </div>
-                </div>
-                <div className={`mt-2 flex items-center justify-between text-[10px] ${softText}`}>
-                  <span>Last 4w</span>
-                  <span className="flex items-center gap-1">
-                    Fees <span className="rounded-full bg-black text-white px-2 py-0.5 text-[10px] font-bold">{fmt(25)}</span>
-                  </span>
-                  <span>Since Mar 25</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+        {/* Welcome bonus */}
+        {!bonusClaimed && (
+          <section className="mt-4">
+            <div className="rounded-2xl p-4 flex items-center gap-3 bg-[#141414] border border-[#D4AF37]/20">
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#8a6b1e] grid place-items-center text-[#0D0D0D] shrink-0">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/50">Welcome bonus</p>
+                <p className="font-extrabold text-lg leading-tight">{fmt(2, 2)} <span className="text-[11px] font-medium text-white/40">≈ $2 USD</span></p>
+              </div>
+              <button
+                onClick={claimBonus}
+                className="shrink-0 rounded-full px-4 py-2 text-xs font-bold bg-gradient-to-r from-[#F4CF5B] to-[#B8871A] text-[#2a1c00] active:scale-95"
+              >
+                Claim
+              </button>
+            </div>
+          </section>
+        )}
       </div>
 
-      {/* Bottom nav */}
+      {/* Bottom nav — Nicegram-style floating pill */}
       <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px] z-40">
-        <div className="rounded-full bg-[#0e6b3f] text-white flex items-center justify-around px-3 py-3 shadow-2xl">
-          <button
-            onClick={() => { setOpenCategory(null); setOpenProfile(false); setOpenPayment(false); setOpenPremium(false); setOpenWithdraw(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-            className={`h-11 w-11 grid place-items-center rounded-full ${!openCategory && !openProfile ? "bg-white/20" : "text-white/80"}`}
-            aria-label="Home"
-          ><Home className="h-5 w-5" /></button>
-          <button onClick={() => setOpenCategory("donation")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "donation" ? "bg-white/20" : "text-white/80"}`} aria-label="Rewards"><Heart className="h-5 w-5" /></button>
-          <button onClick={() => setOpenCategory("history")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "history" ? "bg-white/20" : "text-white/80"}`} aria-label="Search / History"><Search className="h-5 w-5" /></button>
-          <button onClick={() => setOpenCategory("savings")} className={`h-11 w-11 grid place-items-center rounded-full ${openCategory === "savings" ? "bg-white/20" : "text-white/80"}`} aria-label="Wallet"><Wallet className="h-5 w-5" /></button>
-          <button onClick={() => setOpenProfile(true)} className={`h-11 w-11 grid place-items-center rounded-full ${openProfile ? "bg-white/20" : "text-white/80"}`} aria-label="Profile"><User className="h-5 w-5" /></button>
+        <div className="rounded-full bg-[#141414]/90 backdrop-blur-xl border border-white/10 flex items-center justify-around px-2 py-2 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.7)]">
+          {[
+            { icon: Home, label: "Home", key: "home", onClick: () => { setOpenCategory(null); setOpenProfile(false); setOpenPayment(false); setOpenPremium(false); setOpenWithdraw(false); window.scrollTo({ top: 0, behavior: "smooth" }); } },
+            { icon: Wallet, label: "Wallet", key: "savings", onClick: () => setOpenCategory("savings") },
+            { icon: Gift, label: "Rewards", key: "donation", onClick: () => setOpenCategory("donation") },
+            { icon: Users, label: "Community", key: "community", onClick: () => setOpenCategory("community") },
+            { icon: User, label: "Profile", key: "profile", onClick: () => setOpenProfile(true) },
+          ].map(({ icon: Icon, label, key, onClick }) => {
+            const active =
+              (key === "home" && !openCategory && !openProfile) ||
+              (key === "profile" && openProfile) ||
+              openCategory === key;
+            return (
+              <button
+                key={key}
+                onClick={onClick}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition ${
+                  active ? "bg-gradient-to-br from-[#D4AF37]/25 to-transparent" : ""
+                }`}
+                aria-label={label}
+              >
+                <Icon className={`h-5 w-5 ${active ? "text-[#D4AF37]" : "text-white/60"}`} />
+                <span className={`text-[9px] font-bold ${active ? "text-[#D4AF37]" : "text-white/50"}`}>{label}</span>
+              </button>
+            );
+          })}
         </div>
       </nav>
+
 
 
       {openPremium && (
