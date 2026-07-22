@@ -18,6 +18,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { COUNTRIES, BANKS_BY_COUNTRY, type Bank } from "@/lib/banks-data";
 import { getBanksForCountry } from "@/lib/banks.functions";
 import { sendPushNotification } from "@/lib/push.functions";
+import { sendTransactionEmail } from "@/lib/notifications.functions";
 import { enablePushNotifications, currentPermission, canUseWebPush } from "@/lib/push-client";
 
 
@@ -592,6 +593,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         body: `Your deposit of $${amt.toFixed(2)} via ${methodLabel} is pending review.`,
         url: "/", tag: "deposit-submitted",
       } }).catch(() => {});
+      sendTransactionEmail({ data: {
+        kind: "deposit", event: "submitted", amount: amt, currency: "USD",
+      } }).catch(() => {});
     } catch (e) {
       setPaymentStep("pending");
       showToast(`Could not submit: ${(e as Error).message}`);
@@ -602,11 +606,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     try {
       const receiptNo = `FC-${t.id.slice(0, 8).toUpperCase()}`;
       const typeLabel = t.kind === "deposit" ? "Deposit" : t.kind === "withdraw" ? "Withdrawal" : t.kind === "mining" ? "Mining Reward" : t.kind === "bonus" ? "Bonus" : "Declined";
-      const statusColor = t.status === "approved" || t.status === "credited" ? "#0e6b3f" : t.status === "pending" ? "#d97706" : "#dc2626";
+      const statusColor = t.status === "approved" || t.status === "credited" ? "#D4AF37" : t.status === "pending" ? "#d97706" : "#dc2626";
       const html = `<!doctype html><html><head><meta charset="utf-8"><title>Receipt ${receiptNo}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f2f5f3;color:#0b1e1a;padding:24px}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f2f5f3;color:#111111;padding:24px}
   .receipt{max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 32px rgba(14,107,63,.12)}
   .head{background:linear-gradient(135deg,#0f7a47,#0a5a34);color:#fff;padding:28px;text-align:center;position:relative}
   .brand{font-size:28px;font-weight:900;letter-spacing:-.5px}
@@ -621,9 +625,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   td:first-child{color:#64748b;font-weight:600}
   td:last-child{text-align:right;font-weight:700;word-break:break-all}
   .foot{padding:20px 24px;text-align:center;background:#f8fafc;font-size:11px;color:#64748b}
-  .foot b{color:#0e6b3f}
+  .foot b{color:#D4AF37}
   .actions{padding:16px;text-align:center;background:#fff;border-top:1px solid #f1f5f9}
-  .btn{display:inline-block;padding:10px 20px;background:#0e6b3f;color:#fff;border-radius:999px;font-weight:800;border:none;cursor:pointer;margin:0 4px;font-size:13px}
+  .btn{display:inline-block;padding:10px 20px;background:#D4AF37;color:#fff;border-radius:999px;font-weight:800;border:none;cursor:pointer;margin:0 4px;font-size:13px}
   @media print{body{background:#fff;padding:0}.receipt{box-shadow:none}.actions{display:none}}
 </style></head><body>
 <div class="receipt">
@@ -769,6 +773,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         title: "Withdrawal requested",
         body: `Your withdrawal of $${amtUsd.toFixed(2)} is pending admin review.`,
         url: "/", tag: "withdrawal-submitted",
+      } }).catch(() => {});
+      sendTransactionEmail({ data: {
+        kind: "withdrawal", event: "submitted", amount: amtUsd, currency: "USD",
       } }).catch(() => {});
       setWdStep("success");
     }, 1200);
@@ -1122,7 +1129,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
       {openPremium && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setOpenPremium(false)}>
-          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]"} shadow-2xl`}>
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${isDark ? "bg-[#0D0D0D] text-white" : "bg-white text-[#111111]"} shadow-2xl`}>
             <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] rounded-t-3xl">
               <div className="flex items-center gap-2">
                 <Crown className="h-5 w-5" />
@@ -1166,23 +1173,23 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       className={`w-full text-left rounded-2xl p-4 border transition ${
                         locked
                           ? isCurrentActive
-                            ? "border-emerald-500 bg-emerald-50 text-[#0b1e1a] shadow-sm cursor-not-allowed opacity-100"
+                            ? "border-amber-500 bg-amber-50 text-[#111111] shadow-sm cursor-not-allowed opacity-100"
                             : "border-black/5 bg-black/[.03] opacity-60 cursor-not-allowed"
                           : active
-                            ? "border-amber-500 bg-amber-50 text-[#0b1e1a] shadow-md"
+                            ? "border-amber-500 bg-amber-50 text-[#111111] shadow-md"
                             : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className={`h-8 w-8 rounded-full grid place-items-center ${isCurrentActive ? "bg-emerald-500 text-white" : active ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"}`}>
+                          <div className={`h-8 w-8 rounded-full grid place-items-center ${isCurrentActive ? "bg-amber-500 text-white" : active ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"}`}>
                             {isCurrentActive ? <Check className="h-4 w-4" /> : active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
                           </div>
                           <div>
                             <p className="font-extrabold flex items-center gap-2">
                               {p.name} · {fmt(p.invest, dec)}
                               {isCurrentActive && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wide px-2 py-0.5">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[9px] font-black uppercase tracking-wide px-2 py-0.5">
                                   Active Plan
                                 </span>
                               )}
@@ -1192,24 +1199,24 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                                 </span>
                               )}
                             </p>
-                            <p className={`text-[10px] ${active || isCurrentActive ? "text-[#0b1e1a]/60" : softText}`}>
+                            <p className={`text-[10px] ${active || isCurrentActive ? "text-[#111111]/60" : softText}`}>
                               {isCurrentActive ? "Currently active — upgrade to a higher plan" : isLowerThanActive ? "Upgrades only — cannot downgrade" : "Deposit"}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-extrabold text-emerald-600">{fmt(p.mineReward, 2)}</p>
-                          <p className={`text-[10px] ${active || isCurrentActive ? "text-[#0b1e1a]/60" : softText}`}>per mining tap</p>
+                          <p className="font-extrabold text-amber-600">{fmt(p.mineReward, 2)}</p>
+                          <p className={`text-[10px] ${active || isCurrentActive ? "text-[#111111]/60" : softText}`}>per mining tap</p>
                         </div>
                       </div>
-                      <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active || isCurrentActive ? "text-[#0b1e1a]/80" : softText}`}>
+                      <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active || isCurrentActive ? "text-[#111111]/80" : softText}`}>
                         <div className={`rounded-lg px-2 py-1.5 ${active || isCurrentActive ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Per day (2 taps)</p>
-                          <p className={`font-bold ${active || isCurrentActive ? "text-[#0b1e1a]" : ""}`}>{fmt(p.profit, 2)}</p>
+                          <p className={`font-bold ${active || isCurrentActive ? "text-[#111111]" : ""}`}>{fmt(p.profit, 2)}</p>
                         </div>
                         <div className={`rounded-lg px-2 py-1.5 ${active || isCurrentActive ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
                           <p className="opacity-70">Total 7d</p>
-                          <p className={`font-bold ${active || isCurrentActive ? "text-[#0b1e1a]" : ""}`}>{fmt(p.total, 2)}</p>
+                          <p className={`font-bold ${active || isCurrentActive ? "text-[#111111]" : ""}`}>{fmt(p.total, 2)}</p>
                         </div>
                       </div>
                     </button>
@@ -1217,7 +1224,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 })}
               </div>
 
-              <div className={`mt-4 rounded-2xl p-3 text-[11px] ${isDark ? "bg-white/5 text-white/70" : "bg-[#f6f8f7] text-[#0b1e1a]/70"}`}>
+              <div className={`mt-4 rounded-2xl p-3 text-[11px] ${isDark ? "bg-white/5 text-white/70" : "bg-[#f6f8f7] text-[#111111]/70"}`}>
                 <p className="font-bold mb-1">How it works</p>
                 <ul className="space-y-0.5 list-disc pl-4">
                   <li>Mine twice per day — earnings credit instantly to your wallet.</li>
@@ -1257,8 +1264,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
       {openPayment && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={closePayment}>
-          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]"} shadow-2xl`}>
-            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-t-3xl">
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${isDark ? "bg-[#0D0D0D] text-white" : "bg-white text-[#111111]"} shadow-2xl`}>
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-t-3xl">
               <div>
                 <p className="font-black text-base leading-tight">Select your method</p>
                 <p className="text-[10px] font-semibold opacity-90">Deposit {fmt(PREMIUM_PLANS[selectedPlan].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)} to activate</p>
@@ -1277,9 +1284,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       <button
                         key={m.id}
                         onClick={() => selectMethod(m.id)}
-                        className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left active:scale-[.98] transition ${isDark ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-black/5 bg-white hover:bg-emerald-50"}`}
+                        className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left active:scale-[.98] transition ${isDark ? "border-white/10 bg-white/5 hover:bg-white/10" : "border-black/5 bg-white hover:bg-amber-50"}`}
                       >
-                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center text-xl font-black shrink-0">
+                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white grid place-items-center text-xl font-black shrink-0">
                           {m.emoji}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1304,16 +1311,16 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     </div>
                   )}
                   {settings.wallets.map((w, idx) => (
-                    <div key={w.id} className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : idx === 0 ? "border-black/5 bg-emerald-50/60" : "border-black/5 bg-white"}`}>
+                    <div key={w.id} className={`rounded-2xl border p-4 ${isDark ? "border-white/10 bg-white/5" : idx === 0 ? "border-black/5 bg-amber-50/60" : "border-black/5 bg-white"}`}>
                       <div className="flex items-center justify-between">
                         <p className="font-black text-sm">{w.symbol} · {w.network}</p>
-                        {idx === 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">Recommended</span>}
+                        {idx === 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white">Recommended</span>}
                       </div>
                       {w.label && <p className={`text-[10px] ${softText}`}>{w.label}</p>}
                       <p className={`mt-1 text-[10px] uppercase tracking-wide ${softText}`}>Wallet Address</p>
                       <div className="mt-1 flex items-center gap-2">
                         <p className="font-mono text-[11px] break-all flex-1">{w.address}</p>
-                        <button onClick={() => copyText(w.address, `w-${w.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                        <button onClick={() => copyText(w.address, `w-${w.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-amber-500 text-white shrink-0">
                           {copied === `w-${w.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
                         </button>
                       </div>
@@ -1326,7 +1333,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <button
                     disabled={!receiptFile}
                     onClick={submitPayment}
-                    className={`w-full rounded-full py-3.5 font-black text-sm ${receiptFile ? "bg-[#0e6b3f] text-white" : "bg-black/10 text-black/40"}`}
+                    className={`w-full rounded-full py-3.5 font-black text-sm ${receiptFile ? "bg-[#D4AF37] text-white" : "bg-black/10 text-black/40"}`}
                   >
                     Submit payment
                   </button>
@@ -1344,7 +1351,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       return <div className={`rounded-2xl border p-4 text-center text-[11px] ${softText}`}>No bank accounts configured yet. Please contact support.</div>;
                     }
                     return active.map((b) => (
-                      <div key={b.id} className={`rounded-2xl border p-4 space-y-3 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-emerald-50/60"}`}>
+                      <div key={b.id} className={`rounded-2xl border p-4 space-y-3 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-amber-50/60"}`}>
                         <div>
                           <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Bank</p>
                           <p className="font-black">{b.bank_name} <span className="text-[10px] text-slate-500">({b.currency})</span></p>
@@ -1357,7 +1364,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                           <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account Number</p>
                           <div className="flex items-center gap-2">
                             <p className="font-mono font-black text-lg flex-1">{b.account_number}</p>
-                            <button onClick={() => copyText(b.account_number, `b-${b.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-emerald-500 text-white shrink-0">
+                            <button onClick={() => copyText(b.account_number, `b-${b.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-amber-500 text-white shrink-0">
                               {copied === `b-${b.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
                             </button>
                           </div>
@@ -1376,7 +1383,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <button
                     disabled={!receiptFile}
                     onClick={submitPayment}
-                    className={`w-full rounded-full py-3.5 font-black text-sm ${receiptFile ? "bg-[#0e6b3f] text-white" : "bg-black/10 text-black/40"}`}
+                    className={`w-full rounded-full py-3.5 font-black text-sm ${receiptFile ? "bg-[#D4AF37] text-white" : "bg-black/10 text-black/40"}`}
                   >
                     Submit payment
                   </button>
@@ -1385,7 +1392,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
               {paymentStep === "processing" && (
                 <div className="flex flex-col items-center py-10 gap-4">
-                  <div className="h-14 w-14 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                  <div className="h-14 w-14 rounded-full border-4 border-amber-500/20 border-t-amber-500 animate-spin" />
                   <p className="font-bold">Processing payment…</p>
                   <p className={`text-[11px] ${softText}`}>
                     {paymentMethod === "crypto" && "Waiting for blockchain confirmation"}
@@ -1397,12 +1404,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
               {paymentStep === "success" && (
                 <div className="flex flex-col items-center py-8 gap-3 text-center">
-                  <div className="h-16 w-16 rounded-full bg-emerald-500 grid place-items-center text-white">
+                  <div className="h-16 w-16 rounded-full bg-amber-500 grid place-items-center text-white">
                     <Check className="h-8 w-8" />
                   </div>
                   <p className="font-black text-lg">Plan activated!</p>
                   <p className={`text-xs ${softText}`}>You can mine your first reward now. Payouts every 48h for 14 days.</p>
-                  <button onClick={closePayment} className="mt-3 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
+                  <button onClick={closePayment} className="mt-3 w-full rounded-full bg-[#D4AF37] text-white py-3.5 font-black text-sm">
                     Go to Dashboard
                   </button>
                 </div>
@@ -1421,7 +1428,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <p className={`${softText} uppercase tracking-wide font-bold text-[10px]`}>Status</p>
                     <p className="font-black text-amber-600">Awaiting confirmation</p>
                   </div>
-                  <button onClick={closePayment} className="mt-2 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
+                  <button onClick={closePayment} className="mt-2 w-full rounded-full bg-[#D4AF37] text-white py-3.5 font-black text-sm">
                     Got it
                   </button>
                 </div>
@@ -1429,7 +1436,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
               {paymentStep === "comingSoon" && (
                 <div className="flex flex-col items-center py-10 gap-3 text-center">
-                  <div className="h-16 w-16 rounded-full bg-[#0e6b3f]/10 grid place-items-center text-[#0e6b3f]">
+                  <div className="h-16 w-16 rounded-full bg-[#D4AF37]/10 grid place-items-center text-[#D4AF37]">
                     <CreditCard className="h-8 w-8" />
                   </div>
                   <p className="font-black text-lg">Card payments coming soon</p>
@@ -1440,7 +1447,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <button onClick={() => { setPaymentMethod(null); setPaymentStep("choose"); }} className={`flex-1 rounded-full py-3 font-bold text-sm border ${isDark ? "border-white/10" : "border-black/10"}`}>
                       Back
                     </button>
-                    <button onClick={() => selectMethod("crypto")} className="flex-1 rounded-full bg-[#0e6b3f] text-white py-3 font-black text-sm">
+                    <button onClick={() => selectMethod("crypto")} className="flex-1 rounded-full bg-[#D4AF37] text-white py-3 font-black text-sm">
                       Use Crypto
                     </button>
                   </div>
@@ -1455,7 +1462,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       {openWithdraw && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4" onClick={closeWithdraw}>
           <div onClick={e => e.stopPropagation()} className={`w-full sm:max-w-[440px] h-[100dvh] sm:h-auto sm:max-h-[92vh] overflow-y-auto sm:rounded-3xl ${card} shadow-2xl flex flex-col`}>
-            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white sm:rounded-t-3xl" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#D4AF37] to-[#8B6914] text-white sm:rounded-t-3xl" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
               <div className="flex items-center gap-2 min-w-0">
                 <ArrowUpRight className="h-4 w-4 shrink-0" />
                 <p className="font-black text-base truncate">
@@ -1479,7 +1486,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     onClick={() => { setWdMethod("bank"); setWdStep("country"); }}
                     className={`w-full flex items-center gap-3 rounded-2xl border p-4 text-left active:scale-[0.98] transition ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
                   >
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-100 text-[#0e6b3f] grid place-items-center text-2xl shrink-0">🏦</div>
+                    <div className="h-12 w-12 rounded-2xl bg-amber-100 text-[#D4AF37] grid place-items-center text-2xl shrink-0">🏦</div>
                     <div className="min-w-0">
                       <p className="font-black text-sm">Bank account</p>
                       <p className={`text-[11px] ${softText}`}>Withdraw to your local bank</p>
@@ -1502,7 +1509,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select your country</p>
-                    <button onClick={() => setWdStep("method")} className="text-[11px] font-bold text-[#0e6b3f]">Back</button>
+                    <button onClick={() => setWdStep("method")} className="text-[11px] font-bold text-[#D4AF37]">Back</button>
                   </div>
                   <p className={`text-[11px] ${softText}`}>Search any country. We'll load the banks supported for withdrawal there.</p>
                   <label className="block mt-2">
@@ -1510,7 +1517,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       value={wdCountrySearch}
                       onChange={(e) => setWdCountrySearch(e.target.value)}
                       placeholder="Search country or currency (e.g. Nigeria, USD)"
-                      className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-black/10"}`}
+                      className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37] ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-black/10"}`}
                     />
                   </label>
                   <div className="mt-2 max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
@@ -1531,7 +1538,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                           <button
                             key={info.code}
                             onClick={() => { setWdCountry(info.code); setWdBank(""); setWdBanksList([]); setWdStep("bank"); }}
-                            className={`w-full flex items-center justify-between rounded-2xl border p-3 text-left active:scale-[0.98] transition ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                            className={`w-full flex items-center justify-between rounded-2xl border p-3 text-left active:scale-[0.98] transition ${isActive ? "border-[#D4AF37] bg-amber-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <span className="text-2xl shrink-0">{info.flag}</span>
@@ -1569,12 +1576,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       <button
                         onClick={() => loadBanks(wdCountry)}
                         disabled={wdBanksLoading}
-                        className="text-[11px] font-bold text-[#0e6b3f] disabled:opacity-50 flex items-center gap-1"
+                        className="text-[11px] font-bold text-[#D4AF37] disabled:opacity-50 flex items-center gap-1"
                       >
                         <RefreshCw className={`h-3 w-3 ${wdBanksLoading ? "animate-spin" : ""}`} />
                         Refresh
                       </button>
-                      <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#0e6b3f]">Change country</button>
+                      <button onClick={() => setWdStep("country")} className="text-[11px] font-bold text-[#D4AF37]">Change country</button>
                     </div>
                   </div>
                   <label className="block">
@@ -1582,11 +1589,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       value={wdBankSearch}
                       onChange={(e) => setWdBankSearch(e.target.value)}
                       placeholder="Search bank"
-                      className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-black/10"}`}
+                      className={`w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-[#D4AF37] ${isDark ? "bg-white/5 border-white/10 text-white placeholder:text-white/40" : "bg-white border-black/10"}`}
                     />
                   </label>
                   {wdBanksSource === "flutterwave" && (
-                    <p className="text-[10px] text-emerald-600 font-semibold">Live list from payment provider</p>
+                    <p className="text-[10px] text-amber-600 font-semibold">Live list from payment provider</p>
                   )}
                   <div className="mt-2 max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
                     {wdBanksLoading && (
@@ -1599,7 +1606,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                         </p>
                         <button
                           onClick={() => { setWdBank("Other bank"); setWdStep("details"); }}
-                          className="text-xs font-bold text-[#0e6b3f] underline"
+                          className="text-xs font-bold text-[#D4AF37] underline"
                         >
                           Enter my bank manually
                         </button>
@@ -1619,7 +1626,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                           <button
                             key={`${b.name}-${b.code ?? ""}`}
                             onClick={() => { setWdBank(b.name); setWdStep("details"); }}
-                            className={`w-full flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${isActive ? "border-[#0e6b3f] bg-emerald-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
+                            className={`w-full flex items-center justify-between rounded-xl border px-3 py-2.5 text-left ${isActive ? "border-[#D4AF37] bg-amber-50" : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}
                           >
                             <span className="font-semibold text-sm truncate">{b.name}</span>
                             <ChevronDown className="h-4 w-4 -rotate-90 opacity-50 shrink-0" />
@@ -1634,41 +1641,41 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
               {wdStep === "details" && (
                 <div className="space-y-3">
-                  <div className={`rounded-2xl p-3 ${isDark ? "bg-white/5" : "bg-emerald-50"} flex items-center justify-between gap-2`}>
+                  <div className={`rounded-2xl p-3 ${isDark ? "bg-white/5" : "bg-amber-50"} flex items-center justify-between gap-2`}>
                     <div className="min-w-0">
                       <p className={`text-[10px] uppercase font-bold ${softText}`}>Selected bank</p>
                       <p className="font-black text-sm truncate">{wdBank}</p>
                       <p className={`text-[10px] ${softText}`}>{COUNTRY_BY_CODE[wdCountry]?.flag} {COUNTRY_BY_CODE[wdCountry]?.name}</p>
                     </div>
-                    <button onClick={() => setWdStep("bank")} className="text-[11px] font-bold text-[#0e6b3f] shrink-0">Change</button>
+                    <button onClick={() => setWdStep("bank")} className="text-[11px] font-bold text-[#D4AF37] shrink-0">Change</button>
                   </div>
 
                   <label className="block">
                     <span className={`text-[11px] font-bold ${softText}`}>Account number</span>
                     <input value={wdAccountNumber} onChange={e => setWdAccountNumber(e.target.value.replace(/[^0-9]/g, ""))}
                       inputMode="numeric" placeholder="10-digit account number"
-                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#D4AF37] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
                   </label>
 
                   <label className="block">
                     <span className={`text-[11px] font-bold ${softText}`}>Account name</span>
                     <input value={wdAccountName} onChange={e => setWdAccountName(e.target.value)}
                       placeholder="Full name on account"
-                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#D4AF37] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
                   </label>
 
                   <label className="block">
                     <span className={`text-[11px] font-bold ${softText}`}>Amount ({currency.code})</span>
                     <input value={wdAmount} onChange={e => setWdAmount(e.target.value.replace(/[^0-9.]/g, ""))}
                       inputMode="decimal" placeholder={`0.00 ${currency.code}`}
-                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#D4AF37] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
                     <span className={`mt-1 block text-[10px] ${softText}`}>Available: {fmt(balanceUsd, 2)} · Minimum balance ${MIN_WITHDRAW_USD} required</span>
                   </label>
 
                   <button
                     onClick={() => setWdStep("review")}
                     disabled={!wdAccountNumber || !wdAccountName || !wdAmount || parseFloat(wdAmount) <= 0}
-                    className="mt-2 w-full rounded-full bg-[#0e6b3f] disabled:bg-[#0e6b3f]/40 text-white py-3.5 font-black text-sm active:scale-95"
+                    className="mt-2 w-full rounded-full bg-[#D4AF37] disabled:bg-[#D4AF37]/40 text-white py-3.5 font-black text-sm active:scale-95"
                   >
                     Review withdrawal
                   </button>
@@ -1679,7 +1686,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Select cryptocurrency</p>
-                    <button onClick={() => setWdStep("method")} className="text-[11px] font-bold text-[#0e6b3f]">Back</button>
+                    <button onClick={() => setWdStep("method")} className="text-[11px] font-bold text-[#D4AF37]">Back</button>
                   </div>
                   <div className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${isDark ? "bg-white/5 border-white/10" : "bg-white border-black/10"}`}>
                     <Search className="h-4 w-4 opacity-60 shrink-0" />
@@ -1730,7 +1737,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
               {wdStep === "cryptoDetails" && wdCrypto && (
                 <div className="space-y-3">
-                  <div className={`rounded-2xl p-3 ${isDark ? "bg-white/5" : "bg-emerald-50"} flex items-center gap-3`}>
+                  <div className={`rounded-2xl p-3 ${isDark ? "bg-white/5" : "bg-amber-50"} flex items-center gap-3`}>
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white grid place-items-center text-lg font-black shrink-0">
                       {wdCrypto.emoji}
                     </div>
@@ -1738,28 +1745,28 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       <p className="font-black text-sm truncate">{wdCrypto.name}</p>
                       <p className={`text-[10px] ${softText}`}>{wdCrypto.symbol} · {wdCrypto.network}</p>
                     </div>
-                    <button onClick={() => setWdStep("crypto")} className="text-[11px] font-bold text-[#0e6b3f] shrink-0">Change</button>
+                    <button onClick={() => setWdStep("crypto")} className="text-[11px] font-bold text-[#D4AF37] shrink-0">Change</button>
                   </div>
 
                   <label className="block">
                     <span className={`text-[11px] font-bold ${softText}`}>Destination wallet address</span>
                     <input value={wdWalletAddress} onChange={e => setWdWalletAddress(e.target.value.trim())}
                       placeholder={`Your ${wdCrypto.symbol} wallet address`}
-                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-xs font-mono outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-xs font-mono outline-none focus:border-[#D4AF37] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
                   </label>
 
                   <label className="block">
                     <span className={`text-[11px] font-bold ${softText}`}>Amount (USD)</span>
                     <input value={wdAmount} onChange={e => setWdAmount(e.target.value.replace(/[^0-9.]/g, ""))}
                       inputMode="decimal" placeholder="0.00"
-                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#0e6b3f] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#D4AF37] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
                     <span className={`mt-1 block text-[10px] ${softText}`}>Available: ${balanceUsd.toFixed(2)} · Minimum balance ${MIN_WITHDRAW_USD} required</span>
                   </label>
 
                   <button
                     onClick={() => setWdStep("review")}
                     disabled={!wdWalletAddress || wdWalletAddress.length < 8 || !wdAmount || parseFloat(wdAmount) <= 0}
-                    className="mt-2 w-full rounded-full bg-[#0e6b3f] disabled:bg-[#0e6b3f]/40 text-white py-3.5 font-black text-sm active:scale-95"
+                    className="mt-2 w-full rounded-full bg-[#D4AF37] disabled:bg-[#D4AF37]/40 text-white py-3.5 font-black text-sm active:scale-95"
                   >
                     Review withdrawal
                   </button>
@@ -1815,14 +1822,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => setWdStep(wdMethod === "crypto" ? "cryptoDetails" : "details")} className={`flex-1 rounded-full py-3 font-bold text-sm border ${isDark ? "border-white/10" : "border-black/10"}`}>Edit</button>
-                    <button onClick={submitWithdraw} className="flex-1 rounded-full bg-[#0e6b3f] text-white py-3 font-black text-sm active:scale-95">Confirm</button>
+                    <button onClick={submitWithdraw} className="flex-1 rounded-full bg-[#D4AF37] text-white py-3 font-black text-sm active:scale-95">Confirm</button>
                   </div>
                 </div>
               )}
 
               {wdStep === "processing" && (
                 <div className="flex flex-col items-center py-10 gap-3 text-center">
-                  <div className="h-14 w-14 rounded-full border-4 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+                  <div className="h-14 w-14 rounded-full border-4 border-amber-500/30 border-t-amber-500 animate-spin" />
                   <p className="font-black">Processing withdrawal…</p>
                   <p className={`text-xs ${softText}`}>
                     {wdMethod === "crypto" ? `Sending ${wdCrypto?.symbol}` : `Sending to ${wdBank}`}
@@ -1832,7 +1839,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
               {wdStep === "success" && (
                 <div className="flex flex-col items-center py-8 gap-3 text-center">
-                  <div className="h-16 w-16 rounded-full bg-emerald-500 grid place-items-center text-white">
+                  <div className="h-16 w-16 rounded-full bg-amber-500 grid place-items-center text-white">
                     <Check className="h-8 w-8" />
                   </div>
                   <p className="font-black text-lg">Withdrawal submitted!</p>
@@ -1841,7 +1848,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </p>
                   <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">Pending admin review</span>
                   <p className={`text-xs ${softText}`}>Your request is queued for review. You'll be notified once it's approved or rejected.</p>
-                  <button onClick={closeWithdraw} className="mt-3 w-full rounded-full bg-[#0e6b3f] text-white py-3.5 font-black text-sm">
+                  <button onClick={closeWithdraw} className="mt-3 w-full rounded-full bg-[#D4AF37] text-white py-3.5 font-black text-sm">
                     Done
                   </button>
                 </div>
@@ -1852,7 +1859,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       )}
 
       {congrats && (
-        <div className="fixed inset-0 z-[80] bg-gradient-to-br from-[#0e6b3f]/95 to-[#0a4a2c]/95 backdrop-blur-md flex items-center justify-center p-6 overflow-hidden">
+        <div className="fixed inset-0 z-[80] bg-gradient-to-br from-[#D4AF37]/95 to-[#8B6914]/95 backdrop-blur-md flex items-center justify-center p-6 overflow-hidden">
           {/* Confetti */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             {Array.from({ length: 60 }).map((_, i) => {
@@ -1884,14 +1891,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           <style>{`@keyframes fc-fall{to{transform:translateY(110vh) rotate(720deg);opacity:.4}}@keyframes fc-pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}`}</style>
 
           <div className="relative w-full max-w-[380px] bg-white rounded-3xl p-7 text-center shadow-2xl" style={{ animation: "fc-pop .5s ease-out both" }}>
-            <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 grid place-items-center text-white shadow-lg">
+            <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 grid place-items-center text-white shadow-lg">
               <Check className="h-10 w-10" strokeWidth={3} />
             </div>
-            <p className="mt-5 text-2xl font-black text-[#0b1e1a]">🎉 Congratulations!</p>
-            <p className="mt-2 text-sm text-[#0b1e1a]/70">{congrats.body}</p>
+            <p className="mt-5 text-2xl font-black text-[#111111]">🎉 Congratulations!</p>
+            <p className="mt-2 text-sm text-[#111111]/70">{congrats.body}</p>
             <button
               onClick={() => { setCongrats(null); setOpenCategory(null); setOpenPayment(false); setOpenPremium(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-              className="mt-6 w-full rounded-full bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white py-3.5 font-black text-sm shadow-lg active:scale-95"
+              className="mt-6 w-full rounded-full bg-gradient-to-r from-[#D4AF37] to-[#8B6914] text-white py-3.5 font-black text-sm shadow-lg active:scale-95"
             >
               Continue to Dashboard
             </button>
@@ -2064,12 +2071,12 @@ function CategoryModal(props: CategoryModalProps) {
     categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1);
 
 
-  const cardBg = isDark ? "bg-[#111f19] text-white" : "bg-white text-[#0b1e1a]";
+  const cardBg = isDark ? "bg-[#0D0D0D] text-white" : "bg-white text-[#111111]";
   const rowBg = isDark ? "bg-white/5 border-white/10" : "bg-white border-black/5";
 
   const renderTxn = (t: Txn, showDownload: boolean) => {
     const badge =
-      t.status === "approved" ? { bg: "bg-emerald-500", label: "Approved", icon: <Check className="h-3 w-3" /> } :
+      t.status === "approved" ? { bg: "bg-amber-500", label: "Approved", icon: <Check className="h-3 w-3" /> } :
       t.status === "credited" ? { bg: "bg-sky-500", label: "Credited", icon: <TrendingUp className="h-3 w-3" /> } :
       { bg: "bg-red-500", label: "Declined", icon: <XCircle className="h-3 w-3" /> };
     return (
@@ -2084,9 +2091,9 @@ function CategoryModal(props: CategoryModalProps) {
             <p className={`text-[10px] ${softText}`}>{new Date(t.at).toLocaleString()}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className={`font-black ${t.status === "declined" ? "text-red-500 line-through" : "text-emerald-600"}`}>{fmt(t.amountUsd, 2)}</p>
+            <p className={`font-black ${t.status === "declined" ? "text-red-500 line-through" : "text-amber-600"}`}>{fmt(t.amountUsd, 2)}</p>
             {showDownload && (
-              <button onClick={() => downloadReceipt(t)} className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#0e6b3f] text-white px-2.5 py-1 text-[10px] font-bold">
+              <button onClick={() => downloadReceipt(t)} className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#D4AF37] text-white px-2.5 py-1 text-[10px] font-bold">
                 <Download className="h-3 w-3" /> Receipt
               </button>
             )}
@@ -2099,7 +2106,7 @@ function CategoryModal(props: CategoryModalProps) {
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${cardBg} shadow-2xl`}>
-        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-[#0e6b3f] to-[#0a4a2c] text-white rounded-t-3xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-[#D4AF37] to-[#8B6914] text-white rounded-t-3xl">
           <p className="font-black text-base">{title}</p>
           <button onClick={onClose} className="h-8 w-8 grid place-items-center rounded-full bg-black/20"><X className="h-4 w-4" /></button>
         </div>
@@ -2107,7 +2114,7 @@ function CategoryModal(props: CategoryModalProps) {
         <div className="p-5">
           {categoryKey === "savings" && (
             <div className="space-y-3">
-              <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white">
+              <div className="rounded-2xl p-4 bg-gradient-to-br from-amber-500 to-amber-700 text-white">
                 <p className="text-[11px] uppercase opacity-80">Total balance</p>
                 <p className="text-3xl font-extrabold">{fmt(balanceUsd, 2)}</p>
               </div>
@@ -2130,7 +2137,7 @@ function CategoryModal(props: CategoryModalProps) {
               <p className={`text-[11px] ${softText}`}>Join our official channels — updates, announcements and community chat.</p>
               {settings.community.length === 0 && (
                 <div className={`rounded-2xl border p-6 text-center ${rowBg}`}>
-                  <MessageCircle className="h-8 w-8 mx-auto text-emerald-500" />
+                  <MessageCircle className="h-8 w-8 mx-auto text-amber-500" />
                   <p className={`text-xs mt-2 ${softText}`}>No community links yet. Check back soon.</p>
                 </div>
               )}
@@ -2139,7 +2146,7 @@ function CategoryModal(props: CategoryModalProps) {
                 return (
                   <a key={c.id} href={c.url} target="_blank" rel="noreferrer"
                     className={`flex items-center gap-3 rounded-2xl border p-4 ${rowBg} active:scale-[.98] transition`}>
-                    <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center shrink-0">
+                    <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white grid place-items-center shrink-0">
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -2177,7 +2184,7 @@ function CategoryModal(props: CategoryModalProps) {
               <p className={`text-[11px] ${softText}`}>We're here 24/7 — reach us on any of these channels.</p>
               {settings.support.length === 0 && (
                 <div className={`rounded-2xl border p-6 text-center ${rowBg}`}>
-                  <LifeBuoy className="h-8 w-8 mx-auto text-emerald-500" />
+                  <LifeBuoy className="h-8 w-8 mx-auto text-amber-500" />
                   <p className={`text-xs mt-2 ${softText}`}>No support contacts configured yet.</p>
                 </div>
               )}
@@ -2190,7 +2197,7 @@ function CategoryModal(props: CategoryModalProps) {
                 return (
                   <a key={s.id} href={supportHref(s)} target="_blank" rel="noreferrer"
                     className={`flex items-center gap-3 rounded-2xl border p-4 ${rowBg} active:scale-[.98] transition`}>
-                    <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white grid place-items-center shrink-0">
+                    <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white grid place-items-center shrink-0">
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -2206,7 +2213,7 @@ function CategoryModal(props: CategoryModalProps) {
 
           {(categoryKey === "wallet" || categoryKey === "payments" || categoryKey === "journey") && (
             <div className={`rounded-2xl border p-5 text-center ${rowBg}`}>
-              <div className="mx-auto h-14 w-14 rounded-2xl bg-emerald-500 text-white grid place-items-center">
+              <div className="mx-auto h-14 w-14 rounded-2xl bg-amber-500 text-white grid place-items-center">
                 <Briefcase className="h-6 w-6" />
               </div>
               <p className="mt-3 font-black">{title} coming soon</p>
@@ -2223,7 +2230,7 @@ function CategoryModal(props: CategoryModalProps) {
 function ProfileRow({ icon, label, value, softText }: { icon: React.ReactNode; label: string; value: string; softText: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="h-9 w-9 rounded-xl bg-emerald-500/15 text-emerald-600 grid place-items-center shrink-0">{icon}</div>
+      <div className="h-9 w-9 rounded-xl bg-amber-500/15 text-amber-600 grid place-items-center shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className={`text-[10px] uppercase tracking-wide ${softText}`}>{label}</p>
         <p className="font-bold text-sm break-all">{value}</p>
@@ -2236,13 +2243,13 @@ function ReceiptUpload({ receiptFile, setReceiptFile, isDark, softText }: { rece
   return (
     <div>
       <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Upload payment receipt</p>
-      <label className={`mt-2 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-5 cursor-pointer ${isDark ? "border-white/15 bg-white/5" : "border-emerald-400/50 bg-emerald-50/40"}`}>
-        <div className="h-10 w-10 rounded-full bg-emerald-500 text-white grid place-items-center">
+      <label className={`mt-2 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-5 cursor-pointer ${isDark ? "border-white/15 bg-white/5" : "border-amber-400/50 bg-amber-50/40"}`}>
+        <div className="h-10 w-10 rounded-full bg-amber-500 text-white grid place-items-center">
           <Upload className="h-4 w-4" />
         </div>
         {receiptFile ? (
           <>
-            <p className="text-xs font-bold text-emerald-600 break-all text-center">{receiptFile.name}</p>
+            <p className="text-xs font-bold text-amber-600 break-all text-center">{receiptFile.name}</p>
             <p className={`text-[10px] ${softText}`}>Tap to replace</p>
           </>
         ) : (

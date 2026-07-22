@@ -82,7 +82,7 @@ function DomainVerificationCard({
 
   const tone =
     data.overall === "active"
-      ? { bg: "bg-emerald-500", label: "Active" }
+      ? { bg: "bg-amber-500", label: "Active" }
       : data.overall === "failed"
       ? { bg: "bg-red-500", label: "Failed" }
       : { bg: "bg-amber-500", label: "Pending" };
@@ -120,7 +120,7 @@ function DomainVerificationCard({
 
 function DnsCheckRow({ check }: { check: DnsCheck }) {
   const Icon = check.ok ? CheckCircle2 : XCircle;
-  const tone = check.ok ? "text-emerald-600" : "text-red-600";
+  const tone = check.ok ? "text-amber-600" : "text-red-600";
   return (
     <div className="rounded-xl border border-slate-100 bg-white/70 p-3">
       <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ function DnsCheckRow({ check }: { check: DnsCheck }) {
 function DomainCard({ verified, domain }: { verified: boolean | null; domain: string }) {
   const state =
     verified === true
-      ? { Icon: ShieldCheck, tone: "bg-emerald-500", label: "Verified & delivering", sub: "Sender domain is active and OTP emails are being sent." }
+      ? { Icon: ShieldCheck, tone: "bg-amber-500", label: "Verified & delivering", sub: "Sender domain is active and OTP emails are being sent." }
       : verified === false
       ? { Icon: ShieldAlert, tone: "bg-amber-500", label: "No recent sends", sub: "No OTP emails have been sent recently. Domain may still be verifying DNS." }
       : { Icon: ShieldAlert, tone: "bg-slate-400", label: "Status unavailable", sub: "Could not read email logs." };
@@ -176,7 +176,7 @@ function DomainCard({ verified, domain }: { verified: boolean | null; domain: st
 
 function StatsGrid({ totals, windowHours }: { totals: Record<string, number>; windowHours: number }) {
   const items = [
-    { k: "sent", label: "Delivered", tone: "text-emerald-600 bg-emerald-50 border-emerald-100", Icon: CheckCircle2 },
+    { k: "sent", label: "Delivered", tone: "text-amber-600 bg-amber-50 border-amber-100", Icon: CheckCircle2 },
     { k: "bounced", label: "Bounced", tone: "text-red-600 bg-red-50 border-red-100", Icon: XCircle },
     { k: "rejected", label: "Rejected", tone: "text-red-600 bg-red-50 border-red-100", Icon: XCircle },
     { k: "suppressed", label: "Suppressed", tone: "text-amber-700 bg-amber-50 border-amber-100", Icon: AlertTriangle },
@@ -231,7 +231,7 @@ function RecentList({ recent }: { recent: Array<{ timestamp: string; recipient: 
 function EventBadge({ type, status }: { type: string; status?: string }) {
   const tone =
     type === "sent"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "bg-amber-100 text-amber-700"
       : type === "bounced" || type === "rejected" || type === "complained"
       ? "bg-red-100 text-red-700"
       : "bg-amber-100 text-amber-700";

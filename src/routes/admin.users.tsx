@@ -198,7 +198,7 @@ function UsersPage() {
                         suspended
                           ? "bg-red-500/20 text-red-300"
                           : active
-                            ? "bg-emerald-500/20 text-emerald-300"
+                            ? "bg-amber-500/20 text-amber-300"
                             : "bg-gray-700/40 text-gray-400"
                       }`}
                     >
@@ -215,7 +215,7 @@ function UsersPage() {
                     <button
                       disabled={busy === r.id}
                       onClick={() => toggleBan(r.id, suspended)}
-                      className={`text-sm disabled:opacity-40 ${suspended ? "text-emerald-400 hover:text-emerald-300" : "text-red-400 hover:text-red-300"}`}
+                      className={`text-sm disabled:opacity-40 ${suspended ? "text-amber-400 hover:text-amber-300" : "text-red-400 hover:text-red-300"}`}
                     >
                       {suspended ? "Unsuspend" : "Suspend"}
                     </button>

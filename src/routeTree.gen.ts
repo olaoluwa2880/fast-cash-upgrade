@@ -25,6 +25,7 @@ import { Route as AdminBankDetailsRouteImport } from './routes/admin.bank-detail
 import { Route as AuthenticatedLegalIndexRouteImport } from './routes/_authenticated/legal.index'
 import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public/firebase-config'
 import { Route as AuthenticatedLegalSlugRouteImport } from './routes/_authenticated/legal.$slug'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 
@@ -107,6 +108,12 @@ const AuthenticatedLegalSlugRoute = AuthenticatedLegalSlugRouteImport.update({
   path: '/legal/$slug',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
   id: '/lovable/email/auth/webhook',
   path: '/lovable/email/auth/webhook',
@@ -136,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -155,6 +163,7 @@ export interface FileRoutesByTo {
   '/legal': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -176,6 +185,7 @@ export interface FileRoutesById {
   '/_authenticated/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/lovable/email/transactional/preview'
   id:
     | '__root__'
     | '/_authenticated'
@@ -236,6 +248,7 @@ export interface FileRouteTypes {
     | '/_authenticated/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -254,6 +267,7 @@ export interface RootRouteChildren {
   ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -370,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLegalSlugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/auth/webhook': {
       id: '/lovable/email/auth/webhook'
       path: '/lovable/email/auth/webhook'
@@ -418,6 +439,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

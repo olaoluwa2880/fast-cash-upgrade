@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "theme-color", content: "#0e6b3f" },
+      { name: "theme-color", content: "#0D0D0D" },
       { title: "Fastcreditglobal" },
       { name: "description", content: "FastCredit Global is a financial dashboard app for managing multiple currencies." },
       { name: "author", content: "Lovable" },

@@ -73,9 +73,9 @@ function PushStack({ items, onDismiss }: { items: PushNotification[]; onDismiss:
 function iconFor(kind: PushKind = "info") {
   const cls = "h-5 w-5";
   switch (kind) {
-    case "success": return <CheckCircle2 className={cls + " text-emerald-500"} />;
+    case "success": return <CheckCircle2 className={cls + " text-amber-500"} />;
     case "error":   return <AlertTriangle className={cls + " text-red-500"} />;
-    case "wallet":  return <Wallet className={cls + " text-emerald-500"} />;
+    case "wallet":  return <Wallet className={cls + " text-amber-500"} />;
     case "reward":  return <Coins className={cls + " text-amber-500"} />;
     case "bonus":   return <Gift className={cls + " text-pink-500"} />;
     default:        return <Info className={cls + " text-sky-500"} />;
