@@ -106,8 +106,8 @@ export function InstallPrompt() {
           </p>
 
           {ios ? (
-            <div className="mt-4 text-xs text-gray-700 bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2 text-left">
-              <Share className="w-4 h-4 mt-0.5 text-emerald-600 flex-shrink-0" />
+            <div className="mt-4 text-xs text-gray-700 bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-start gap-2 text-left">
+              <Share className="w-4 h-4 mt-0.5 text-amber-600 flex-shrink-0" />
               <span>Tap the <b>Share</b> button, then select <b>Add to Home Screen</b>.</span>
             </div>
           ) : null}
@@ -123,7 +123,7 @@ export function InstallPrompt() {
               <button
                 onClick={install}
                 disabled={!deferred}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5"
               >
                 <Download className="w-4 h-4" /> Install Now
               </button>

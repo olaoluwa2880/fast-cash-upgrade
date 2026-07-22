@@ -276,12 +276,12 @@ function Dashboard() {
                 {r.status && (
                   <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${
                     r.status === "pending" ? "bg-amber-100 text-amber-700"
-                      : r.status === "approved" ? "bg-emerald-100 text-emerald-700"
+                      : r.status === "approved" ? "bg-amber-100 text-amber-700"
                       : "bg-red-100 text-red-600"
                   }`}>{r.status}</span>
                 )}
                 {tab === "payments" && r.credited && (
-                  <div className="text-[10px] text-emerald-600 font-semibold mt-1">Credited</div>
+                  <div className="text-[10px] text-amber-600 font-semibold mt-1">Credited</div>
                 )}
               </div>
             </div>

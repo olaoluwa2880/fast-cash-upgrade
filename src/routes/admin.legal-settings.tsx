@@ -59,7 +59,7 @@ function Page() {
         Formatting: use <code>#</code>, <code>##</code>, <code>###</code> for headings, <code>-</code> for bullet points, and blank lines to separate paragraphs.
       </p>
 
-      {msg && <div className="text-xs bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg">{msg}</div>}
+      {msg && <div className="text-xs bg-amber-100 text-amber-700 px-3 py-2 rounded-lg">{msg}</div>}
 
       <div className="bg-white/70 backdrop-blur border border-white rounded-full p-1 flex items-center overflow-x-auto shadow-sm">
         {LEGAL_SLUGS.map((s) => (
