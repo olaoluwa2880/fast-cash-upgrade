@@ -112,13 +112,16 @@ function Root() {
 
 function Splash() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0e6b3f]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="text-white text-4xl font-black tracking-tight">FastCredit</div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#0D0D0D]">
+      <div className="flex flex-col items-center gap-5">
+        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#F4CF5B] via-[#D4AF37] to-[#8a6b1e] grid place-items-center shadow-[0_0_40px_rgba(212,175,55,0.4)]">
+          <Crown className="h-8 w-8 text-[#0D0D0D]" />
+        </div>
+        <div className="text-white text-3xl font-black tracking-tight">FastCredit</div>
         <div className="flex gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce [animation-delay:-0.3s]" />
-          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce [animation-delay:-0.15s]" />
-          <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce" />
+          <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-bounce [animation-delay:-0.3s]" />
+          <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-bounce [animation-delay:-0.15s]" />
+          <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-bounce" />
         </div>
       </div>
     </div>
