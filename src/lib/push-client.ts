@@ -44,43 +44,60 @@ export function currentPermission(): NotificationPermission | "unsupported" {
 }
 
 export async function enablePushNotifications(): Promise<{ ok: boolean; reason?: string }> {
-  if (!canUseWebPush()) return { ok: false, reason: "unsupported" };
-  const perm = await Notification.requestPermission();
-  if (perm !== "granted") return { ok: false, reason: perm };
+  try {
+    const inIframe = typeof window !== "undefined" && window.top !== window.self;
+    if (inIframe) return { ok: false, reason: "Open the app in a real browser tab (not the preview) to enable notifications." };
 
-  const messaging = await getMessagingInstance();
-  if (!messaging) return { ok: false, reason: "unsupported" };
-  const cfg = await loadConfig();
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const inStandalone = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as any).standalone;
+    if (isIos && !inStandalone) {
+      return { ok: false, reason: "On iPhone, tap Share → Add to Home Screen, then open FastCredit from that icon to enable notifications." };
+    }
+    if (!canUseWebPush()) return { ok: false, reason: "This browser doesn't support push notifications." };
 
-  // Ensure our messaging SW is registered at root scope.
-  const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
-  await navigator.serviceWorker.ready;
+    const perm = await Notification.requestPermission();
+    if (perm === "denied") return { ok: false, reason: "Notifications are blocked in your browser settings for this site." };
+    if (perm !== "granted") return { ok: false, reason: perm };
 
-  const token = await getToken(messaging, {
-    vapidKey: cfg.vapidKey,
-    serviceWorkerRegistration: reg,
-  });
-  if (!token) return { ok: false, reason: "no-token" };
+    const cfg = await loadConfig();
+    if (!cfg.vapidKey || !cfg.apiKey || !cfg.projectId) {
+      return { ok: false, reason: "Push service isn't configured yet. Please contact support." };
+    }
 
-  await registerPushToken({
-    data: { token, platform: "web", userAgent: navigator.userAgent },
-  });
+    const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
+    await navigator.serviceWorker.ready;
 
-  // Foreground messages: also show system notification via SW so it appears in the tray.
-  onMessage(messaging, (payload) => {
-    const d = (payload.data ?? {}) as Record<string, string>;
-    const title = d.title || payload.notification?.title || "FastCredit";
-    const body = d.body || payload.notification?.body || "";
-    try {
-      reg.showNotification(title, {
-        body,
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
-        data: { url: d.url || "/" },
-        tag: d.tag,
-      });
-    } catch {}
-  });
+    const messaging = await getMessagingInstance();
+    if (!messaging) return { ok: false, reason: "Messaging unsupported on this device." };
 
-  return { ok: true };
+    const token = await getToken(messaging, {
+      vapidKey: cfg.vapidKey,
+      serviceWorkerRegistration: reg,
+    });
+    if (!token) return { ok: false, reason: "Couldn't obtain a device token." };
+
+    await registerPushToken({
+      data: { token, platform: "web", userAgent: navigator.userAgent },
+    });
+
+    onMessage(messaging, (payload) => {
+      const d = (payload.data ?? {}) as Record<string, string>;
+      const title = d.title || payload.notification?.title || "FastCredit";
+      const body = d.body || payload.notification?.body || "";
+      try {
+        reg.showNotification(title, {
+          body,
+          icon: "/icon-192.png",
+          badge: "/icon-192.png",
+          data: { url: d.url || "/" },
+          tag: d.tag,
+        });
+      } catch {}
+    });
+
+    return { ok: true };
+  } catch (e: any) {
+    console.error("[push] enable failed", e);
+    return { ok: false, reason: e?.message || "Unknown error enabling notifications" };
+  }
 }
