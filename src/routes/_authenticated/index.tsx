@@ -1924,83 +1924,103 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       )}
 
       {openProfile && (
-        <div className="fixed inset-0 z-50 flex flex-col">
-          <div className={`flex-1 overflow-y-auto ${isDark ? "bg-[#0a1410] text-white" : "bg-[#e8f5ec] text-[#0b1e1a]"}`}>
-            <div className="bg-gradient-to-b from-[#0f7a47] to-[#0a5a34] text-white px-5 pt-10 pb-8 rounded-b-[28px] relative overflow-hidden">
-              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#05100c] animate-fade-in">
+          <div className="flex-1 overflow-y-auto text-white">
+            {/* Green gradient header */}
+            <div className="relative overflow-hidden px-5 pt-12 pb-16 rounded-b-[36px] text-white"
+              style={{ background: "linear-gradient(160deg, #10b981 0%, #0f7a47 55%, #0a5a34 100%)" }}
+            >
+              <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+              <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-emerald-300/10 blur-2xl" />
+
               <div className="flex items-center justify-between relative">
-                <p className="font-black text-lg">My Profile</p>
-                <button onClick={() => setOpenProfile(false)} className="h-10 w-10 grid place-items-center rounded-full bg-white/15 backdrop-blur">
+                <p className="font-black text-lg tracking-tight">My Profile</p>
+                <button
+                  onClick={() => setOpenProfile(false)}
+                  className="h-10 w-10 grid place-items-center rounded-full bg-white/20 backdrop-blur border border-white/25 active:scale-95 transition"
+                  aria-label="Close profile"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </div>
+
               <div className="mt-8 flex flex-col items-center relative">
-                <div className="h-24 w-24 rounded-full bg-white/20 grid place-items-center text-3xl font-black border-4 border-white/30 overflow-hidden">
+                <div className="h-28 w-28 rounded-full bg-white/15 grid place-items-center text-4xl font-black border-4 border-white/40 overflow-hidden shadow-2xl">
                   {userProfile.avatar_url ? (
                     <img src={userProfile.avatar_url} alt={userProfile.name || "avatar"} className="h-full w-full object-cover" />
                   ) : (
                     (userProfile.name || userProfile.username || userProfile.email || "F")[0].toUpperCase()
                   )}
                 </div>
-                <p className="mt-4 text-xl font-black">{userProfile.name || userProfile.username || "FastCredit user"}</p>
+                <p className="mt-5 text-2xl font-black tracking-tight">{userProfile.name || userProfile.username || "FastCredit user"}</p>
                 {userProfile.username && (
-                  <p className="text-sm opacity-80">@{userProfile.username}</p>
+                  <p className="text-sm text-white/85 font-medium">@{userProfile.username}</p>
                 )}
-                <p className="text-xs opacity-70">{userProfile.country || "—"}</p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 backdrop-blur">
+                  <Globe className="h-3.5 w-3.5" />
+                  <span className="text-xs font-semibold">{userProfile.country || "—"}</span>
+                </div>
               </div>
             </div>
 
-            <div className="mx-4 mt-4 space-y-3 pb-8">
-              <div className={`rounded-3xl p-5 shadow-sm ${card}`}>
-                <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Profile details</p>
-                <div className="mt-4 space-y-4">
-                  <ProfileRow icon={<User className="h-4 w-4" />} label="Full name" value={userProfile.name || "—"} softText={softText} />
-                  <ProfileRow icon={<UserCircle className="h-4 w-4" />} label="Username" value={userProfile.username ? `@${userProfile.username}` : "—"} softText={softText} />
-                  <ProfileRow icon={<Mail className="h-4 w-4" />} label="Email address" value={userProfile.email || "—"} softText={softText} />
-                  <ProfileRow icon={<Smartphone className="h-4 w-4" />} label="Phone number" value={userProfile.phone || "—"} softText={softText} />
-                  <ProfileRow icon={<Globe className="h-4 w-4" />} label="Country" value={userProfile.country || "—"} softText={softText} />
-                  <ProfileRow icon={<Wallet className="h-4 w-4" />} label="Wallet balance" value={fmt(balanceUsd, 2)} softText={softText} />
-                  <ProfileRow icon={<Crown className="h-4 w-4" />} label="Current plan" value={activePlan ? `Premium ${PREMIUM_PLANS[activePlan.index].name} (${planActive ? "Active" : "Expired"})` : "No active plan"} softText={softText} />
-                  <ProfileRow icon={<CreditCard className="h-4 w-4" />} label="Preferred currency" value={`${currency.code} (${currency.symbol.trim()})`} softText={softText} />
-                  <ProfileRow icon={<Calendar className="h-4 w-4" />} label="Date joined" value={userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—"} softText={softText} />
-                  <div className="flex items-center gap-3">
-                    <div className={`h-8 w-8 rounded-full grid place-items-center ${isDark ? "bg-white/10" : "bg-black/5"}`}>
-                      <Gift className="h-4 w-4" />
+            {/* Info cards */}
+            <div className="mx-4 -mt-8 space-y-3 pb-10 relative">
+              <div className="rounded-3xl p-2 bg-[#0d1a15] border border-white/5 shadow-xl">
+                {[
+                  { icon: User, label: "Full Name", value: userProfile.name || "—" },
+                  { icon: UserCircle, label: "Username", value: userProfile.username ? `@${userProfile.username}` : "—" },
+                  { icon: Mail, label: "Email Address", value: userProfile.email || "—" },
+                  { icon: Smartphone, label: "Phone Number", value: userProfile.phone || "—" },
+                  { icon: Globe, label: "Country", value: userProfile.country || "—" },
+                  { icon: Wallet, label: "Wallet Balance", value: fmt(balanceUsd, 2) },
+                  { icon: Crown, label: "Current Plan", value: activePlan ? `${PREMIUM_PLANS[activePlan.index].name} · ${planActive ? "Active" : "Expired"}` : "No active plan" },
+                  { icon: CreditCard, label: "Preferred Currency", value: `${currency.code} (${currency.symbol.trim()})` },
+                ].map(({ icon: Icon, label, value }, i, arr) => (
+                  <div key={label} className={`flex items-center gap-3 px-3 py-3.5 ${i < arr.length - 1 ? "border-b border-white/[0.06]" : ""}`}>
+                    <div className="h-10 w-10 rounded-2xl grid place-items-center shrink-0 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                      <Icon className="h-4.5 w-4.5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[11px] ${softText}`}>Referral code</p>
-                      <p className="font-black tracking-wide">{userProfile.referral_code || "—"}</p>
+                      <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold">{label}</p>
+                      <p className="text-sm font-bold text-white truncate">{value}</p>
                     </div>
-                    {userProfile.referral_code && (
-                      <button
-                        onClick={() => copyText(userProfile.referral_code, "ref")}
-                        className="inline-flex items-center gap-1 rounded-full bg-[#0e6b3f] text-white px-3 py-1.5 text-[11px] font-bold active:scale-95"
-                      >
-                        {copied === "ref" ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
-                      </button>
-                    )}
                   </div>
-                </div>
+                ))}
               </div>
 
-              <div className={`rounded-3xl p-5 shadow-sm ${card}`}>
-                <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Account status</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-emerald-500/15 text-emerald-600 grid place-items-center shrink-0">
-                    <Check className="h-5 w-5" />
+              {userProfile.referral_code && (
+                <div className="rounded-3xl p-4 bg-[#0d1a15] border border-white/5 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-2xl grid place-items-center shrink-0 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                    <Gift className="h-4.5 w-4.5" />
                   </div>
-                  <div>
-                    <p className="font-bold text-sm">Verified member</p>
-                    <p className={`text-[11px] ${softText}`}>
-                      {userProfile.created_at ? `Joined ${new Date(userProfile.created_at).toLocaleDateString()}` : "Account active"}
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold">Referral Code</p>
+                    <p className="font-black tracking-wide text-white truncate">{userProfile.referral_code}</p>
                   </div>
+                  <button
+                    onClick={() => copyText(userProfile.referral_code, "ref")}
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-black px-3 py-1.5 text-[11px] font-bold active:scale-95"
+                  >
+                    {copied === "ref" ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+                  </button>
+                </div>
+              )}
+
+              <div className="rounded-3xl p-4 bg-[#0d1a15] border border-white/5 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-emerald-500/15 text-emerald-400 grid place-items-center shrink-0 border border-emerald-500/20">
+                  <Check className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-white">Verified Member</p>
+                  <p className="text-[11px] text-white/50">
+                    {userProfile.created_at ? `Joined ${new Date(userProfile.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}` : "Account active"}
+                  </p>
                 </div>
               </div>
 
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 rounded-3xl p-4 font-bold text-sm bg-red-500/10 text-red-600 hover:bg-red-500/15 active:scale-[.98] transition"
+                className="w-full flex items-center justify-center gap-2 rounded-3xl p-4 font-bold text-sm bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/15 active:scale-[.98] transition"
               >
                 <LogOut className="h-4 w-4" /> Log out
               </button>
