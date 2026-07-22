@@ -587,6 +587,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       if (insErr) throw insErr;
       setPaymentStep("pending");
       addTxn({ kind: "deposit", amountUsd: amt, method: methodLabel, status: "pending", note: `Premium plan activation · awaiting confirmation` });
+      sendPushNotification({ data: {
+        title: "Deposit submitted",
+        body: `Your deposit of $${amt.toFixed(2)} via ${methodLabel} is pending review.`,
+        url: "/", tag: "deposit-submitted",
+      } }).catch(() => {});
     } catch (e) {
       setPaymentStep("pending");
       showToast(`Could not submit: ${(e as Error).message}`);
@@ -760,6 +765,11 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       }
       addTxn({ kind: "withdraw", amountUsd: amtUsd, status: "pending", method, note: `${note} · awaiting admin review` });
       push({ title: "Withdrawal submitted", message: `$${amtUsd.toFixed(2)} · pending admin review`, kind: "wallet" });
+      sendPushNotification({ data: {
+        title: "Withdrawal requested",
+        body: `Your withdrawal of $${amtUsd.toFixed(2)} is pending admin review.`,
+        url: "/", tag: "withdrawal-submitted",
+      } }).catch(() => {});
       setWdStep("success");
     }, 1200);
   };
