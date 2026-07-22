@@ -775,13 +775,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   const bal = fmtBalance(balanceUsd);
-  const isDark = dark;
 
   // Nicegram Premium-inspired dark theme — locked regardless of `dark` toggle.
   const isDark = true;
   const card = "bg-[#141414] text-white border border-white/5";
   const softText = "text-white/50";
-  void isDark;
+  void isDark; void dark;
 
   const shortcuts: { icon: typeof Wallet; label: string; onClick: () => void }[] = [
     { icon: Wallet, label: "Wallet", onClick: () => setOpenCategory("savings") },
