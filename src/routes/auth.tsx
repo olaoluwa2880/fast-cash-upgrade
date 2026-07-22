@@ -212,42 +212,8 @@ function AuthPage() {
     }
   }
 
-  // ---- Shared premium shell ----
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <div
-      className="min-h-[100svh] w-full flex items-start sm:items-center justify-center px-5 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:py-10 relative overflow-x-hidden"
-      style={{ backgroundColor: BG }}
-    >
-      {/* Ambient gold glow */}
-      <div
-        className="absolute -top-40 -left-40 w-[420px] h-[420px] rounded-full blur-3xl opacity-20 pointer-events-none"
-        style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }}
-      />
-      <div
-        className="absolute -bottom-40 -right-40 w-[420px] h-[420px] rounded-full blur-3xl opacity-15 pointer-events-none"
-        style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }}
-      />
-      <div className="w-full max-w-sm relative z-10 animate-fade-in">{children}</div>
-    </div>
-  );
 
-  const BrandMark = ({ subtitle }: { subtitle: string }) => (
-    <div className="text-center mb-8">
-      <div
-        className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 shadow-2xl"
-        style={{
-          background: `linear-gradient(135deg, ${GOLD} 0%, #B8912E 100%)`,
-          boxShadow: `0 20px 40px -12px ${GOLD}66`,
-        }}
-      >
-        <Sparkles className="w-8 h-8 text-black" strokeWidth={2.5} />
-      </div>
-      <h1 className="text-3xl font-black text-white tracking-tight" style={{ letterSpacing: "-0.02em" }}>
-        Fast<span style={{ color: GOLD }}>Credit</span>
-      </h1>
-      <p className="text-xs text-white/50 mt-2 font-medium">{subtitle}</p>
-    </div>
-  );
+
 
   if (step === "verifying") {
     return (
@@ -441,6 +407,45 @@ const inputStyle: React.CSSProperties = { fontSize: 16, scrollMarginTop: 120, sc
 const primaryBtn =
   "w-full font-semibold py-3 rounded-xl transition-all text-black shadow-lg " +
   "hover:brightness-110 active:scale-[0.98] bg-gradient-to-r from-[#D4AF37] to-[#B8912E] shadow-[#D4AF37]/30";
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="min-h-[100svh] w-full flex items-start sm:items-center justify-center px-5 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:py-10 relative overflow-x-hidden"
+      style={{ backgroundColor: BG }}
+    >
+      <div
+        className="absolute -top-40 -left-40 w-[420px] h-[420px] rounded-full blur-3xl opacity-20 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }}
+      />
+      <div
+        className="absolute -bottom-40 -right-40 w-[420px] h-[420px] rounded-full blur-3xl opacity-15 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }}
+      />
+      <div className="w-full max-w-sm relative z-10 animate-fade-in">{children}</div>
+    </div>
+  );
+}
+
+function BrandMark({ subtitle }: { subtitle: string }) {
+  return (
+    <div className="text-center mb-8">
+      <div
+        className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 shadow-2xl"
+        style={{
+          background: `linear-gradient(135deg, ${GOLD} 0%, #B8912E 100%)`,
+          boxShadow: `0 20px 40px -12px ${GOLD}66`,
+        }}
+      >
+        <Sparkles className="w-8 h-8 text-black" strokeWidth={2.5} />
+      </div>
+      <h1 className="text-3xl font-black text-white tracking-tight" style={{ letterSpacing: "-0.02em" }}>
+        Fast<span style={{ color: GOLD }}>Credit</span>
+      </h1>
+      <p className="text-xs text-white/50 mt-2 font-medium">{subtitle}</p>
+    </div>
+  );
+}
 
 function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
