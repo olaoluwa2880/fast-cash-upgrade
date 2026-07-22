@@ -774,6 +774,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         body: `Your withdrawal of $${amtUsd.toFixed(2)} is pending admin review.`,
         url: "/", tag: "withdrawal-submitted",
       } }).catch(() => {});
+      sendTransactionEmail({ data: {
+        kind: "withdrawal", event: "submitted", amount: amtUsd, currency: "USD",
+      } }).catch(() => {});
       setWdStep("success");
     }, 1200);
   };
