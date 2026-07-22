@@ -23,6 +23,7 @@ import { Route as AdminCryptoWalletsRouteImport } from './routes/admin.crypto-wa
 import { Route as AdminCommunityRouteImport } from './routes/admin.community'
 import { Route as AdminBankDetailsRouteImport } from './routes/admin.bank-details'
 import { Route as AuthenticatedLegalIndexRouteImport } from './routes/_authenticated/legal.index'
+import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public/firebase-config'
 import { Route as AuthenticatedLegalSlugRouteImport } from './routes/_authenticated/legal.$slug'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -96,6 +97,11 @@ const AuthenticatedLegalIndexRoute = AuthenticatedLegalIndexRouteImport.update({
   path: '/legal/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicFirebaseConfigRoute = ApiPublicFirebaseConfigRouteImport.update({
+  id: '/api/public/firebase-config',
+  path: '/api/public/firebase-config',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedLegalSlugRoute = AuthenticatedLegalSlugRouteImport.update({
   id: '/legal/$slug',
   path: '/legal/$slug',
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
   '/legal/$slug': typeof AuthenticatedLegalSlugRoute
+  '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/admin': typeof AdminIndexRoute
   '/legal/$slug': typeof AuthenticatedLegalSlugRoute
+  '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/legal': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_authenticated/legal/$slug': typeof AuthenticatedLegalSlugRoute
+  '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/_authenticated/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/'
     | '/legal/$slug'
+    | '/api/public/firebase-config'
     | '/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/legal/$slug'
+    | '/api/public/firebase-config'
     | '/legal'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/admin/'
     | '/_authenticated/legal/$slug'
+    | '/api/public/firebase-config'
     | '/_authenticated/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   AdminSupportSettingsRoute: typeof AdminSupportSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
 }
@@ -343,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLegalIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/firebase-config': {
+      id: '/api/public/firebase-config'
+      path: '/api/public/firebase-config'
+      fullPath: '/api/public/firebase-config'
+      preLoaderRoute: typeof ApiPublicFirebaseConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/legal/$slug': {
       id: '/_authenticated/legal/$slug'
       path: '/legal/$slug'
@@ -395,19 +415,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSupportSettingsRoute: AdminSupportSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
+  ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

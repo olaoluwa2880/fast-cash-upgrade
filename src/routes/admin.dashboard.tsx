@@ -105,6 +105,10 @@ function Dashboard() {
 
   async function notify(userId: string, title: string, body: string, kind: string) {
     await supabase.from("notifications").insert({ user_id: userId, title, body, kind });
+    try {
+      const { sendPushNotification } = await import("@/lib/push.functions");
+      await sendPushNotification({ data: { userId, title, body, url: "/", tag: `admin-${kind}` } });
+    } catch (e) { console.error("push send failed", e); }
   }
 
   async function creditBalance(userId: string, amount: number) {
