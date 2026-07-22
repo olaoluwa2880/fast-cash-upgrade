@@ -851,7 +851,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               <Coins className="h-3 w-3 text-[#D4AF37]" />
               <span className="text-[11px] font-bold tabular-nums">{Math.floor(balanceUsd)}</span>
             </div>
-            <button className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 backdrop-blur relative">
+            <button
+              onClick={async () => {
+                if (!canUseWebPush()) { push({ title: "Notifications not supported", message: "Your browser doesn't support push notifications.", kind: "info" }); return; }
+                const p = currentPermission();
+                if (p === "denied") { push({ title: "Notifications blocked", message: "Enable notifications in your browser settings for FastCredit.", kind: "info" }); return; }
+                const res = await enablePushNotifications();
+                if (res.ok) push({ title: "Notifications enabled", message: "You'll now get real push alerts for deposits and withdrawals.", kind: "success" });
+                else push({ title: "Couldn't enable notifications", message: res.reason ?? "unknown", kind: "error" });
+              }}
+              className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 backdrop-blur relative"
+              aria-label="Enable push notifications"
+            >
               <Bell className="h-4 w-4" />
               <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
             </button>
