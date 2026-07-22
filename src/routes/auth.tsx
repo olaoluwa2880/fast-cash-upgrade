@@ -434,8 +434,9 @@ function AuthPage() {
 }
 
 const inputCls =
-  "w-full pl-9 pr-3 py-2.5 rounded-xl outline-none text-sm text-white placeholder:text-white/30 transition " +
+  "w-full pl-9 pr-3 py-2.5 rounded-xl outline-none text-white placeholder:text-white/30 transition " +
   "bg-white/[0.03] border border-white/10 focus:border-[#D4AF37]/60 focus:bg-white/[0.06] focus:ring-2 focus:ring-[#D4AF37]/20";
+const inputStyle: React.CSSProperties = { fontSize: 16, scrollMarginTop: 120, scrollMarginBottom: 120 };
 
 const primaryBtn =
   "w-full font-semibold py-3 rounded-xl transition-all text-black shadow-lg " +
