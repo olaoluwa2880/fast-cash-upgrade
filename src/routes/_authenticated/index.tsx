@@ -165,7 +165,7 @@ const PREMIUM_PLANS = (() => {
     { name: "Plan 6", invest: 650,   mineReward: 120 },
     { name: "Plan 7", invest: 1500,  mineReward: 210 },
     { name: "Plan 8", invest: 2000,  mineReward: 350 },
-    { name: "Plan 9", invest: 2200,  mineReward: 500 },
+    
   ];
   // 2 taps/day × 7 days = 14 total taps
   return base.map(p => {
