@@ -146,8 +146,11 @@ function Dashboard() {
         await emailTxn(r.user_id, "deposit", "approved", Number(r.amount), r.currency ?? "USD");
       }
     } else if (table === "withdrawals") {
-      await notify(r.user_id, "Withdrawal completed", `Your withdrawal of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved and completed.`, "success");
-      await emailTxn(r.user_id, "withdrawal", "approved", Number(r.amount ?? 0), r.currency ?? "USD");
+      const wAmt = Number((r as any).local_amount ?? r.amount ?? 0);
+      const wCur = r.currency ?? "USD";
+      await notify(r.user_id, "Withdrawal completed", `Your withdrawal of ${wAmt.toFixed(2)} ${wCur} has been approved and completed.`, "success");
+      await emailTxn(r.user_id, "withdrawal", "approved", wAmt, wCur);
+
     } else if (table === "upgrades") {
       await notify(r.user_id, "Upgrade approved", `Your plan upgrade has been approved.`, "success");
     }
@@ -174,7 +177,8 @@ function Dashboard() {
     }
     await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
     if (table === "payments" || table === "withdrawals") {
-      await emailTxn(r.user_id, table === "payments" ? "deposit" : "withdrawal", "rejected", Number(r.amount ?? 0), r.currency ?? "USD", reason || undefined);
+      const amt = table === "withdrawals" ? Number((r as any).local_amount ?? r.amount ?? 0) : Number(r.amount ?? 0);
+      await emailTxn(r.user_id, table === "payments" ? "deposit" : "withdrawal", "rejected", amt, r.currency ?? "USD", reason || undefined);
     }
 
     setBusy(null);

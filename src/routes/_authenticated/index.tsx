@@ -753,10 +753,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       }
       if (typeof newBal === "number") setBalanceUsd(newBal);
       // Record the request as PENDING — admin approves/rejects from the panel.
+      const localCurrency = wdMethod === "crypto" ? "USD" : (COUNTRY_BY_CODE[wdCountry]?.currency ?? "USD");
+      const localAmount = wdMethod === "crypto" ? amtUsd : Math.max(0, parseFloat(wdAmount || "0"));
       const { error: insErr } = await supabase.from("withdrawals").insert({
         user_id: u.user.id,
         amount: amtUsd,
-        currency: wdMethod === "crypto" ? "USD" : (COUNTRY_BY_CODE[wdCountry]?.currency ?? "USD"),
+        currency: localCurrency,
+        local_amount: localAmount,
         wallet_address: wdMethod === "crypto" ? wdWalletAddress : null,
         status: "pending",
       });
@@ -775,8 +778,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         url: "/", tag: "withdrawal-submitted",
       } }).catch(() => {});
       sendTransactionEmail({ data: {
-        kind: "withdrawal", event: "submitted", amount: amtUsd, currency: "USD",
+        kind: "withdrawal", event: "submitted", amount: localAmount, currency: localCurrency,
       } }).catch(() => {});
+
       setWdStep("success");
     }, 1200);
   };

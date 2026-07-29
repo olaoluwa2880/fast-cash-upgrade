@@ -500,6 +500,7 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          local_amount: number | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["request_status"]
@@ -512,6 +513,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          local_amount?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -524,6 +526,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          local_amount?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["request_status"]
