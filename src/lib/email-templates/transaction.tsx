@@ -48,6 +48,26 @@ const BODIES: Record<string, (amt: string) => string> = {
     `Your withdrawal of ${a} was not approved and the amount has been returned to your wallet.`,
 }
 
+// Common ISO currency → symbol map so emails display ₦ / $ / £ / € etc.
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$', USDT: '$', USDC: '$',
+  NGN: '₦', GHS: 'GH₵', KES: 'KSh', UGX: 'USh', TZS: 'TSh',
+  ZAR: 'R', RWF: 'RF', XAF: 'FCFA', XOF: 'CFA',
+  EUR: '€', GBP: '£', CAD: 'CA$', AUD: 'A$', INR: '₹',
+  JPY: '¥', CNY: '¥', BRL: 'R$', MXN: 'MX$', AED: 'د.إ',
+}
+
+function formatAmount(amount: number, currency: string): string {
+  const code = (currency || 'USD').toUpperCase()
+  const symbol = CURRENCY_SYMBOLS[code]
+  const fractionDigits = code === 'NGN' || code === 'JPY' ? 0 : 2
+  const num = Number(amount || 0).toLocaleString(undefined, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })
+  return symbol ? `${symbol}${num}` : `${num} ${code}`
+}
+
 export const TransactionEmail = ({
   kind = 'deposit',
   event = 'submitted',
@@ -57,10 +77,11 @@ export const TransactionEmail = ({
   name,
 }: Props) => {
   const key = `${kind}:${event}`
-  const amt = `${currency} ${Number(amount).toFixed(2)}`
+  const amt = formatAmount(amount, currency)
   const headline = HEADLINES[key] ?? 'Transaction update'
   const body = (BODIES[key] ?? ((a: string) => `Your transaction of ${a} has been updated.`))(amt)
   const accent = event === 'approved' ? '#D4AF37' : event === 'rejected' ? '#dc2626' : '#8B6914'
+
 
   return (
     <Html lang="en" dir="ltr">
