@@ -1132,104 +1132,129 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
 
       {openPremium && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setOpenPremium(false)}>
-          <div onClick={e => e.stopPropagation()} className={`w-full max-w-[440px] max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl ${isDark ? "bg-[#0D0D0D] text-white" : "bg-white text-[#111111]"} shadow-2xl`}>
-            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-black/5 bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500] rounded-t-3xl">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setOpenPremium(false)}>
+          <div onClick={e => e.stopPropagation()} className="w-full max-w-[460px] max-h-[94vh] overflow-y-auto rounded-t-[28px] sm:rounded-[28px] bg-[#0B0B0B] text-white shadow-2xl border border-white/5 relative">
+            {/* Ambient gold glow */}
+            <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-56 w-56 rounded-full bg-[#D4AF37]/20 blur-3xl" />
+
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-[#0B0B0B]/90 backdrop-blur border-b border-white/5">
               <div className="flex items-center gap-2">
-                <Crown className="h-5 w-5" />
+                <div className="h-9 w-9 rounded-full grid place-items-center bg-gradient-to-br from-[#D4AF37] to-[#8B6914] text-black shadow-lg shadow-[#D4AF37]/20">
+                  <Crown className="h-4 w-4" />
+                </div>
                 <div>
-                  <p className="font-black text-base leading-tight">Premium Upgrade</p>
-                  <p className="text-[10px] font-semibold opacity-80">7 days · 2 mining taps daily</p>
+                  <p className="font-black text-base leading-tight tracking-tight">Choose Your Plan</p>
+                  <p className="text-[10px] font-medium text-white/50">Premium mining · 7-day cycle</p>
                 </div>
               </div>
-              <button onClick={() => setOpenPremium(false)} className="h-8 w-8 grid place-items-center rounded-full bg-black/10">
+              <button onClick={() => setOpenPremium(false)} className="h-9 w-9 grid place-items-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="p-5">
-              <div className={`rounded-2xl p-4 ${isDark ? "bg-white/5" : "bg-amber-50"} border ${isDark ? "border-white/10" : "border-amber-200"}`}>
-                <p className={`text-[11px] font-semibold uppercase tracking-wide ${softText}`}>Starting investment</p>
-                <p className="mt-1 text-3xl font-extrabold text-amber-600">{fmt(PREMIUM_PLANS[0].invest, ["USD","EUR","GBP"].includes(currency.code) ? 2 : 0)}</p>
-                <p className={`mt-1 text-[11px] ${softText}`}>≈ ${PREMIUM_PLANS[0].invest} USD · Shown in {currency.code}</p>
+            <div className="px-5 pt-6 pb-6 relative">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-black tracking-tight">Choose Your Plan</h2>
+                <p className="mt-1.5 text-[12px] text-white/50">Affordable and adaptable pricing to suit your goals.</p>
               </div>
 
               {hasPendingDeposit && (
-                <div className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 text-amber-800 px-3 py-2 text-[11px] font-semibold">
+                <div className="mb-4 rounded-2xl border border-[#D4AF37]/30 bg-[#D4AF37]/10 text-[#D4AF37] px-3.5 py-2.5 text-[11px] font-semibold">
                   Your payment request is still pending. Please wait until it has been approved or rejected before submitting another deposit.
                 </div>
               )}
 
-              <p className={`mt-5 text-xs font-bold uppercase tracking-wide ${softText}`}>Choose a plan</p>
-              <div className="mt-3 space-y-2">
+              <div className="space-y-3">
                 {PREMIUM_PLANS.map((p, i) => {
                   const dec = ["USD", "EUR", "GBP"].includes(currency.code) ? 2 : 0;
                   const active = selectedPlan === i;
                   const isCurrentActive = planActive && activePlan?.index === i;
                   const isLowerThanActive = planActive && activePlan != null && i < activePlan.index;
                   const locked = isCurrentActive || isLowerThanActive;
+                  const isRecommended = i === 3; // Plan 4 as the recommended pick
+                  const highlighted = active || isCurrentActive;
+
+                  const benefits = [
+                    `${fmt(p.mineReward, 2)} per mining tap`,
+                    `${fmt(p.profit, 2)} earned daily (2 taps)`,
+                    `${fmt(p.total, 2)} total over 7 days`,
+                    `${fmt(p.returned, dec)} returned at maturity`,
+                    `Instant wallet credit on each tap`,
+                  ];
+
                   return (
                     <button
                       key={p.invest}
                       onClick={() => { if (!locked) setSelectedPlan(i); }}
                       disabled={locked}
                       aria-disabled={locked}
-                      className={`w-full text-left rounded-2xl p-4 border transition ${
-                        locked
-                          ? isCurrentActive
-                            ? "border-amber-500 bg-amber-50 text-[#111111] shadow-sm cursor-not-allowed opacity-100"
-                            : "border-black/5 bg-black/[.03] opacity-60 cursor-not-allowed"
-                          : active
-                            ? "border-amber-500 bg-amber-50 text-[#111111] shadow-md"
-                            : isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"
+                      className={`relative w-full text-left rounded-2xl p-5 border transition-all ${
+                        highlighted
+                          ? "border-[#D4AF37] bg-gradient-to-b from-[#D4AF37]/15 via-[#D4AF37]/5 to-transparent shadow-[0_10px_40px_-10px_rgba(212,175,55,0.35)]"
+                          : locked
+                            ? "border-white/5 bg-white/[0.02] opacity-50 cursor-not-allowed"
+                            : "border-white/8 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`h-8 w-8 rounded-full grid place-items-center ${isCurrentActive ? "bg-amber-500 text-white" : active ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700"}`}>
-                            {isCurrentActive ? <Check className="h-4 w-4" /> : active ? <Check className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
-                          </div>
-                          <div>
-                            <p className="font-extrabold flex items-center gap-2">
-                              {p.name} · {fmt(p.invest, dec)}
-                              {isCurrentActive && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[9px] font-black uppercase tracking-wide px-2 py-0.5">
-                                  Active Plan
-                                </span>
-                              )}
-                              {isLowerThanActive && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-300 text-slate-700 text-[9px] font-black uppercase tracking-wide px-2 py-0.5">
-                                  Locked
-                                </span>
-                              )}
-                            </p>
-                            <p className={`text-[10px] ${active || isCurrentActive ? "text-[#111111]/60" : softText}`}>
-                              {isCurrentActive ? "Currently active — upgrade to a higher plan" : isLowerThanActive ? "Upgrades only — cannot downgrade" : "Deposit"}
-                            </p>
-                          </div>
+                      {isRecommended && !locked && (
+                        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#F5D670] text-black text-[9px] font-black uppercase tracking-wider px-2.5 py-1 shadow-lg">
+                            <Crown className="h-2.5 w-2.5" /> Recommended
+                          </span>
                         </div>
-                        <div className="text-right">
-                          <p className="font-extrabold text-amber-600">{fmt(p.mineReward, 2)}</p>
-                          <p className={`text-[10px] ${active || isCurrentActive ? "text-[#111111]/60" : softText}`}>per mining tap</p>
+                      )}
+                      {isCurrentActive && (
+                        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#D4AF37] text-black text-[9px] font-black uppercase tracking-wider px-2.5 py-1 shadow-lg">
+                            <Check className="h-2.5 w-2.5" /> Active Plan
+                          </span>
                         </div>
+                      )}
+                      {isLowerThanActive && (
+                        <div className="absolute top-3 right-3">
+                          <span className="inline-flex items-center rounded-full bg-white/10 text-white/60 text-[9px] font-black uppercase tracking-wider px-2 py-0.5">
+                            Locked
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className={`text-lg font-black tracking-tight ${highlighted ? "text-white" : "text-white/90"}`}>{p.name}</p>
+                          <p className="text-[11px] text-white/45 mt-0.5">7-day mining cycle</p>
+                        </div>
+                        {active && !isCurrentActive && (
+                          <div className="h-6 w-6 rounded-full grid place-items-center bg-[#D4AF37] text-black shrink-0">
+                            <Check className="h-3.5 w-3.5" />
+                          </div>
+                        )}
                       </div>
-                      <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${active || isCurrentActive ? "text-[#111111]/80" : softText}`}>
-                        <div className={`rounded-lg px-2 py-1.5 ${active || isCurrentActive ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
-                          <p className="opacity-70">Per day (2 taps)</p>
-                          <p className={`font-bold ${active || isCurrentActive ? "text-[#111111]" : ""}`}>{fmt(p.profit, 2)}</p>
-                        </div>
-                        <div className={`rounded-lg px-2 py-1.5 ${active || isCurrentActive ? "bg-white" : isDark ? "bg-white/5" : "bg-[#f6f8f7]"}`}>
-                          <p className="opacity-70">Total 7d</p>
-                          <p className={`font-bold ${active || isCurrentActive ? "text-[#111111]" : ""}`}>{fmt(p.total, 2)}</p>
-                        </div>
+
+                      <div className="mt-4 flex items-baseline gap-1.5">
+                        <span className={`text-4xl font-black tracking-tight ${highlighted ? "text-[#D4AF37]" : "text-white"}`}>
+                          {fmt(p.invest, dec)}
+                        </span>
+                        <span className="text-[11px] font-semibold text-white/40">/ 7 days</span>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-white/5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 mb-2.5">What's included</p>
+                        <ul className="space-y-1.5">
+                          {benefits.map((b, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-[12px] text-white/75">
+                              <Check className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${highlighted ? "text-[#D4AF37]" : "text-white/40"}`} />
+                              <span>{b}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </button>
                   );
                 })}
               </div>
 
-              <div className={`mt-4 rounded-2xl p-3 text-[11px] ${isDark ? "bg-white/5 text-white/70" : "bg-[#f6f8f7] text-[#111111]/70"}`}>
-                <p className="font-bold mb-1">How it works</p>
+              <div className="mt-5 rounded-2xl p-3.5 text-[11px] bg-white/[0.03] border border-white/5 text-white/60">
+                <p className="font-bold mb-1 text-white/80">How it works</p>
                 <ul className="space-y-0.5 list-disc pl-4">
                   <li>Mine twice per day — earnings credit instantly to your wallet.</li>
                   <li>Each plan runs for 7 days, then expires automatically.</li>
@@ -1251,10 +1276,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     onClick={activatePlan}
                     disabled={disabled}
                     aria-disabled={disabled}
-                    className={`mt-4 w-full rounded-full py-3.5 font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 ${
+                    className={`mt-5 w-full rounded-full py-4 font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-[0.98] transition ${
                       disabled
-                        ? "bg-slate-300 text-slate-600 cursor-not-allowed"
-                        : "bg-gradient-to-r from-amber-400 to-amber-500 text-[#3a2500]"
+                        ? "bg-white/5 text-white/40 cursor-not-allowed border border-white/5"
+                        : "bg-gradient-to-r from-[#D4AF37] to-[#F5D670] text-black shadow-[#D4AF37]/30"
                     }`}
                   >
                     <Crown className="h-4 w-4" /> {label}
