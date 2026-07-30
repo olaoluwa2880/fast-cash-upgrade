@@ -1963,11 +1963,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
                   {wdFeeState === "pending" && (
                     <div className={`rounded-2xl border p-4 text-center space-y-2 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}>
-                      <p className="font-black text-sm">Fee payment under review</p>
-                      <p className={`text-[11px] ${softText}`}>We received your {feeLabel} fee receipt. Once an admin confirms it, you can submit your withdrawal.</p>
+                      <p className="font-black text-sm">Fee payment received</p>
+                      <p className={`text-[11px] ${softText}`}>We received your {feeLabel} fee receipt. You can submit your withdrawal now — it will show as pending until an admin approves it.</p>
                       <button onClick={() => refreshFeeState()} className="text-[11px] font-bold text-[#D4AF37]">Check again</button>
                     </div>
                   )}
+
 
                   {(wdFeeState === "none" || wdFeeState === "rejected") && (
                     <>
@@ -2022,11 +2023,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <button onClick={() => setWdStep(wdMethod === "crypto" ? "cryptoDetails" : "details")} className={`flex-1 rounded-full py-3 font-bold text-sm border ${isDark ? "border-white/10" : "border-black/10"}`}>Edit</button>
                     <button
                       onClick={submitWithdraw}
-                      disabled={wdFeeState !== "paid"}
-                      className={`flex-1 rounded-full py-3 font-black text-sm ${wdFeeState === "paid" ? "bg-[#D4AF37] text-white active:scale-95" : "bg-[#D4AF37]/40 text-white/70"}`}
+                      disabled={wdFeeState !== "paid" && wdFeeState !== "pending"}
+                      className={`flex-1 rounded-full py-3 font-black text-sm ${wdFeeState === "paid" || wdFeeState === "pending" ? "bg-[#D4AF37] text-white active:scale-95" : "bg-[#D4AF37]/40 text-white/70"}`}
                     >
                       Confirm
                     </button>
+
                   </div>
 
                 </div>
