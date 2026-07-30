@@ -793,10 +793,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setWdWalletAddress("");
     setWdFeeFile(null);
     setWdFeeState("unknown");
-    setWdStep("fee");
+    setWdStep("method");
     setOpenWithdraw(true);
-    const state = await refreshFeeState();
-    setWdStep(state === "paid" ? "method" : "fee");
+    void refreshFeeState();
+
   };
   const closeWithdraw = () => {
     setOpenWithdraw(false);
