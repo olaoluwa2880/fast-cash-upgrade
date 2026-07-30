@@ -70,9 +70,14 @@ function Dashboard() {
     } else if (tab === "upgrades") {
       const { data: d } = await supabase.from("upgrades").select("*").order("created_at", { ascending: false });
       data = await attach((d ?? []) as Row[]);
-    } else if (tab === "payments") {
-      const { data: d } = await supabase.from("payments").select("*").order("created_at", { ascending: false });
-      const withProfiles = await attach((d ?? []) as Row[]);
+    } else if (tab === "payments" || tab === "fees") {
+      const { data: d } = tab === "payments"
+        ? await supabase.from("payments").select("*").order("created_at", { ascending: false })
+        : await supabase.from("withdrawal_fees").select("*").order("created_at", { ascending: false });
+      const normalized = ((d ?? []) as any[]).map((r) =>
+        tab === "fees" ? { ...r, amount: r.amount_ngn, currency: r.currency ?? "NGN" } : r
+      ) as Row[];
+      const withProfiles = await attach(normalized);
       // sign receipt URLs
       const paths = withProfiles.map((r) => r.receipt_url).filter((p): p is string => !!p);
       const signedMap = new Map<string, string>();
