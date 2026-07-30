@@ -20,6 +20,8 @@ interface Props {
   event?: TxEvent
   amount?: number
   currency?: string
+  usdAmount?: number
+  destination?: string
   reason?: string
   name?: string
 }
@@ -28,7 +30,7 @@ const HEADLINES: Record<string, string> = {
   'deposit:submitted': 'Deposit received — awaiting review',
   'deposit:approved': 'Deposit approved',
   'deposit:rejected': 'Deposit rejected',
-  'withdrawal:submitted': 'Withdrawal request received',
+  'withdrawal:submitted': 'Withdrawal pending approval',
   'withdrawal:approved': 'Withdrawal approved',
   'withdrawal:rejected': 'Withdrawal rejected',
 }
@@ -41,7 +43,7 @@ const BODIES: Record<string, (amt: string) => string> = {
   'deposit:rejected': (a) =>
     `Your deposit of ${a} was not approved. Please review the reason below and try again or contact support.`,
   'withdrawal:submitted': (a) =>
-    `Your withdrawal request for ${a} has been submitted and is pending admin review.`,
+    `Your withdrawal of ${a} is on pending. It is awaiting admin approval and you'll be notified by email as soon as it is approved.`,
   'withdrawal:approved': (a) =>
     `Your withdrawal of ${a} has been approved and is being sent to your chosen destination.`,
   'withdrawal:rejected': (a) =>
@@ -73,6 +75,8 @@ export const TransactionEmail = ({
   event = 'submitted',
   amount = 0,
   currency = 'USD',
+  usdAmount,
+  destination,
   reason,
   name,
 }: Props) => {
@@ -81,7 +85,11 @@ export const TransactionEmail = ({
   const headline = HEADLINES[key] ?? 'Transaction update'
   const body = (BODIES[key] ?? ((a: string) => `Your transaction of ${a} has been updated.`))(amt)
   const accent = event === 'approved' ? '#D4AF37' : event === 'rejected' ? '#dc2626' : '#8B6914'
-
+  const statusLabel = event === 'submitted' ? 'Pending' : event === 'approved' ? 'Approved' : 'Rejected'
+  const showUsd =
+    typeof usdAmount === 'number' &&
+    usdAmount > 0 &&
+    (currency || 'USD').toUpperCase() !== 'USD'
 
   return (
     <Html lang="en" dir="ltr">
@@ -99,7 +107,16 @@ export const TransactionEmail = ({
             <Section style={{ ...amountCard, borderColor: accent }}>
               <Text style={amountLabel}>Amount</Text>
               <Text style={{ ...amountValue, color: accent }}>{amt}</Text>
+              {showUsd ? (
+                <Text style={amountSub}>≈ {formatAmount(usdAmount as number, 'USD')}</Text>
+              ) : null}
+              <Text style={{ ...statusPill, color: accent, borderColor: accent }}>{statusLabel}</Text>
             </Section>
+            {destination ? (
+              <Text style={text}>
+                <strong>Destination:</strong> {destination}
+              </Text>
+            ) : null}
             {reason ? (
               <Text style={reasonText}>
                 <strong>Reason:</strong> {reason}
@@ -157,6 +174,18 @@ const amountCard = {
 }
 const amountLabel = { fontSize: '11px', color: '#666', textTransform: 'uppercase' as const, letterSpacing: '1.5px', margin: 0 }
 const amountValue = { fontSize: '26px', fontWeight: 900, margin: '6px 0 0' }
+const amountSub = { fontSize: '12px', color: '#666', margin: '4px 0 0' }
+const statusPill = {
+  display: 'inline-block',
+  marginTop: '10px',
+  padding: '4px 12px',
+  border: '1px solid #D4AF37',
+  borderRadius: '999px',
+  fontSize: '11px',
+  fontWeight: 800,
+  letterSpacing: '1px',
+  textTransform: 'uppercase' as const,
+}
 const reasonText = { fontSize: '13px', color: '#555', background: '#fdf3f3', padding: '10px 12px', borderRadius: '8px', margin: '0 0 10px' }
 const hr = { borderColor: '#eee', margin: '20px 0' }
 const footer = { fontSize: '12px', color: '#888', margin: '4px 0' }

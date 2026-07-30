@@ -8,6 +8,8 @@ const Input = z.object({
   event: z.enum(["submitted", "approved", "rejected"]),
   amount: z.number().nonnegative(),
   currency: z.string().max(8).default("USD"),
+  usdAmount: z.number().nonnegative().optional(),
+  destination: z.string().max(200).optional(),
   reason: z.string().max(500).optional(),
 });
 
@@ -48,6 +50,8 @@ export const sendTransactionEmail = createServerFn({ method: "POST" })
           event: data.event,
           amount: data.amount,
           currency: data.currency,
+          usdAmount: data.usdAmount,
+          destination: data.destination,
           reason: data.reason,
           name,
         },
