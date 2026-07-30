@@ -134,10 +134,17 @@ function Dashboard() {
     }
   }
 
-  async function approve(table: "payments" | "withdrawals" | "upgrades", r: Row) {
+  async function approve(tableKey: "payments" | "withdrawals" | "upgrades" | "fees", r: Row) {
+    const table = tableKey === "fees" ? "withdrawal_fees" : tableKey;
     setBusy(r.id);
     const { data: u } = await supabase.auth.getUser();
     await supabase.from(table).update({ status: "approved", reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() }).eq("id", r.id);
+    if (tableKey === "fees") {
+      await notify(r.user_id, "Withdrawal fee confirmed", `Your withdrawal fee of ₦${Number(r.amount ?? 0).toLocaleString("en-NG")} has been confirmed. You can now submit your withdrawal request.`, "success");
+      setBusy(null);
+      await Promise.all([load(), refresh()]);
+      return;
+    }
     if (table === "payments" && !r.credited && r.amount != null) {
       if (r.plan_index != null) {
         // Mining plan upgrade — activate plan, do NOT credit balance
