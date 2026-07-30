@@ -20,6 +20,8 @@ interface Props {
   event?: TxEvent
   amount?: number
   currency?: string
+  usdAmount?: number
+  destination?: string
   reason?: string
   name?: string
 }
@@ -28,7 +30,7 @@ const HEADLINES: Record<string, string> = {
   'deposit:submitted': 'Deposit received — awaiting review',
   'deposit:approved': 'Deposit approved',
   'deposit:rejected': 'Deposit rejected',
-  'withdrawal:submitted': 'Withdrawal request received',
+  'withdrawal:submitted': 'Withdrawal pending approval',
   'withdrawal:approved': 'Withdrawal approved',
   'withdrawal:rejected': 'Withdrawal rejected',
 }
@@ -41,7 +43,7 @@ const BODIES: Record<string, (amt: string) => string> = {
   'deposit:rejected': (a) =>
     `Your deposit of ${a} was not approved. Please review the reason below and try again or contact support.`,
   'withdrawal:submitted': (a) =>
-    `Your withdrawal request for ${a} has been submitted and is pending admin review.`,
+    `Your withdrawal of ${a} is on pending. It is awaiting admin approval and you'll be notified by email as soon as it is approved.`,
   'withdrawal:approved': (a) =>
     `Your withdrawal of ${a} has been approved and is being sent to your chosen destination.`,
   'withdrawal:rejected': (a) =>
