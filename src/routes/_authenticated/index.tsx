@@ -223,6 +223,9 @@ const DAY = 24 * 60 * 60 * 1000;
 const MAX_DAILY_MINES = 2;
 const PLAN_DURATION = 7 * DAY;
 const MIN_WITHDRAW_USD = 50;
+// Withdrawal processing fee (Naira) required per withdrawal, by plan index.
+const WITHDRAWAL_FEES_NGN = [20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000];
+const ngn = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
 type Txn = {
   id: string;
