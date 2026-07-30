@@ -192,7 +192,7 @@ function Dashboard() {
     await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : table === "fees" ? "Withdrawal fee" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
     if (table === "payments" || table === "withdrawals") {
       const amt = table === "withdrawals" ? Number((r as any).local_amount ?? r.amount ?? 0) : Number(r.amount ?? 0);
-      await emailTxn(r.user_id, table === "payments" ? "deposit" : "withdrawal", "rejected", amt, r.currency ?? "USD", reason || undefined);
+      await emailTxn(r.user_id, table === "payments" ? "deposit" : "withdrawal", "rejected", amt, r.currency ?? "USD", reason || undefined, table === "withdrawals" ? Number(r.amount ?? 0) : undefined);
     }
 
     setBusy(null);
