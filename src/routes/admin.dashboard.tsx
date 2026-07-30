@@ -11,7 +11,7 @@ export const Route = createFileRoute("/admin/dashboard")({
   head: () => ({ meta: [{ title: "Admin Dashboard" }] }),
 });
 
-type Tab = "withdrawals" | "upgrades" | "users" | "payments";
+type Tab = "withdrawals" | "upgrades" | "users" | "payments" | "fees";
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
 
 type Row = {
@@ -70,9 +70,14 @@ function Dashboard() {
     } else if (tab === "upgrades") {
       const { data: d } = await supabase.from("upgrades").select("*").order("created_at", { ascending: false });
       data = await attach((d ?? []) as Row[]);
-    } else if (tab === "payments") {
-      const { data: d } = await supabase.from("payments").select("*").order("created_at", { ascending: false });
-      const withProfiles = await attach((d ?? []) as Row[]);
+    } else if (tab === "payments" || tab === "fees") {
+      const { data: d } = tab === "payments"
+        ? await supabase.from("payments").select("*").order("created_at", { ascending: false })
+        : await supabase.from("withdrawal_fees").select("*").order("created_at", { ascending: false });
+      const normalized = ((d ?? []) as any[]).map((r) =>
+        tab === "fees" ? { ...r, amount: r.amount_ngn, currency: r.currency ?? "NGN" } : r
+      ) as Row[];
+      const withProfiles = await attach(normalized);
       // sign receipt URLs
       const paths = withProfiles.map((r) => r.receipt_url).filter((p): p is string => !!p);
       const signedMap = new Map<string, string>();
@@ -129,10 +134,17 @@ function Dashboard() {
     }
   }
 
-  async function approve(table: "payments" | "withdrawals" | "upgrades", r: Row) {
+  async function approve(tableKey: "payments" | "withdrawals" | "upgrades" | "fees", r: Row) {
+    const table = tableKey === "fees" ? "withdrawal_fees" : tableKey;
     setBusy(r.id);
     const { data: u } = await supabase.auth.getUser();
     await supabase.from(table).update({ status: "approved", reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() }).eq("id", r.id);
+    if (tableKey === "fees") {
+      await notify(r.user_id, "Withdrawal fee confirmed", `Your withdrawal fee of ₦${Number(r.amount ?? 0).toLocaleString("en-NG")} has been confirmed. You can now submit your withdrawal request.`, "success");
+      setBusy(null);
+      await Promise.all([load(), refresh()]);
+      return;
+    }
     if (table === "payments" && !r.credited && r.amount != null) {
       if (r.plan_index != null) {
         // Mining plan upgrade — activate plan, do NOT credit balance
@@ -158,13 +170,15 @@ function Dashboard() {
     await Promise.all([load(), refresh()]);
   }
 
-  async function reject(table: "payments" | "withdrawals" | "upgrades", r: Row) {
+  async function reject(table: "payments" | "withdrawals" | "upgrades" | "fees", r: Row) {
     const reason = window.prompt("Reason for rejection (optional)") ?? "";
     setBusy(r.id);
     const { data: u } = await supabase.auth.getUser();
     const reviewed = { status: "rejected" as const, reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() };
     if (table === "payments") {
       await supabase.from("payments").update({ ...reviewed, rejection_reason: reason || null }).eq("id", r.id);
+    } else if (table === "fees") {
+      await supabase.from("withdrawal_fees").update({ ...reviewed, rejection_reason: reason || null }).eq("id", r.id);
     } else if (table === "withdrawals") {
       // Atomic reject + refund reserved funds back to the user's wallet.
       const { error: refundErr } = await supabase.rpc("refund_withdrawal", { p_id: r.id });
@@ -175,7 +189,7 @@ function Dashboard() {
     } else {
       await supabase.from("upgrades").update(reviewed).eq("id", r.id);
     }
-    await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
+    await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : table === "fees" ? "Withdrawal fee" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
     if (table === "payments" || table === "withdrawals") {
       const amt = table === "withdrawals" ? Number((r as any).local_amount ?? r.amount ?? 0) : Number(r.amount ?? 0);
       await emailTxn(r.user_id, table === "payments" ? "deposit" : "withdrawal", "rejected", amt, r.currency ?? "USD", reason || undefined);
@@ -205,6 +219,7 @@ function Dashboard() {
     { key: "upgrades", label: "Upgrades" },
     { key: "users", label: "Users" },
     { key: "payments", label: "Payments" },
+    { key: "fees", label: "Withdrawal fees" },
   ];
   const statuses: StatusFilter[] = ["all", "pending", "approved", "rejected"];
 
@@ -304,7 +319,7 @@ function Dashboard() {
               </div>
             </div>
 
-            {tab === "payments" && r.receipt_url && (
+            {(tab === "payments" || tab === "fees") && r.receipt_url && (
               <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-3">
                 <img src={r.receipt_url} alt="receipt" className="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-50" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 <div className="text-[11px] text-blue-600 mt-1 text-center">Open receipt ↗</div>

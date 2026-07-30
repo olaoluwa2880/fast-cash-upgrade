@@ -494,6 +494,54 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_fees: {
+        Row: {
+          amount_ngn: number
+          consumed: boolean
+          created_at: string
+          currency: string
+          id: string
+          plan_index: number
+          receipt_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_ngn?: number
+          consumed?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          plan_index: number
+          receipt_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_ngn?: number
+          consumed?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          plan_index?: number
+          receipt_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       withdrawals: {
         Row: {
           amount: number
@@ -543,6 +591,7 @@ export type Database = {
     Functions: {
       adjust_wallet_balance: { Args: { p_delta: number }; Returns: number }
       claim_welcome_bonus: { Args: never; Returns: number }
+      consume_withdrawal_fee: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
