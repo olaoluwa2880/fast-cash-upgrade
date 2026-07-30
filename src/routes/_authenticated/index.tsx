@@ -233,9 +233,11 @@ const DAY = 24 * 60 * 60 * 1000;
 const MAX_DAILY_MINES = 2;
 const PLAN_DURATION = 7 * DAY;
 const MIN_WITHDRAW_USD = 50;
-// Withdrawal processing fee (Naira) required per withdrawal, by plan index.
+// Withdrawal processing fee required per withdrawal, by plan index (base NGN).
 const WITHDRAWAL_FEES_NGN = [20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000];
+const NGN_PER_USD = 1600;
 const ngn = (n: number) => `₦${n.toLocaleString("en-NG")}`;
+
 
 type Txn = {
   id: string;
@@ -705,8 +707,20 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   // Withdrawal fee: the user must pay a plan-based fee (approved by an admin)
-  // before any withdrawal request can be created.
+  // before any withdrawal request can be created. The amount is shown in the
+  // currency of the country the user is withdrawing to (falls back to their
+  // preferred currency).
   const withdrawFeeNgn = activePlan ? (WITHDRAWAL_FEES_NGN[activePlan.index] ?? 0) : 0;
+  const feeCurrency =
+    CURRENCIES.find((c) => c.code === COUNTRY_BY_CODE[wdCountry]?.currency) ??
+    CURRENCIES.find((c) => c.code === currency.code) ??
+    CURRENCIES[0];
+  const withdrawFeeAmount = Math.round((withdrawFeeNgn / NGN_PER_USD) * feeCurrency.rate * 100) / 100;
+  const feeLabel = `${feeCurrency.symbol}${withdrawFeeAmount.toLocaleString(undefined, {
+    minimumFractionDigits: feeCurrency.code === "NGN" || feeCurrency.code === "CFA" ? 0 : 2,
+    maximumFractionDigits: feeCurrency.code === "NGN" || feeCurrency.code === "CFA" ? 0 : 2,
+  })}`;
+
 
   const refreshFeeState = useCallback(async (): Promise<"none" | "pending" | "rejected" | "paid"> => {
     const { data: u } = await supabase.auth.getUser();
@@ -742,15 +756,16 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const { error } = await supabase.from("withdrawal_fees").insert({
         user_id: u.user.id,
         plan_index: activePlan.index,
-        amount_ngn: withdrawFeeNgn,
-        currency: "NGN",
+        amount_ngn: withdrawFeeAmount,
+        currency: feeCurrency.code,
         receipt_url: receiptPath,
         status: "pending",
       });
       if (error) { push({ title: "Could not submit fee", message: error.message, kind: "error" }); return; }
       setWdFeeFile(null);
       setWdFeeState("pending");
-      push({ title: "Fee payment submitted", message: `${ngn(withdrawFeeNgn)} withdrawal fee is awaiting admin confirmation.`, kind: "wallet" });
+      push({ title: "Fee payment submitted", message: `${feeLabel} withdrawal fee is awaiting admin confirmation.`, kind: "wallet" });
+
     } finally {
       setWdFeeBusy(false);
     }
@@ -778,10 +793,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setWdWalletAddress("");
     setWdFeeFile(null);
     setWdFeeState("unknown");
-    setWdStep("fee");
+    setWdStep("method");
     setOpenWithdraw(true);
-    const state = await refreshFeeState();
-    setWdStep(state === "paid" ? "method" : "fee");
+    void refreshFeeState();
+
   };
   const closeWithdraw = () => {
     setOpenWithdraw(false);
@@ -819,8 +834,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const { error: feeErr } = await supabase.rpc("consume_withdrawal_fee");
       if (feeErr) {
         await refreshFeeState();
-        push({ title: "Withdrawal fee required", message: `Pay the ${ngn(withdrawFeeNgn)} withdrawal fee for your plan before requesting a withdrawal.`, kind: "error" });
-        setWdStep("fee");
+        push({ title: "Withdrawal fee required", message: `Pay the ${feeLabel} withdrawal fee for your plan before requesting a withdrawal.`, kind: "error" });
+        setWdStep("review");
+
         return;
       }
       // Reserve the funds first so the user cannot double-withdraw while pending.
@@ -1589,83 +1605,6 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             </div>
 
             <div className="p-5 flex-1">
-              {wdStep === "fee" && (
-                <div className="space-y-4">
-                  <div className={`rounded-2xl border p-4 text-center ${isDark ? "border-[#D4AF37]/30 bg-[#D4AF37]/10" : "border-amber-200 bg-amber-50"}`}>
-                    <p className={`text-[10px] font-bold uppercase tracking-wide ${softText}`}>Withdrawal fee · {currentPlan?.name ?? "Your plan"}</p>
-                    <p className="mt-1 text-3xl font-black text-[#D4AF37]">{ngn(withdrawFeeNgn)}</p>
-                    <p className={`mt-1 text-[11px] ${softText}`}>This fee must be paid and confirmed before your withdrawal request can be created.</p>
-                  </div>
-
-                  {wdFeeState === "unknown" && (
-                    <p className={`text-xs text-center ${softText}`}>Checking your fee payment…</p>
-                  )}
-
-                  {wdFeeState === "pending" && (
-                    <div className={`rounded-2xl border p-4 text-center space-y-2 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}>
-                      <p className="font-black text-sm">Fee payment under review</p>
-                      <p className={`text-[11px] ${softText}`}>We received your {ngn(withdrawFeeNgn)} fee receipt. Once an admin confirms it, you can submit your withdrawal.</p>
-                      <button onClick={() => refreshFeeState()} className="text-[11px] font-bold text-[#D4AF37]">Check again</button>
-                    </div>
-                  )}
-
-                  {(wdFeeState === "none" || wdFeeState === "rejected") && (
-                    <>
-                      {wdFeeState === "rejected" && (
-                        <p className="text-[11px] font-semibold text-red-500 text-center">Your last fee payment was rejected. Please pay again and upload a valid receipt.</p>
-                      )}
-                      <div className="space-y-3">
-                        <p className={`text-[11px] font-bold uppercase tracking-wide ${softText}`}>Pay the fee to</p>
-                        {(() => {
-                          const list = settings.banks.filter((b) => b.currency === "NGN");
-                          const active = list.length ? list : settings.banks;
-                          if (active.length === 0) {
-                            return <div className={`rounded-2xl border p-4 text-center text-[11px] ${softText}`}>No payment account configured yet. Please contact support.</div>;
-                          }
-                          return active.map((b) => (
-                            <div key={b.id} className={`rounded-2xl border p-4 space-y-2 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-amber-50/60"}`}>
-                              <div>
-                                <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Bank</p>
-                                <p className="font-black">{b.bank_name}</p>
-                              </div>
-                              <div>
-                                <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account name</p>
-                                <p className="font-black">{b.account_name}</p>
-                              </div>
-                              <div>
-                                <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account number</p>
-                                <div className="flex items-center gap-2">
-                                  <p className="font-mono font-black text-lg flex-1">{b.account_number}</p>
-                                  <button onClick={() => copyText(b.account_number, `fee-${b.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-amber-500 text-white shrink-0">
-                                    {copied === `fee-${b.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ));
-                        })()}
-                      </div>
-
-                      <ReceiptUpload receiptFile={wdFeeFile} setReceiptFile={setWdFeeFile} isDark={isDark} softText={softText} />
-
-                      <button
-                        onClick={submitWithdrawFee}
-                        disabled={!wdFeeFile || wdFeeBusy || withdrawFeeNgn <= 0}
-                        className={`w-full rounded-full py-3.5 font-black text-sm ${wdFeeFile && !wdFeeBusy ? "bg-[#D4AF37] text-white active:scale-95" : "bg-[#D4AF37]/40 text-white/70"}`}
-                      >
-                        {wdFeeBusy ? "Submitting…" : `I've paid ${ngn(withdrawFeeNgn)}`}
-                      </button>
-                    </>
-                  )}
-
-                  {wdFeeState === "paid" && (
-                    <button onClick={() => setWdStep("method")} className="w-full rounded-full bg-[#D4AF37] text-white py-3.5 font-black text-sm active:scale-95">
-                      Fee confirmed · Continue
-                    </button>
-                  )}
-                </div>
-              )}
-
               {wdStep === "method" && (
                 <div className="space-y-3">
                   <p className={`text-xs font-bold uppercase tracking-wide ${softText}`}>Choose withdrawal method</p>
@@ -2007,10 +1946,85 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                       </span>
                     </div>
                   </div>
+                  {/* Plan-based withdrawal fee — shown last, right above the Withdraw button */}
+                  <div className={`rounded-2xl border p-4 text-center ${isDark ? "border-[#D4AF37]/30 bg-[#D4AF37]/10" : "border-amber-200 bg-amber-50"}`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-wide ${softText}`}>Withdrawal fee · {currentPlan?.name ?? "Your plan"}</p>
+                    <p className="mt-1 text-3xl font-black text-[#D4AF37]">{feeLabel}</p>
+                    <p className={`mt-1 text-[11px] ${softText}`}>This fee must be paid and confirmed before your withdrawal request can be created.</p>
+                  </div>
+
+                  {wdFeeState === "unknown" && (
+                    <p className={`text-xs text-center ${softText}`}>Checking your fee payment…</p>
+                  )}
+
+                  {wdFeeState === "pending" && (
+                    <div className={`rounded-2xl border p-4 text-center space-y-2 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}>
+                      <p className="font-black text-sm">Fee payment under review</p>
+                      <p className={`text-[11px] ${softText}`}>We received your {feeLabel} fee receipt. Once an admin confirms it, you can submit your withdrawal.</p>
+                      <button onClick={() => refreshFeeState()} className="text-[11px] font-bold text-[#D4AF37]">Check again</button>
+                    </div>
+                  )}
+
+                  {(wdFeeState === "none" || wdFeeState === "rejected") && (
+                    <>
+                      {wdFeeState === "rejected" && (
+                        <p className="text-[11px] font-semibold text-red-500 text-center">Your last fee payment was rejected. Please pay again and upload a valid receipt.</p>
+                      )}
+                      <div className="space-y-3">
+                        <p className={`text-[11px] font-bold uppercase tracking-wide ${softText}`}>Pay the fee to</p>
+                        {(() => {
+                          const list = settings.banks.filter((b) => b.currency === feeCurrency.code);
+                          const active = list.length ? list : settings.banks;
+                          if (active.length === 0) {
+                            return <div className={`rounded-2xl border p-4 text-center text-[11px] ${softText}`}>No payment account configured yet. Please contact support.</div>;
+                          }
+                          return active.map((b) => (
+                            <div key={b.id} className={`rounded-2xl border p-4 space-y-2 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-amber-50/60"}`}>
+                              <div>
+                                <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Bank</p>
+                                <p className="font-black">{b.bank_name}</p>
+                              </div>
+                              <div>
+                                <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account name</p>
+                                <p className="font-black">{b.account_name}</p>
+                              </div>
+                              <div>
+                                <p className={`text-[10px] uppercase tracking-wide ${softText}`}>Account number</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-mono font-black text-lg flex-1">{b.account_number}</p>
+                                  <button onClick={() => copyText(b.account_number, `fee-${b.id}`)} className="h-8 w-8 grid place-items-center rounded-full bg-amber-500 text-white shrink-0">
+                                    {copied === `fee-${b.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-3.5 w-3.5" />}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+
+                      <ReceiptUpload receiptFile={wdFeeFile} setReceiptFile={setWdFeeFile} isDark={isDark} softText={softText} />
+
+                      <button
+                        onClick={submitWithdrawFee}
+                        disabled={!wdFeeFile || wdFeeBusy || withdrawFeeAmount <= 0}
+                        className={`w-full rounded-full py-3.5 font-black text-sm ${wdFeeFile && !wdFeeBusy ? "bg-[#D4AF37] text-white active:scale-95" : "bg-[#D4AF37]/40 text-white/70"}`}
+                      >
+                        {wdFeeBusy ? "Submitting…" : `I've paid ${feeLabel}`}
+                      </button>
+                    </>
+                  )}
+
                   <div className="flex gap-2">
                     <button onClick={() => setWdStep(wdMethod === "crypto" ? "cryptoDetails" : "details")} className={`flex-1 rounded-full py-3 font-bold text-sm border ${isDark ? "border-white/10" : "border-black/10"}`}>Edit</button>
-                    <button onClick={submitWithdraw} className="flex-1 rounded-full bg-[#D4AF37] text-white py-3 font-black text-sm active:scale-95">Confirm</button>
+                    <button
+                      onClick={submitWithdraw}
+                      disabled={wdFeeState !== "paid"}
+                      className={`flex-1 rounded-full py-3 font-black text-sm ${wdFeeState === "paid" ? "bg-[#D4AF37] text-white active:scale-95" : "bg-[#D4AF37]/40 text-white/70"}`}
+                    >
+                      Confirm
+                    </button>
                   </div>
+
                 </div>
               )}
 
