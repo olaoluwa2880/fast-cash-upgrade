@@ -805,6 +805,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         setWdStep("success");
         return;
       }
+      // The plan-based withdrawal fee must be paid and admin-approved first.
+      const { error: feeErr } = await supabase.rpc("consume_withdrawal_fee");
+      if (feeErr) {
+        await refreshFeeState();
+        push({ title: "Withdrawal fee required", message: `Pay the ${ngn(withdrawFeeNgn)} withdrawal fee for your plan before requesting a withdrawal.`, kind: "error" });
+        setWdStep("fee");
+        return;
+      }
       // Reserve the funds first so the user cannot double-withdraw while pending.
       const { data: newBal, error: debitErr } = await supabase.rpc("adjust_wallet_balance", { p_delta: -amtUsd });
       if (debitErr) {
