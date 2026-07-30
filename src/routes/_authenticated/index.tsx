@@ -707,8 +707,20 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
 
   // Withdrawal fee: the user must pay a plan-based fee (approved by an admin)
-  // before any withdrawal request can be created.
+  // before any withdrawal request can be created. The amount is shown in the
+  // currency of the country the user is withdrawing to (falls back to their
+  // preferred currency).
   const withdrawFeeNgn = activePlan ? (WITHDRAWAL_FEES_NGN[activePlan.index] ?? 0) : 0;
+  const feeCurrency =
+    CURRENCIES.find((c) => c.code === COUNTRY_BY_CODE[wdCountry]?.currency) ??
+    CURRENCIES.find((c) => c.code === currency.code) ??
+    CURRENCIES[0];
+  const withdrawFeeAmount = Math.round((withdrawFeeNgn / NGN_PER_USD) * feeCurrency.rate * 100) / 100;
+  const feeLabel = `${feeCurrency.symbol}${withdrawFeeAmount.toLocaleString(undefined, {
+    minimumFractionDigits: feeCurrency.code === "NGN" || feeCurrency.code === "CFA" ? 0 : 2,
+    maximumFractionDigits: feeCurrency.code === "NGN" || feeCurrency.code === "CFA" ? 0 : 2,
+  })}`;
+
 
   const refreshFeeState = useCallback(async (): Promise<"none" | "pending" | "rejected" | "paid"> => {
     const { data: u } = await supabase.auth.getUser();
