@@ -75,6 +75,8 @@ export const TransactionEmail = ({
   event = 'submitted',
   amount = 0,
   currency = 'USD',
+  usdAmount,
+  destination,
   reason,
   name,
 }: Props) => {
@@ -83,7 +85,11 @@ export const TransactionEmail = ({
   const headline = HEADLINES[key] ?? 'Transaction update'
   const body = (BODIES[key] ?? ((a: string) => `Your transaction of ${a} has been updated.`))(amt)
   const accent = event === 'approved' ? '#D4AF37' : event === 'rejected' ? '#dc2626' : '#8B6914'
-
+  const statusLabel = event === 'submitted' ? 'Pending' : event === 'approved' ? 'Approved' : 'Rejected'
+  const showUsd =
+    typeof usdAmount === 'number' &&
+    usdAmount > 0 &&
+    (currency || 'USD').toUpperCase() !== 'USD'
 
   return (
     <Html lang="en" dir="ltr">
@@ -101,7 +107,16 @@ export const TransactionEmail = ({
             <Section style={{ ...amountCard, borderColor: accent }}>
               <Text style={amountLabel}>Amount</Text>
               <Text style={{ ...amountValue, color: accent }}>{amt}</Text>
+              {showUsd ? (
+                <Text style={amountSub}>≈ {formatAmount(usdAmount as number, 'USD')}</Text>
+              ) : null}
+              <Text style={{ ...statusPill, color: accent, borderColor: accent }}>{statusLabel}</Text>
             </Section>
+            {destination ? (
+              <Text style={text}>
+                <strong>Destination:</strong> {destination}
+              </Text>
+            ) : null}
             {reason ? (
               <Text style={reasonText}>
                 <strong>Reason:</strong> {reason}
