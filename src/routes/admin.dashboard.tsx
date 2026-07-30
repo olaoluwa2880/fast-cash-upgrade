@@ -319,7 +319,7 @@ function Dashboard() {
               </div>
             </div>
 
-            {tab === "payments" && r.receipt_url && (
+            {(tab === "payments" || tab === "fees") && r.receipt_url && (
               <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-3">
                 <img src={r.receipt_url} alt="receipt" className="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-50" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 <div className="text-[11px] text-blue-600 mt-1 text-center">Open receipt ↗</div>
