@@ -694,7 +694,59 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setReceiptFile(null);
   };
 
-  const openWithdrawFlow = () => {
+  // Withdrawal fee: the user must pay a plan-based fee (approved by an admin)
+  // before any withdrawal request can be created.
+  const withdrawFeeNgn = activePlan ? (WITHDRAWAL_FEES_NGN[activePlan.index] ?? 0) : 0;
+
+  const refreshFeeState = useCallback(async (): Promise<"none" | "pending" | "rejected" | "paid"> => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return "none";
+    const { data } = await supabase
+      .from("withdrawal_fees")
+      .select("status, consumed, created_at")
+      .eq("user_id", u.user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    const rows = data ?? [];
+    let next: "none" | "pending" | "rejected" | "paid" = "none";
+    if (rows.some((r) => r.status === "approved" && !r.consumed)) next = "paid";
+    else if (rows.some((r) => r.status === "pending")) next = "pending";
+    else if (rows.length && rows[0].status === "rejected") next = "rejected";
+    setWdFeeState(next);
+    return next;
+  }, []);
+
+  const submitWithdrawFee = async () => {
+    if (!activePlan) return;
+    setWdFeeBusy(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) { push({ title: "Not signed in", kind: "error" }); return; }
+      let receiptPath: string | null = null;
+      if (wdFeeFile) {
+        const ext = wdFeeFile.name.split(".").pop() || "png";
+        receiptPath = `${u.user.id}/fee-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("receipts").upload(receiptPath, wdFeeFile, { contentType: wdFeeFile.type || "image/png" });
+        if (upErr) { push({ title: "Upload failed", message: upErr.message, kind: "error" }); return; }
+      }
+      const { error } = await supabase.from("withdrawal_fees").insert({
+        user_id: u.user.id,
+        plan_index: activePlan.index,
+        amount_ngn: withdrawFeeNgn,
+        currency: "NGN",
+        receipt_url: receiptPath,
+        status: "pending",
+      });
+      if (error) { push({ title: "Could not submit fee", message: error.message, kind: "error" }); return; }
+      setWdFeeFile(null);
+      setWdFeeState("pending");
+      push({ title: "Fee payment submitted", message: `${ngn(withdrawFeeNgn)} withdrawal fee is awaiting admin confirmation.`, kind: "wallet" });
+    } finally {
+      setWdFeeBusy(false);
+    }
+  };
+
+  const openWithdrawFlow = async () => {
     if (!planActive) {
       showToast("You must upgrade your mining plan before you can withdraw your earnings.");
       setOpenPremium(true);
@@ -714,8 +766,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     setWdCrypto(null);
     setWdCryptoSearch("");
     setWdWalletAddress("");
-    setWdStep("method");
+    setWdFeeFile(null);
+    setWdFeeState("unknown");
+    setWdStep("fee");
     setOpenWithdraw(true);
+    const state = await refreshFeeState();
+    setWdStep(state === "paid" ? "method" : "fee");
   };
   const closeWithdraw = () => {
     setOpenWithdraw(false);
