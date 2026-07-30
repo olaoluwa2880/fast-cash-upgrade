@@ -833,15 +833,18 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         setWdStep("success");
         return;
       }
-      // The plan-based withdrawal fee must be paid and admin-approved first.
+      // The plan-based withdrawal fee must be paid first. If the admin hasn't
+      // confirmed it yet, the withdrawal is still created as pending.
       const { error: feeErr } = await supabase.rpc("consume_withdrawal_fee");
       if (feeErr) {
-        await refreshFeeState();
-        push({ title: "Withdrawal fee required", message: `Pay the ${feeLabel} withdrawal fee for your plan before requesting a withdrawal.`, kind: "error" });
-        setWdStep("review");
-
-        return;
+        const state = await refreshFeeState();
+        if (state !== "pending") {
+          push({ title: "Withdrawal fee required", message: `Pay the ${feeLabel} withdrawal fee for your plan before requesting a withdrawal.`, kind: "error" });
+          setWdStep("review");
+          return;
+        }
       }
+
       // Reserve the funds first so the user cannot double-withdraw while pending.
       const { data: newBal, error: debitErr } = await supabase.rpc("adjust_wallet_balance", { p_delta: -amtUsd });
       if (debitErr) {
@@ -1954,7 +1957,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <div className={`rounded-2xl border p-4 text-center ${isDark ? "border-[#D4AF37]/30 bg-[#D4AF37]/10" : "border-amber-200 bg-amber-50"}`}>
                     <p className={`text-[10px] font-bold uppercase tracking-wide ${softText}`}>Withdrawal fee · {currentPlan?.name ?? "Your plan"}</p>
                     <p className="mt-1 text-3xl font-black text-[#D4AF37]">{feeLabel}</p>
-                    <p className={`mt-1 text-[11px] ${softText}`}>This fee must be paid and confirmed before your withdrawal request can be created.</p>
+                    <p className={`mt-1 text-[11px] ${softText}`}>Pay this fee and upload your receipt, then submit your withdrawal — it stays pending until an admin approves it.</p>
                   </div>
 
                   {wdFeeState === "unknown" && (
@@ -1963,11 +1966,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
                   {wdFeeState === "pending" && (
                     <div className={`rounded-2xl border p-4 text-center space-y-2 ${isDark ? "border-white/10 bg-white/5" : "border-black/5 bg-white"}`}>
-                      <p className="font-black text-sm">Fee payment under review</p>
-                      <p className={`text-[11px] ${softText}`}>We received your {feeLabel} fee receipt. Once an admin confirms it, you can submit your withdrawal.</p>
+                      <p className="font-black text-sm">Fee payment received</p>
+                      <p className={`text-[11px] ${softText}`}>We received your {feeLabel} fee receipt. You can submit your withdrawal now — it will show as pending until an admin approves it.</p>
                       <button onClick={() => refreshFeeState()} className="text-[11px] font-bold text-[#D4AF37]">Check again</button>
                     </div>
                   )}
+
 
                   {(wdFeeState === "none" || wdFeeState === "rejected") && (
                     <>
@@ -2022,11 +2026,12 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                     <button onClick={() => setWdStep(wdMethod === "crypto" ? "cryptoDetails" : "details")} className={`flex-1 rounded-full py-3 font-bold text-sm border ${isDark ? "border-white/10" : "border-black/10"}`}>Edit</button>
                     <button
                       onClick={submitWithdraw}
-                      disabled={wdFeeState !== "paid"}
-                      className={`flex-1 rounded-full py-3 font-black text-sm ${wdFeeState === "paid" ? "bg-[#D4AF37] text-white active:scale-95" : "bg-[#D4AF37]/40 text-white/70"}`}
+                      disabled={wdFeeState !== "paid" && wdFeeState !== "pending"}
+                      className={`flex-1 rounded-full py-3 font-black text-sm ${wdFeeState === "paid" || wdFeeState === "pending" ? "bg-[#D4AF37] text-white active:scale-95" : "bg-[#D4AF37]/40 text-white/70"}`}
                     >
                       Confirm
                     </button>
+
                   </div>
 
                 </div>
