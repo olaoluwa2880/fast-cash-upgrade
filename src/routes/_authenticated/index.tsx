@@ -279,7 +279,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     navigate({ to: "/auth" });
   };
   const [openWithdraw, setOpenWithdraw] = useState(false);
-  const [wdStep, setWdStep] = useState<"method" | "country" | "bank" | "details" | "crypto" | "cryptoDetails" | "review" | "processing" | "success">("method");
+  const [wdStep, setWdStep] = useState<"method" | "country" | "bank" | "details" | "crypto" | "cryptoDetails" | "review" | "processing" | "success" | "fee">("method");
+  const [wdFeeState, setWdFeeState] = useState<"unknown" | "none" | "pending" | "rejected" | "paid">("unknown");
+  const [wdFeeFile, setWdFeeFile] = useState<File | null>(null);
+  const [wdFeeBusy, setWdFeeBusy] = useState(false);
   const [wdMethod, setWdMethod] = useState<"bank" | "crypto" | null>(null);
   const [wdCountry, setWdCountry] = useState<string>("NG");
   const [wdCountrySearch, setWdCountrySearch] = useState("");
