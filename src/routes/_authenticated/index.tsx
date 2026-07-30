@@ -804,7 +804,10 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   };
   const submitWithdraw = () => {
     setWdStep("processing");
-    const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / (wdMethod === "crypto" ? 1 : (currency.rate || 1));
+    // Bank withdrawals are entered in the currency of the destination country,
+    // so convert with that country's rate (not the user's display currency).
+    const wdRate = wdMethod === "crypto" ? 1 : (feeCurrency.rate || 1);
+    const amtUsd = Math.max(0, parseFloat(wdAmount || "0")) / wdRate;
     const countryInfo = COUNTRY_BY_CODE[wdCountry];
     setTimeout(async () => {
       const method = wdMethod === "crypto"
