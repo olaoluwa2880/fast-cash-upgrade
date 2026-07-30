@@ -23,7 +23,6 @@ import { Route as AdminCryptoWalletsRouteImport } from './routes/admin.crypto-wa
 import { Route as AdminCommunityRouteImport } from './routes/admin.community'
 import { Route as AdminBankDetailsRouteImport } from './routes/admin.bank-details'
 import { Route as AuthenticatedLegalIndexRouteImport } from './routes/_authenticated/legal.index'
-import { Route as ApiPublicPushSelftestRouteImport } from './routes/api/public/push-selftest'
 import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public/firebase-config'
 import { Route as AuthenticatedLegalSlugRouteImport } from './routes/_authenticated/legal.$slug'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -99,11 +98,6 @@ const AuthenticatedLegalIndexRoute = AuthenticatedLegalIndexRouteImport.update({
   path: '/legal/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiPublicPushSelftestRoute = ApiPublicPushSelftestRouteImport.update({
-  id: '/api/public/push-selftest',
-  path: '/api/public/push-selftest',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicFirebaseConfigRoute = ApiPublicFirebaseConfigRouteImport.update({
   id: '/api/public/firebase-config',
   path: '/api/public/firebase-config',
@@ -146,7 +140,6 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/legal/$slug': typeof AuthenticatedLegalSlugRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
-  '/api/public/push-selftest': typeof ApiPublicPushSelftestRoute
   '/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -167,7 +160,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/legal/$slug': typeof AuthenticatedLegalSlugRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
-  '/api/public/push-selftest': typeof ApiPublicPushSelftestRoute
   '/legal': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -190,7 +182,6 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/_authenticated/legal/$slug': typeof AuthenticatedLegalSlugRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
-  '/api/public/push-selftest': typeof ApiPublicPushSelftestRoute
   '/_authenticated/legal/': typeof AuthenticatedLegalIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -213,7 +204,6 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/legal/$slug'
     | '/api/public/firebase-config'
-    | '/api/public/push-selftest'
     | '/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -234,7 +224,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/legal/$slug'
     | '/api/public/firebase-config'
-    | '/api/public/push-selftest'
     | '/legal'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -256,7 +245,6 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/_authenticated/legal/$slug'
     | '/api/public/firebase-config'
-    | '/api/public/push-selftest'
     | '/_authenticated/legal/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -277,7 +265,6 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
-  ApiPublicPushSelftestRoute: typeof ApiPublicPushSelftestRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -383,13 +370,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLegalIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/push-selftest': {
-      id: '/api/public/push-selftest'
-      path: '/api/public/push-selftest'
-      fullPath: '/api/public/push-selftest'
-      preLoaderRoute: typeof ApiPublicPushSelftestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/firebase-config': {
       id: '/api/public/firebase-config'
       path: '/api/public/firebase-config'
@@ -457,7 +437,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
-  ApiPublicPushSelftestRoute: ApiPublicPushSelftestRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
