@@ -8,7 +8,7 @@ import {
   Award, UserCircle, Download, TrendingUp, XCircle, Mail, Calendar,
   Globe, Smartphone, CreditCard, MessageCircle, Send, Phone, ExternalLink,
   LogOut, RefreshCw, Coins, UserPlus, ArrowLeftRight, Settings as SettingsIcon,
-  ArrowRight, ShieldCheck,
+  ArrowRight, ShieldCheck, ScrollText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
@@ -887,6 +887,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     { icon: Users, label: "Community", onClick: () => setOpenCategory("community") },
     { icon: Clock, label: "History", onClick: () => setOpenCategory("history") },
     { icon: LifeBuoy, label: "Support", onClick: () => setOpenCategory("support") },
+    { icon: ScrollText, label: "Legal", onClick: () => navigate({ to: "/legal" }) },
     { icon: SettingsIcon, label: "Settings", onClick: () => setOpenProfile(true) },
   ];
 
