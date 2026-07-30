@@ -43,6 +43,62 @@ export function currentPermission(): NotificationPermission | "unsupported" {
   return Notification.permission;
 }
 
+const PUSH_SCOPE = "/firebase-cloud-messaging-push-scope";
+
+async function registerPushSw(): Promise<ServiceWorkerRegistration> {
+  // Own scope so the app's offline worker at "/" can't evict this registration.
+  const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+    scope: PUSH_SCOPE,
+  });
+  await reg.update().catch(() => {});
+  return reg;
+}
+
+async function obtainAndStoreToken(reg: ServiceWorkerRegistration, cfg: Cfg): Promise<string | null> {
+  const messaging = await getMessagingInstance();
+  if (!messaging) return null;
+  const token = await getToken(messaging, { vapidKey: cfg.vapidKey, serviceWorkerRegistration: reg });
+  if (!token) return null;
+  await registerPushToken({
+    data: { token, platform: "web", userAgent: navigator.userAgent },
+  });
+
+  onMessage(messaging, (payload) => {
+    const d = (payload.data ?? {}) as Record<string, string>;
+    const title = d.title || payload.notification?.title || "FastCredit";
+    const body = d.body || payload.notification?.body || "";
+    try {
+      reg.showNotification(title, {
+        body,
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+        data: { url: d.url || "/" },
+        tag: d.tag,
+      });
+    } catch {}
+  });
+  return token;
+}
+
+/**
+ * Silently refreshes the device token for users who already granted
+ * permission. Safe to call on every app load.
+ */
+export async function syncPushRegistration(): Promise<void> {
+  try {
+    if (typeof window === "undefined") return;
+    if (window.top !== window.self) return;
+    if (!canUseWebPush() || Notification.permission !== "granted") return;
+    const cfg = await loadConfig();
+    if (!cfg.vapidKey || !cfg.apiKey || !cfg.projectId) return;
+    const reg = await registerPushSw();
+    await navigator.serviceWorker.ready.catch(() => {});
+    await obtainAndStoreToken(reg, cfg);
+  } catch (e) {
+    console.error("[push] sync failed", e);
+  }
+}
+
 export async function enablePushNotifications(): Promise<{ ok: boolean; reason?: string }> {
   try {
     const inIframe = typeof window !== "undefined" && window.top !== window.self;
@@ -64,36 +120,11 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; reason?:
       return { ok: false, reason: "Push service isn't configured yet. Please contact support." };
     }
 
-    const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
-    await navigator.serviceWorker.ready;
+    const reg = await registerPushSw();
+    await navigator.serviceWorker.ready.catch(() => {});
 
-    const messaging = await getMessagingInstance();
-    if (!messaging) return { ok: false, reason: "Messaging unsupported on this device." };
-
-    const token = await getToken(messaging, {
-      vapidKey: cfg.vapidKey,
-      serviceWorkerRegistration: reg,
-    });
+    const token = await obtainAndStoreToken(reg, cfg);
     if (!token) return { ok: false, reason: "Couldn't obtain a device token." };
-
-    await registerPushToken({
-      data: { token, platform: "web", userAgent: navigator.userAgent },
-    });
-
-    onMessage(messaging, (payload) => {
-      const d = (payload.data ?? {}) as Record<string, string>;
-      const title = d.title || payload.notification?.title || "FastCredit";
-      const body = d.body || payload.notification?.body || "";
-      try {
-        reg.showNotification(title, {
-          body,
-          icon: "/icon-192.png",
-          badge: "/icon-192.png",
-          data: { url: d.url || "/" },
-          tag: d.tag,
-        });
-      } catch {}
-    });
 
     return { ok: true };
   } catch (e: any) {
@@ -101,3 +132,4 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; reason?:
     return { ok: false, reason: e?.message || "Unknown error enabling notifications" };
   }
 }
+

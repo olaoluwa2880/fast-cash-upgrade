@@ -60,7 +60,17 @@ function Root() {
       return () => clearTimeout(t);
     }
   }, [screen]);
+  // Keep this device's push token fresh so approval/rejection alerts land on the phone
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { syncPushRegistration } = await import("@/lib/push-client");
+      if (!cancelled) await syncPushRegistration();
+    })();
+    return () => { cancelled = true; };
+  }, []);
   // Load registered profile details from the database
+
   useEffect(() => {
     let cancelled = false;
     async function loadProfile() {
