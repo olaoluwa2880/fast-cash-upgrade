@@ -170,13 +170,15 @@ function Dashboard() {
     await Promise.all([load(), refresh()]);
   }
 
-  async function reject(table: "payments" | "withdrawals" | "upgrades", r: Row) {
+  async function reject(table: "payments" | "withdrawals" | "upgrades" | "fees", r: Row) {
     const reason = window.prompt("Reason for rejection (optional)") ?? "";
     setBusy(r.id);
     const { data: u } = await supabase.auth.getUser();
     const reviewed = { status: "rejected" as const, reviewed_by: u.user?.id ?? null, reviewed_at: new Date().toISOString() };
     if (table === "payments") {
       await supabase.from("payments").update({ ...reviewed, rejection_reason: reason || null }).eq("id", r.id);
+    } else if (table === "fees") {
+      await supabase.from("withdrawal_fees").update({ ...reviewed, rejection_reason: reason || null }).eq("id", r.id);
     } else if (table === "withdrawals") {
       // Atomic reject + refund reserved funds back to the user's wallet.
       const { error: refundErr } = await supabase.rpc("refund_withdrawal", { p_id: r.id });
@@ -187,7 +189,7 @@ function Dashboard() {
     } else {
       await supabase.from("upgrades").update(reviewed).eq("id", r.id);
     }
-    await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
+    await notify(r.user_id, `${table === "payments" ? "Payment" : table === "withdrawals" ? "Withdrawal" : table === "fees" ? "Withdrawal fee" : "Upgrade"} rejected`, reason ? `Reason: ${reason}` : "Your request was rejected. Please contact support.", "error");
     if (table === "payments" || table === "withdrawals") {
       const amt = table === "withdrawals" ? Number((r as any).local_amount ?? r.amount ?? 0) : Number(r.amount ?? 0);
       await emailTxn(r.user_id, table === "payments" ? "deposit" : "withdrawal", "rejected", amt, r.currency ?? "USD", reason || undefined);
