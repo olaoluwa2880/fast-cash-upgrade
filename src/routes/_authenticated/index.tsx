@@ -756,15 +756,16 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const { error } = await supabase.from("withdrawal_fees").insert({
         user_id: u.user.id,
         plan_index: activePlan.index,
-        amount_ngn: withdrawFeeNgn,
-        currency: "NGN",
+        amount_ngn: withdrawFeeAmount,
+        currency: feeCurrency.code,
         receipt_url: receiptPath,
         status: "pending",
       });
       if (error) { push({ title: "Could not submit fee", message: error.message, kind: "error" }); return; }
       setWdFeeFile(null);
       setWdFeeState("pending");
-      push({ title: "Fee payment submitted", message: `${ngn(withdrawFeeNgn)} withdrawal fee is awaiting admin confirmation.`, kind: "wallet" });
+      push({ title: "Fee payment submitted", message: `${feeLabel} withdrawal fee is awaiting admin confirmation.`, kind: "wallet" });
+
     } finally {
       setWdFeeBusy(false);
     }
