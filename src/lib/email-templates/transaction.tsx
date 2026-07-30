@@ -174,6 +174,18 @@ const amountCard = {
 }
 const amountLabel = { fontSize: '11px', color: '#666', textTransform: 'uppercase' as const, letterSpacing: '1.5px', margin: 0 }
 const amountValue = { fontSize: '26px', fontWeight: 900, margin: '6px 0 0' }
+const amountSub = { fontSize: '12px', color: '#666', margin: '4px 0 0' }
+const statusPill = {
+  display: 'inline-block',
+  marginTop: '10px',
+  padding: '4px 12px',
+  border: '1px solid #D4AF37',
+  borderRadius: '999px',
+  fontSize: '11px',
+  fontWeight: 800,
+  letterSpacing: '1px',
+  textTransform: 'uppercase' as const,
+}
 const reasonText = { fontSize: '13px', color: '#555', background: '#fdf3f3', padding: '10px 12px', borderRadius: '8px', margin: '0 0 10px' }
 const hr = { borderColor: '#eee', margin: '20px 0' }
 const footer = { fontSize: '12px', color: '#888', margin: '4px 0' }
