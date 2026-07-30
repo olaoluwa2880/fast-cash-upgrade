@@ -50,6 +50,8 @@ export const sendTransactionEmail = createServerFn({ method: "POST" })
           event: data.event,
           amount: data.amount,
           currency: data.currency,
+          usdAmount: data.usdAmount,
+          destination: data.destination,
           reason: data.reason,
           name,
         },
