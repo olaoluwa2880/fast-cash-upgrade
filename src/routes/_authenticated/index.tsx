@@ -1957,7 +1957,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   <div className={`rounded-2xl border p-4 text-center ${isDark ? "border-[#D4AF37]/30 bg-[#D4AF37]/10" : "border-amber-200 bg-amber-50"}`}>
                     <p className={`text-[10px] font-bold uppercase tracking-wide ${softText}`}>Withdrawal fee · {currentPlan?.name ?? "Your plan"}</p>
                     <p className="mt-1 text-3xl font-black text-[#D4AF37]">{feeLabel}</p>
-                    <p className={`mt-1 text-[11px] ${softText}`}>This fee must be paid and confirmed before your withdrawal request can be created.</p>
+                    <p className={`mt-1 text-[11px] ${softText}`}>Pay this fee and upload your receipt, then submit your withdrawal — it stays pending until an admin approves it.</p>
                   </div>
 
                   {wdFeeState === "unknown" && (
