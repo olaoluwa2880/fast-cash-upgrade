@@ -219,6 +219,7 @@ function Dashboard() {
     { key: "upgrades", label: "Upgrades" },
     { key: "users", label: "Users" },
     { key: "payments", label: "Payments" },
+    { key: "fees", label: "Withdrawal fees" },
   ];
   const statuses: StatusFilter[] = ["all", "pending", "approved", "rejected"];
 
