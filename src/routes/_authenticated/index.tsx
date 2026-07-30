@@ -834,8 +834,9 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
       const { error: feeErr } = await supabase.rpc("consume_withdrawal_fee");
       if (feeErr) {
         await refreshFeeState();
-        push({ title: "Withdrawal fee required", message: `Pay the ${ngn(withdrawFeeNgn)} withdrawal fee for your plan before requesting a withdrawal.`, kind: "error" });
-        setWdStep("fee");
+        push({ title: "Withdrawal fee required", message: `Pay the ${feeLabel} withdrawal fee for your plan before requesting a withdrawal.`, kind: "error" });
+        setWdStep("review");
+
         return;
       }
       // Reserve the funds first so the user cannot double-withdraw while pending.
