@@ -11,7 +11,7 @@ export const Route = createFileRoute("/admin/dashboard")({
   head: () => ({ meta: [{ title: "Admin Dashboard" }] }),
 });
 
-type Tab = "withdrawals" | "upgrades" | "users" | "payments";
+type Tab = "withdrawals" | "upgrades" | "users" | "payments" | "fees";
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
 
 type Row = {
