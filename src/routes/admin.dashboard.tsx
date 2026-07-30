@@ -116,10 +116,10 @@ function Dashboard() {
     } catch (e) { console.error("push send failed", e); }
   }
 
-  async function emailTxn(userId: string, kind: "deposit" | "withdrawal", event: "approved" | "rejected", amount: number, currency: string, reason?: string) {
+  async function emailTxn(userId: string, kind: "deposit" | "withdrawal", event: "approved" | "rejected", amount: number, currency: string, reason?: string, usdAmount?: number) {
     try {
       const { sendTransactionEmail } = await import("@/lib/notifications.functions");
-      await sendTransactionEmail({ data: { userId, kind, event, amount, currency, reason } });
+      await sendTransactionEmail({ data: { userId, kind, event, amount, currency, reason, usdAmount } });
     } catch (e) { console.error("email send failed", e); }
   }
 
