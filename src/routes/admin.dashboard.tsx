@@ -332,18 +332,25 @@ function Dashboard() {
 
             {(tab === "payments" || tab === "fees") && r.receipt_path && (
               r.receipt_url ? (
-                <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-3">
+                <div className="mt-3">
                   {/\.pdf($|\?)/i.test(r.receipt_path) ? (
-                    <div className="w-full py-6 rounded-xl border border-slate-200 bg-slate-50 text-center text-sm text-slate-600">PDF receipt</div>
+                    <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block w-full py-6 rounded-xl border border-slate-200 bg-slate-50 text-center text-sm text-slate-600">
+                      PDF receipt — open ↗
+                    </a>
                   ) : (
-                    <img src={r.receipt_url} alt="Payment receipt" className="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-50" />
+                    <div className="max-h-96 overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-slate-50">
+                      <img src={r.receipt_url} alt="Payment receipt" className="w-full h-auto block" />
+                    </div>
                   )}
-                  <div className="text-[11px] text-blue-600 mt-1 text-center">Open receipt ↗</div>
-                </a>
+                  <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block text-[11px] text-blue-600 mt-1 text-center">
+                    Open full receipt ↗
+                  </a>
+                </div>
               ) : (
                 <div className="mt-3 text-[11px] text-red-500">Receipt uploaded but preview unavailable ({r.receipt_path.split("/").pop()})</div>
               )
             )}
+
 
 
             <div className="flex gap-2 mt-3">
