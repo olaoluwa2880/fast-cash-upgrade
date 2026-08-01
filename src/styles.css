@@ -137,9 +137,17 @@
     border-color: var(--color-border);
   }
 
-  html, body, #root {
+  html {
     min-height: 100vh;
     min-height: 100dvh;
+    height: -webkit-fill-available;
+    background-color: var(--color-background);
+  }
+
+  body, #root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
   }
 
   body {
@@ -151,5 +159,23 @@
     padding-right: env(safe-area-inset-right);
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Installed / standalone app: fill the whole screen, no browser chrome gaps */
+  @media all and (display-mode: standalone), all and (display-mode: fullscreen) {
+    html, body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    #root {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
   }
 }
