@@ -78,14 +78,23 @@ function Dashboard() {
         tab === "fees" ? { ...r, amount: r.amount_ngn, currency: r.currency ?? "NGN" } : r
       ) as Row[];
       const withProfiles = await attach(normalized);
-      // sign receipt URLs
-      const paths = withProfiles.map((r) => r.receipt_url).filter((p): p is string => !!p);
+      // sign receipt URLs (one-by-one so a single bad path can't break the whole batch)
+      const paths = [...new Set(withProfiles.map((r) => r.receipt_url).filter((p): p is string => !!p))];
       const signedMap = new Map<string, string>();
-      if (paths.length) {
-        const { data: signed } = await supabase.storage.from("receipts").createSignedUrls(paths, 60 * 60);
-        (signed ?? []).forEach((s) => { if (s.path && s.signedUrl) signedMap.set(s.path, s.signedUrl); });
-      }
-      data = withProfiles.map((r) => ({ ...r, receipt_url: r.receipt_url ? signedMap.get(r.receipt_url) ?? r.receipt_url : r.receipt_url }));
+      await Promise.all(
+        paths.map(async (p) => {
+          if (/^https?:\/\//i.test(p)) { signedMap.set(p, p); return; }
+          const { data: s, error } = await supabase.storage.from("receipts").createSignedUrl(p, 60 * 60);
+          if (error) { console.error("sign receipt failed", p, error.message); return; }
+          if (s?.signedUrl) signedMap.set(p, s.signedUrl);
+        })
+      );
+      data = withProfiles.map((r) => ({
+        ...r,
+        receipt_path: r.receipt_url ?? null,
+        receipt_url: r.receipt_url ? signedMap.get(r.receipt_url) ?? null : null,
+      })) as Row[];
+
     } else {
       const { data: d } = await supabase.from("profiles").select("id,email,full_name,created_at").order("created_at", { ascending: false });
       data = (d ?? []).map((p) => ({
