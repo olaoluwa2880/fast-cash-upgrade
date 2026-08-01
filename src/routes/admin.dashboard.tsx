@@ -26,6 +26,8 @@ type Row = {
   created_at: string;
   method?: string | null;
   receipt_url?: string | null;
+  receipt_path?: string | null;
+
   rejection_reason?: string | null;
   plan_index?: number | null;
   credited?: boolean;
