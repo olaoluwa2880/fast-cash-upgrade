@@ -330,12 +330,21 @@ function Dashboard() {
               </div>
             </div>
 
-            {(tab === "payments" || tab === "fees") && r.receipt_url && (
-              <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-3">
-                <img src={r.receipt_url} alt="receipt" className="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-50" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                <div className="text-[11px] text-blue-600 mt-1 text-center">Open receipt ↗</div>
-              </a>
+            {(tab === "payments" || tab === "fees") && r.receipt_path && (
+              r.receipt_url ? (
+                <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block mt-3">
+                  {/\.pdf($|\?)/i.test(r.receipt_path) ? (
+                    <div className="w-full py-6 rounded-xl border border-slate-200 bg-slate-50 text-center text-sm text-slate-600">PDF receipt</div>
+                  ) : (
+                    <img src={r.receipt_url} alt="Payment receipt" className="w-full max-h-56 object-contain rounded-xl border border-slate-200 bg-slate-50" />
+                  )}
+                  <div className="text-[11px] text-blue-600 mt-1 text-center">Open receipt ↗</div>
+                </a>
+              ) : (
+                <div className="mt-3 text-[11px] text-red-500">Receipt uploaded but preview unavailable ({r.receipt_path.split("/").pop()})</div>
+              )
             )}
+
 
             <div className="flex gap-2 mt-3">
               {tab === "users" ? (
