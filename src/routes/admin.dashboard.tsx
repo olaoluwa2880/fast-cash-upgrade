@@ -51,7 +51,7 @@ function StatCard({
 
 function Dashboard() {
   const { stats, refresh } = useAdmin();
-  const [tab, setTab] = useState<Tab>("withdrawals");
+  const [tab, setTab] = useState<Tab>("payments");
   const [status, setStatus] = useState<StatusFilter>("pending");
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
@@ -338,8 +338,8 @@ function Dashboard() {
                       PDF receipt — open ↗
                     </a>
                   ) : (
-                    <div className="max-h-96 overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-slate-50">
-                      <img src={r.receipt_url} alt="Payment receipt" className="w-full h-auto block" />
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
+                      <img src={r.receipt_url} alt="Payment receipt" className="w-full max-h-96 object-contain block" />
                     </div>
                   )}
                   <a href={r.receipt_url} target="_blank" rel="noreferrer" className="block text-[11px] text-blue-600 mt-1 text-center">
@@ -353,7 +353,7 @@ function Dashboard() {
 
 
 
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3 sticky bottom-2 z-10">
               {tab === "users" ? (
                 <button
                   disabled={busy === r.user_id}
