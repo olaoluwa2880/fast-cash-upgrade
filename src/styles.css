@@ -141,7 +141,7 @@
     min-height: 100vh;
     min-height: 100dvh;
     height: -webkit-fill-available;
-    background-color: var(--color-background);
+    background-color: #0D0D0D;
   }
 
   body, #root {
@@ -151,7 +151,7 @@
   }
 
   body {
-    background-color: var(--color-background);
+    background-color: #0D0D0D;
     color: var(--color-foreground);
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
