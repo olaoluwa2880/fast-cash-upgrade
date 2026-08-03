@@ -128,11 +128,20 @@ function Dashboard() {
   }
 
   async function emailTxn(userId: string, kind: "deposit" | "withdrawal", event: "approved" | "rejected", amount: number, currency: string, reason?: string, usdAmount?: number) {
-    try {
-      const { sendTransactionEmail } = await import("@/lib/notifications.functions");
-      await sendTransactionEmail({ data: { userId, kind, event, amount, currency, reason, usdAmount } });
-    } catch (e) { console.error("email send failed", e); }
+    // Retry once — approval emails are load-bearing for the user.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { sendTransactionEmail } = await import("@/lib/notifications.functions");
+        const res: any = await sendTransactionEmail({ data: { userId, kind, event, amount, currency, reason, usdAmount } });
+        if (res?.sent) return;
+        console.error("email not sent", res);
+      } catch (e) {
+        console.error("email send failed", e);
+      }
+    }
+    window.alert("The confirmation email could not be sent to this user. Please try again.");
   }
+
 
   async function creditBalance(userId: string, amount: number) {
     const { data: existing } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", userId).maybeSingle();
