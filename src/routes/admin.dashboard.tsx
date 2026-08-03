@@ -128,11 +128,20 @@ function Dashboard() {
   }
 
   async function emailTxn(userId: string, kind: "deposit" | "withdrawal", event: "approved" | "rejected", amount: number, currency: string, reason?: string, usdAmount?: number) {
-    try {
-      const { sendTransactionEmail } = await import("@/lib/notifications.functions");
-      await sendTransactionEmail({ data: { userId, kind, event, amount, currency, reason, usdAmount } });
-    } catch (e) { console.error("email send failed", e); }
+    // Retry once — approval emails are load-bearing for the user.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { sendTransactionEmail } = await import("@/lib/notifications.functions");
+        const res: any = await sendTransactionEmail({ data: { userId, kind, event, amount, currency, reason, usdAmount } });
+        if (res?.sent) return;
+        console.error("email not sent", res);
+      } catch (e) {
+        console.error("email send failed", e);
+      }
+    }
+    window.alert("The confirmation email could not be sent to this user. Please try again.");
   }
+
 
   async function creditBalance(userId: string, amount: number) {
     const { data: existing } = await supabase.from("wallet_balances").select("balance_usd").eq("user_id", userId).maybeSingle();
@@ -156,19 +165,23 @@ function Dashboard() {
       await Promise.all([load(), refresh()]);
       return;
     }
-    if (table === "payments" && !r.credited && r.amount != null) {
-      if (r.plan_index != null) {
-        // Mining plan upgrade — activate plan, do NOT credit balance
-        await supabase.from("payments").update({ credited: true }).eq("id", r.id);
-        await notify(r.user_id, "🎉 Mining plan upgrade approved", "Congratulations! Your mining plan upgrade has been approved successfully. You can now start mining.", "success");
-        await emailTxn(r.user_id, "deposit", "approved", Number(r.amount), r.currency ?? "USD");
-      } else {
+    if (table === "payments") {
+      const alreadyCredited = !!r.credited || r.amount == null;
+      if (!alreadyCredited && r.plan_index == null) {
         await creditBalance(r.user_id, Number(r.amount));
-        await supabase.from("payments").update({ credited: true }).eq("id", r.id);
-        await notify(r.user_id, "Payment approved", `Your deposit of ${Number(r.amount).toFixed(2)} ${r.currency ?? "USD"} has been approved and credited to your wallet.`, "success");
-        await emailTxn(r.user_id, "deposit", "approved", Number(r.amount), r.currency ?? "USD");
       }
+      if (!alreadyCredited) {
+        await supabase.from("payments").update({ credited: true }).eq("id", r.id);
+      }
+      if (r.plan_index != null) {
+        await notify(r.user_id, "🎉 Mining plan upgrade approved", "Congratulations! Your mining plan upgrade has been approved successfully. You can now start mining.", "success");
+      } else {
+        await notify(r.user_id, "Payment approved", `Your deposit of ${Number(r.amount ?? 0).toFixed(2)} ${r.currency ?? "USD"} has been approved and credited to your wallet.`, "success");
+      }
+      // Always email the approval, even if the row was credited earlier.
+      await emailTxn(r.user_id, "deposit", "approved", Number(r.amount ?? 0), r.currency ?? "USD");
     } else if (table === "withdrawals") {
+
       const wAmt = Number((r as any).local_amount ?? r.amount ?? 0);
       const wCur = r.currency ?? "USD";
       await notify(r.user_id, "Withdrawal completed", `Your withdrawal of ${wAmt.toFixed(2)} ${wCur} has been approved and completed.`, "success");
