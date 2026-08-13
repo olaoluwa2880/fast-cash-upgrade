@@ -87,17 +87,17 @@ function LiveChat() {
             <MessageContent
               className={
                 m.role === "user"
-                  ? "rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/15 px-4 py-2.5 text-[#F5E7B8]"
-                  : "rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-[#EDEDED]"
+                  ? "rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/15 px-4 py-2.5 text-[#D4AF37]"
+                  : "rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-[#D4AF37]"
               }
             >
-              <MessageResponse>{m.content}</MessageResponse>
+              <MessageResponse className="text-[#D4AF37]">{m.content}</MessageResponse>
             </MessageContent>
           </Message>
         ))}
         {loading && (
           <Message from="assistant">
-            <MessageContent className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5">
+            <MessageContent className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-[#D4AF37]">
               <Shimmer className="text-sm text-[#D4AF37]">Thinking...</Shimmer>
             </MessageContent>
           </Message>
@@ -115,7 +115,7 @@ function LiveChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask Live Support..."
-          className="min-h-20 max-h-36 bg-transparent text-[#EDEDED] placeholder:text-[#8A8A8A]"
+          className="min-h-20 max-h-36 bg-transparent text-[#D4AF37] placeholder:text-[#D4AF37]/50"
         />
         <PromptInputFooter className="justify-end border-t border-white/5">
           <PromptInputSubmit
