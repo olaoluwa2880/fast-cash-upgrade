@@ -284,35 +284,11 @@ export function SupportCenter({ section, onSection, onClose }: {
     tickets: "My Support Tickets",
   };
 
-  // Keep the device/browser Back button on the dashboard: opening Support pushes
-  // one history entry, and Back simply closes the overlay instead of leaving the app.
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  const poppedRef = useRef(false);
+  // No history manipulation: the Support Center is an in-app overlay, so closing
+  // it simply returns to the dashboard without any navigation (which previously
+  // could land on an error page in installed/mobile browsers).
+  const goDashboard = () => onClose();
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.history.pushState({ fastcreditSupport: true }, "");
-    const onPop = () => {
-      poppedRef.current = true;
-      closeRef.current();
-    };
-    window.addEventListener("popstate", onPop);
-    return () => {
-      window.removeEventListener("popstate", onPop);
-      if (!poppedRef.current && window.history.state?.fastcreditSupport) {
-        window.history.back();
-      }
-    };
-  }, []);
-
-  const goDashboard = () => {
-    if (typeof window !== "undefined" && window.history.state?.fastcreditSupport) {
-      poppedRef.current = true;
-      window.history.back();
-    }
-    onClose();
-  };
 
   return (
     <div className="fixed inset-0 z-[70] bg-[#0D0D0D] text-white flex flex-col">
