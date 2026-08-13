@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  X, Send, Bot, ChevronLeft, LifeBuoy, Mail, MessageCircle, Phone,
+  X, Send, Bot, ChevronLeft, Mail, MessageCircle, Phone,
   ExternalLink, Search, HelpCircle, Ticket, Clock, ArrowUpRight,
 } from "lucide-react";
 import { useSiteSettings, supportHref, type SupportRow } from "@/lib/site-settings";
@@ -267,6 +267,36 @@ export function SupportCenter({ section, onSection, onClose }: {
     tickets: "My Support Tickets",
   };
 
+  // Keep the device/browser Back button on the dashboard: opening Support pushes
+  // one history entry, and Back simply closes the overlay instead of leaving the app.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const poppedRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.history.pushState({ fastcreditSupport: true }, "");
+    const onPop = () => {
+      poppedRef.current = true;
+      closeRef.current();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (!poppedRef.current && window.history.state?.fastcreditSupport) {
+        window.history.back();
+      }
+    };
+  }, []);
+
+  const goDashboard = () => {
+    if (typeof window !== "undefined" && window.history.state?.fastcreditSupport) {
+      poppedRef.current = true;
+      window.history.back();
+    }
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-[70] bg-[#0D0D0D] text-white flex flex-col">
       <div className="shrink-0 border-b border-white/5 px-4 py-4 flex items-center gap-3 max-w-[720px] w-full mx-auto">
@@ -275,18 +305,19 @@ export function SupportCenter({ section, onSection, onClose }: {
             <ChevronLeft className="h-4 w-4" />
           </button>
         ) : (
-          <div className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10">
-            <LifeBuoy className="h-4 w-4 text-[#D4AF37]" />
-          </div>
+          <button onClick={goDashboard} aria-label="Back to dashboard" className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10">
+            <ChevronLeft className="h-4 w-4 text-[#D4AF37]" />
+          </button>
         )}
         <h2 className="flex-1 text-center font-black">{titles[section]}</h2>
-        <button onClick={onClose} aria-label="Close support" className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10">
+        <button onClick={goDashboard} aria-label="Close support" className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10">
           <X className="h-4 w-4" />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="max-w-[720px] mx-auto h-full">
+
           {section === "home" && (
             <div className="space-y-3">
               <div className="text-center">
