@@ -55,6 +55,7 @@ function Dashboard() {
   const [status, setStatus] = useState<StatusFilter>("pending");
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
+  const [banned, setBanned] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
