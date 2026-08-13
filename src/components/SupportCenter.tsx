@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  X, Send, Bot, ChevronLeft, LifeBuoy, Mail, MessageCircle, Phone,
+  X, Send, Bot, ChevronLeft, Mail, MessageCircle, Phone,
   ExternalLink, Search, HelpCircle, Ticket, Clock, ArrowUpRight,
 } from "lucide-react";
 import { useSiteSettings, supportHref, type SupportRow } from "@/lib/site-settings";
