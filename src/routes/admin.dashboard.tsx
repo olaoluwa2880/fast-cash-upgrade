@@ -319,6 +319,9 @@ function Dashboard() {
                   {r.profile?.full_name || r.profile?.email || "Unknown user"}
                 </div>
                 <div className="text-xs text-slate-500 truncate">{r.profile?.email}</div>
+                {banned.has(r.user_id) && (
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-600">Banned</span>
+                )}
                 {r.wallet_address && (
                   <div className="text-xs text-slate-500 mt-1 font-mono truncate">{r.wallet_address}</div>
                 )}
