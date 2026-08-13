@@ -121,7 +121,7 @@ function LiveChat() {
           <PromptInputSubmit
             disabled={loading || !input.trim()}
             status={loading ? "submitted" : "ready"}
-            className="bg-[#D4AF37] text-[#0D0D0D] hover:bg-[#e0bf४f] disabled:opacity-40"
+            className="bg-[#D4AF37] text-[#0D0D0D] hover:bg-[#e6c860] disabled:opacity-40"
           />
         </PromptInputFooter>
       </PromptInput>
