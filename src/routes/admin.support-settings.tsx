@@ -17,15 +17,16 @@ type Row = {
   enabled: boolean;
   sort_order: number;
 };
-const KINDS = ["telegram", "whatsapp", "email", "phone", "website", "other"] as const;
+const KINDS = SUPPORT_KINDS;
 const EMPTY: Omit<Row, "id"> = { kind: "telegram", label: "Telegram Support", value: "", enabled: true, sort_order: 0 };
 
 function validate(kind: string, value: string): string | null {
   const v = value.trim();
+  if (kind === "live_chat") return null;
   if (!v) return "Value is required";
-  if (kind === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return "Invalid email";
-  if (kind === "whatsapp" && !/^\+?[\d\s\-()]{6,}$/.test(v) && !/^https?:\/\//.test(v)) return "Enter phone or wa.me link";
-  if ((kind === "telegram" || kind === "website" || kind === "other") && v.startsWith("http") && !/^https?:\/\/\S+$/.test(v)) return "Invalid URL";
+  if ((kind === "email" || kind === "gmail") && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return "Invalid email address";
+  if ((kind === "whatsapp" || kind === "phone" || kind === "sms") && !/^\+?[\d\s\-()]{6,}$/.test(v) && !/^https?:\/\//.test(v)) return "Enter a valid phone number or link";
+  if (v.startsWith("http") && !/^https?:\/\/\S+$/.test(v)) return "Invalid URL";
   return null;
 }
 
