@@ -2151,6 +2151,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           setOpenMenu(false);
           if (a === "logout") { handleLogout(); return; }
           if (a === "profile" || a === "settings") { setOpenProfile(true); return; }
+          if (a === "telegram") { openSupport("https://t.me/fastcredit21"); return; }
           setSupportSection(a === "support" ? "home" : a);
         }}
       />
