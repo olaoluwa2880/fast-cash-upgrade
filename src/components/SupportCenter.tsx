@@ -91,7 +91,9 @@ function LiveChat() {
                   : "rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-[#D4AF37]"
               }
             >
-              <MessageResponse className="text-[#D4AF37]">{m.content}</MessageResponse>
+              <div className="text-[#D4AF37] [&_*]:text-[#D4AF37] [&_p]:text-[#D4AF37] [&_span]:text-[#D4AF37] [&_li]:text-[#D4AF37] [&_strong]:text-[#D4AF37] [&_a]:text-[#D4AF37] [&_code]:text-[#D4AF37]">
+                <MessageResponse>{m.content}</MessageResponse>
+              </div>
             </MessageContent>
           </Message>
         ))}
