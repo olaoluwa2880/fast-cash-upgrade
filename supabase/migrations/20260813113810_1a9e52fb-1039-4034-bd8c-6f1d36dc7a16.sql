@@ -1,0 +1,1 @@
+DELETE FROM public.support_settings a USING public.support_settings b WHERE a.kind='telegram' AND b.kind='telegram' AND a.value=b.value AND a.ctid>b.ctid;
