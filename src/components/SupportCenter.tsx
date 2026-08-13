@@ -84,40 +84,51 @@ function LiveChat() {
         <ConversationContent className="gap-4 px-0 py-3">
         {messages.map((m, i) => (
           <Message key={`${m.role}-${i}`} from={m.role}>
-            <MessageContent className={m.role === "user" ? "bg-primary text-primary-foreground" : "bg-transparent px-0 py-0"}>
+            <MessageContent
+              className={
+                m.role === "user"
+                  ? "rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/15 px-4 py-2.5 text-[#F5E7B8]"
+                  : "rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-[#EDEDED]"
+              }
+            >
               <MessageResponse>{m.content}</MessageResponse>
             </MessageContent>
           </Message>
         ))}
         {loading && (
           <Message from="assistant">
-            <MessageContent className="bg-transparent px-0 py-0">
-              <Shimmer className="text-sm">Thinking...</Shimmer>
+            <MessageContent className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5">
+              <Shimmer className="text-sm text-[#D4AF37]">Thinking...</Shimmer>
             </MessageContent>
           </Message>
         )}
         </ConversationContent>
-        <ConversationScrollButton />
+        <ConversationScrollButton className="border-[#D4AF37]/40 bg-[#141414] text-[#D4AF37] hover:bg-[#1c1c1c]" />
       </Conversation>
 
       <PromptInput
         onSubmit={({ text }) => send(text)}
-        className="border-border bg-card"
+        className="rounded-2xl border border-[#D4AF37]/30 bg-[#141414]"
       >
         <PromptInputTextarea
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask Live Support..."
-          className="min-h-20 max-h-36"
+          className="min-h-20 max-h-36 bg-transparent text-[#EDEDED] placeholder:text-[#8A8A8A]"
         />
-        <PromptInputFooter className="justify-end">
-          <PromptInputSubmit disabled={loading || !input.trim()} status={loading ? "submitted" : "ready"} />
+        <PromptInputFooter className="justify-end border-t border-white/5">
+          <PromptInputSubmit
+            disabled={loading || !input.trim()}
+            status={loading ? "submitted" : "ready"}
+            className="bg-[#D4AF37] text-[#0D0D0D] hover:bg-[#e6c860] disabled:opacity-40"
+          />
         </PromptInputFooter>
       </PromptInput>
     </div>
   );
 }
+
 
 function Faq() {
   const [q, setQ] = useState("");
