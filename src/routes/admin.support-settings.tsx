@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Plus, Save, Trash2, LifeBuoy, Power } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPPORT_KINDS } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/admin/support-settings")({
   component: () => (<AdminLayout><Page /></AdminLayout>),
