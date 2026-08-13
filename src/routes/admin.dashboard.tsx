@@ -373,13 +373,23 @@ function Dashboard() {
 
             <div className="flex gap-2 mt-3 sticky bottom-2 z-10">
               {tab === "users" ? (
-                <button
-                  disabled={busy === r.user_id}
-                  onClick={() => banUser(r.user_id)}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-red-500 text-white text-sm font-semibold disabled:opacity-50"
-                >
-                  <ShieldOff className="h-4 w-4" /> Ban user
-                </button>
+                banned.has(r.user_id) ? (
+                  <button
+                    disabled={busy === r.user_id}
+                    onClick={() => setBan(r.user_id, false)}
+                    className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    <ShieldCheck className="h-4 w-4" /> Unban user
+                  </button>
+                ) : (
+                  <button
+                    disabled={busy === r.user_id}
+                    onClick={() => setBan(r.user_id, true)}
+                    className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-red-500 text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    <ShieldOff className="h-4 w-4" /> Ban user
+                  </button>
+                )
               ) : r.status === "pending" ? (
                 <>
                   <button
