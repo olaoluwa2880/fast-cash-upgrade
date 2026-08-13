@@ -190,49 +190,37 @@ function Faq() {
 }
 
 function Contact({ onLive }: { onLive: () => void }) {
-  const { support } = useSiteSettings();
-  const cards = [
-    { icon: MessageCircle, title: "Live Chat", desc: "Chat with our AI support agent", cta: "Start Chat", onClick: onLive },
-  ];
+  const { support, loaded } = useSiteSettings();
+  const liveRow = support.find((s) => s.kind === "live_chat");
+  const links = support.filter((s) => s.kind !== "live_chat" && supportHref(s));
+
   return (
     <div className="space-y-3">
       <p className="text-sm text-white/50">Choose a way to contact us</p>
-      {cards.map((c) => (
-        <div key={c.title} className="rounded-2xl border border-white/10 bg-[#141414] p-4">
-          <div className="flex gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#F4CF5B] to-[#D4AF37] grid place-items-center shrink-0">
-              <c.icon className="h-5 w-5 text-[#1a1405]" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-black">{c.title}</p>
-              <p className="text-[13px] text-white/50">{c.desc}</p>
-              <p className="text-[13px] text-white/50">We usually reply in a few minutes</p>
-            </div>
-          </div>
-          <button onClick={c.onClick}
-            className="mt-3 w-full rounded-xl bg-gradient-to-r from-[#F4CF5B] to-[#D4AF37] py-2.5 font-black text-[#1a1405]">
-            {c.cta}
-          </button>
-        </div>
-      ))}
 
       <div className="rounded-2xl border border-white/10 bg-[#141414] p-4">
         <div className="flex gap-3">
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#F4CF5B] to-[#D4AF37] grid place-items-center shrink-0">
-            <Send className="h-5 w-5 text-[#1a1405]" />
+            <MessageCircle className="h-5 w-5 text-[#1a1405]" />
           </div>
           <div className="min-w-0">
-            <p className="font-black">Telegram Support</p>
-            <p className="text-[13px] text-white/50">Message our team directly on Telegram</p>
+            <p className="font-black">{liveRow?.label ?? "Live Chat"}</p>
+            <p className="text-[13px] text-white/50">{liveRow?.value?.trim() || "Chat with our AI support agent"}</p>
+            <p className="text-[13px] text-white/50">We usually reply in a few minutes</p>
           </div>
         </div>
-        <TelegramButton className="mt-3 w-full" />
+        <button onClick={onLive}
+          className="mt-3 w-full rounded-xl bg-gradient-to-r from-[#F4CF5B] to-[#D4AF37] py-2.5 font-black text-[#1a1405]">
+          Start Chat
+        </button>
       </div>
 
-      {support.filter((s) => s.kind !== "telegram").map((s) => {
-        const Icon = s.kind === "whatsapp" ? MessageCircle : s.kind === "email" ? Mail : s.kind === "phone" ? Phone : ExternalLink;
+      {links.map((s) => {
+        const Icon = kindIcon(s.kind);
+        const href = supportHref(s);
+        const external = /^https?:/i.test(href);
         return (
-          <a key={s.id} href={supportHref(s)} target="_blank" rel="noreferrer"
+          <a key={s.id} href={href} {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
             className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#141414] p-4 active:scale-[.98] transition">
             <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#F4CF5B] to-[#D4AF37] grid place-items-center shrink-0">
               <Icon className="h-5 w-5 text-[#1a1405]" />
@@ -245,6 +233,12 @@ function Contact({ onLive }: { onLive: () => void }) {
           </a>
         );
       })}
+
+      {loaded && links.length === 0 && (
+        <p className="text-center text-[13px] text-white/40 py-4">
+          No other contact methods are available right now — use Live Chat above.
+        </p>
+      )}
 
       <div className="rounded-2xl border border-white/10 bg-[#141414] p-4">
         <div className="flex items-center gap-2 text-[#D4AF37]">
