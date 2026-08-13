@@ -80,23 +80,51 @@ export type SupportKind = (typeof SUPPORT_KINDS)[number];
 
 export function supportHref(row: SupportRow): string {
   const v = (row.value ?? "").trim();
+  if (row.kind === "live_chat") return "";
   if (!v) return "";
+
+  // Already a usable scheme
   if (/^(https?:|mailto:|tel:|sms:)/i.test(v)) return v;
-  const digits = v.replace(/[^\d+]/g, "").replace(/^\+/, "");
-  const handle = v.replace(/^@/, "");
+  // Bare domain / path that clearly points at a website
+  if (/^(www\.|t\.me\/|wa\.me\/|api\.whatsapp\.com|m\.me\/|discord\.gg\/|facebook\.com|instagram\.com|x\.com|twitter\.com)/i.test(v)) {
+    return `https://${v.replace(/^\/+/, "")}`;
+  }
+
+  const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+  const digits = v.replace(/[^\d]/g, "");
+  const handle = v.replace(/^@/, "").replace(/\s+/g, "");
+
   switch (row.kind) {
-    case "live_chat": return "";
-    case "telegram":  return `https://t.me/${handle}`;
-    case "whatsapp":  return `https://wa.me/${digits}`;
+    case "telegram":  return handle ? `https://t.me/${handle}` : "";
+    case "whatsapp":  return digits ? `https://wa.me/${digits}` : "";
     case "gmail":
-    case "email":     return `mailto:${v}`;
-    case "phone":     return `tel:${v.replace(/\s+/g, "")}`;
-    case "sms":       return `sms:${v.replace(/\s+/g, "")}`;
+    case "email":     return isEmail ? `mailto:${v}` : "";
+    case "phone":     return digits ? `tel:${v.replace(/\s+/g, "")}` : "";
+    case "sms":       return digits ? `sms:${v.replace(/\s+/g, "")}` : "";
     case "facebook":  return `https://facebook.com/${handle}`;
     case "instagram": return `https://instagram.com/${handle}`;
     case "twitter":   return `https://x.com/${handle}`;
-    case "discord":   return handle.startsWith("discord") ? `https://${handle}` : `https://discord.gg/${handle}`;
+    case "discord":   return /^discord/i.test(handle) ? `https://${handle}` : `https://discord.gg/${handle}`;
     case "website":   return `https://${v.replace(/^\/+/, "")}`;
-    default:          return /\S+@\S+\.\S+/.test(v) ? `mailto:${v}` : `https://${v}`;
+    default:
+      if (isEmail) return `mailto:${v}`;
+      if (/^\+?[\d\s\-()]{6,}$/.test(v)) return `tel:${v.replace(/\s+/g, "")}`;
+      return `https://${v.replace(/^\/+/, "")}`;
   }
 }
+
+/**
+ * Opens a support link safely.
+ * mailto:/tel:/sms: must use same-tab navigation — opening them in a new tab
+ * leaves a blank page in mobile browsers and installed PWAs.
+ */
+export function openSupport(href: string) {
+  if (!href || typeof window === "undefined") return;
+  if (/^(mailto:|tel:|sms:)/i.test(href)) {
+    window.location.href = href;
+    return;
+  }
+  const win = window.open(href, "_blank", "noopener,noreferrer");
+  if (!win) window.location.href = href; // popup blocked / standalone PWA
+}
+
