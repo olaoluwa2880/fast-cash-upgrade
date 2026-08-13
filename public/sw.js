@@ -1,6 +1,6 @@
 // Minimal service worker to enable PWA installability.
 // Network-first for navigation to avoid stale HTML; passthrough otherwise.
-const CACHE = "fastcredit-v3";
+const CACHE = "fastcredit-v4";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {

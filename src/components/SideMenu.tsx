@@ -1,14 +1,10 @@
-import { X, LifeBuoy, HelpCircle, Mail, Ticket, Settings, User, LogOut, MessageCircle } from "lucide-react";
+import { X, Settings, User, LogOut, MessageCircle } from "lucide-react";
 
 export type SideMenuAction =
-  | "support" | "live" | "faq" | "contact" | "tickets" | "settings" | "profile" | "logout";
+  | "live" | "settings" | "profile" | "logout";
 
 const ITEMS: { key: SideMenuAction; label: string; icon: typeof LifeBuoy; desc: string }[] = [
   { key: "live", label: "Live Support", icon: MessageCircle, desc: "Chat with our AI assistant" },
-  { key: "support", label: "Support", icon: LifeBuoy, desc: "Support center" },
-  { key: "faq", label: "FAQ", icon: HelpCircle, desc: "Common questions" },
-  { key: "contact", label: "Contact Support", icon: Mail, desc: "Telegram, email & more" },
-  { key: "tickets", label: "My Tickets", icon: Ticket, desc: "Your support requests" },
   { key: "settings", label: "Settings", icon: Settings, desc: "App preferences" },
   { key: "profile", label: "Profile", icon: User, desc: "Your account details" },
 ];
