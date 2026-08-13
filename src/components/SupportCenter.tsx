@@ -224,10 +224,9 @@ function Contact({ onLive }: { onLive: () => void }) {
       {links.map((s) => {
         const Icon = kindIcon(s.kind);
         const href = supportHref(s);
-        const external = /^https?:/i.test(href);
         return (
-          <a key={s.id} href={href} {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#141414] p-4 active:scale-[.98] transition">
+          <button key={s.id} type="button" onClick={() => openSupport(href)}
+            className="w-full text-left flex items-center gap-3 rounded-2xl border border-white/10 bg-[#141414] p-4 active:scale-[.98] transition">
             <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#F4CF5B] to-[#D4AF37] grid place-items-center shrink-0">
               <Icon className="h-5 w-5 text-[#1a1405]" />
             </div>
@@ -236,9 +235,10 @@ function Contact({ onLive }: { onLive: () => void }) {
               <p className="text-[11px] text-white/50 truncate">{s.value}</p>
             </div>
             <ArrowUpRight className="h-4 w-4 opacity-60" />
-          </a>
+          </button>
         );
       })}
+
 
       {loaded && links.length === 0 && (
         <p className="text-center text-[13px] text-white/40 py-4">
