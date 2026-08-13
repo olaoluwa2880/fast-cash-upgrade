@@ -116,7 +116,17 @@ function Root() {
       .channel("ban-watch")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "user_bans" }, kickIfBanned)
       .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(channel); };
+    // Fallback polling in case realtime isn't delivered on this connection.
+    const poll = setInterval(kickIfBanned, 30000);
+    const onVisible = () => { if (document.visibilityState === "visible") kickIfBanned(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisible);
+      supabase.removeChannel(channel);
+    };
+
   }, []);
   if (screen === "splash") return <Splash />;
   return <Dashboard userProfile={userProfile} />;
