@@ -932,7 +932,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     { icon: UserPlus, label: "Referral", onClick: () => setOpenProfile(true) },
     { icon: Users, label: "Community", onClick: () => setOpenCategory("community") },
     { icon: Clock, label: "History", onClick: () => setOpenCategory("history") },
-    { icon: LifeBuoy, label: "Live Chat", onClick: () => setSupportSection("live") },
+    { icon: LifeBuoy, label: "Support", onClick: () => setSupportSection("home") },
     { icon: ScrollText, label: "Legal", onClick: () => navigate({ to: "/legal" }) },
     { icon: SettingsIcon, label: "Settings", onClick: () => setOpenProfile(true) },
   ];
