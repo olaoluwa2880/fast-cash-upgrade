@@ -11,10 +11,10 @@ import {
   ArrowRight, ShieldCheck, ScrollText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useSiteSettings, supportHref } from "@/lib/site-settings";
+import { useSiteSettings, supportHref, openSupport } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
 import { SideMenu, type SideMenuAction } from "@/components/SideMenu";
-import { SupportCenter, type SupportSection } from "@/components/SupportCenter";
+import { SupportCenter, kindIcon, type SupportSection } from "@/components/SupportCenter";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { COUNTRIES, BANKS_BY_COUNTRY, type Bank } from "@/lib/banks-data";
@@ -2436,21 +2436,18 @@ function CategoryModal(props: CategoryModalProps) {
           {categoryKey === "support" && (
             <div className="space-y-3">
               <p className={`text-[11px] ${softText}`}>We're here 24/7 — reach us on any of these channels.</p>
-              {settings.support.length === 0 && (
+              {settings.support.filter((s) => supportHref(s)).length === 0 && (
                 <div className={`rounded-2xl border p-6 text-center ${rowBg}`}>
                   <LifeBuoy className="h-8 w-8 mx-auto text-amber-500" />
                   <p className={`text-xs mt-2 ${softText}`}>No support contacts configured yet.</p>
                 </div>
               )}
-              {settings.support.map((s) => {
-                const Icon = s.kind === "telegram" ? Send
-                  : s.kind === "whatsapp" ? MessageCircle
-                  : s.kind === "email" ? Mail
-                  : s.kind === "phone" ? Phone
-                  : ExternalLink;
+              {settings.support.filter((s) => supportHref(s)).map((s) => {
+                const Icon = kindIcon(s.kind);
+                const href = supportHref(s);
                 return (
-                  <a key={s.id} href={supportHref(s)} target="_blank" rel="noreferrer"
-                    className={`flex items-center gap-3 rounded-2xl border p-4 ${rowBg} active:scale-[.98] transition`}>
+                  <button key={s.id} type="button" onClick={() => openSupport(href)}
+                    className={`w-full text-left flex items-center gap-3 rounded-2xl border p-4 ${rowBg} active:scale-[.98] transition`}>
                     <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white grid place-items-center shrink-0">
                       <Icon className="h-5 w-5" />
                     </div>
@@ -2459,11 +2456,12 @@ function CategoryModal(props: CategoryModalProps) {
                       <p className={`text-[11px] ${softText} truncate`}>{s.value}</p>
                     </div>
                     <ArrowUpRight className="h-4 w-4 opacity-60" />
-                  </a>
+                  </button>
                 );
               })}
             </div>
           )}
+
 
           {(categoryKey === "wallet" || categoryKey === "payments" || categoryKey === "journey") && (
             <div className={`rounded-2xl border p-5 text-center ${rowBg}`}>

@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import {
   X, Send, Bot, ChevronLeft, Mail, MessageCircle, Phone,
   ExternalLink, Search, HelpCircle, Ticket, Clock, ArrowUpRight,
+  Facebook, Instagram, Twitter, Globe, MessagesSquare,
 } from "lucide-react";
-import { useSiteSettings, supportHref, type SupportRow } from "@/lib/site-settings";
+import { useSiteSettings, supportHref, openSupport, type SupportRow } from "@/lib/site-settings";
 
 export type SupportSection = "home" | "live" | "faq" | "contact" | "tickets";
 
@@ -33,6 +34,11 @@ export function kindIcon(kind: string) {
     case "phone":
     case "sms": return Phone;
     case "live_chat": return MessageCircle;
+    case "facebook": return Facebook;
+    case "instagram": return Instagram;
+    case "twitter": return Twitter;
+    case "discord": return MessagesSquare;
+    case "website": return Globe;
     default: return ExternalLink;
   }
 }
@@ -44,17 +50,17 @@ export function TelegramButton({ className = "" }: { className?: string }) {
   if (!href) return null;
   const label = row?.kind === "telegram" ? "Contact Telegram Support" : `Contact ${row?.label ?? "Support"}`;
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className={`flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#F4CF5B] to-[#D4AF37] px-4 py-3 font-black text-[#1a1405] active:scale-[.98] transition ${className}`}
+    <button
+      type="button"
+      onClick={() => openSupport(href)}
+      className={`w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#F4CF5B] to-[#D4AF37] px-4 py-3 font-black text-[#1a1405] active:scale-[.98] transition ${className}`}
     >
       <Send className="h-4 w-4" />
       {label}
-    </a>
+    </button>
   );
 }
+
 
 type ChatMsg = { role: "user" | "assistant"; content: string; escalate?: boolean };
 
@@ -218,10 +224,9 @@ function Contact({ onLive }: { onLive: () => void }) {
       {links.map((s) => {
         const Icon = kindIcon(s.kind);
         const href = supportHref(s);
-        const external = /^https?:/i.test(href);
         return (
-          <a key={s.id} href={href} {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#141414] p-4 active:scale-[.98] transition">
+          <button key={s.id} type="button" onClick={() => openSupport(href)}
+            className="w-full text-left flex items-center gap-3 rounded-2xl border border-white/10 bg-[#141414] p-4 active:scale-[.98] transition">
             <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-[#F4CF5B] to-[#D4AF37] grid place-items-center shrink-0">
               <Icon className="h-5 w-5 text-[#1a1405]" />
             </div>
@@ -230,9 +235,10 @@ function Contact({ onLive }: { onLive: () => void }) {
               <p className="text-[11px] text-white/50 truncate">{s.value}</p>
             </div>
             <ArrowUpRight className="h-4 w-4 opacity-60" />
-          </a>
+          </button>
         );
       })}
+
 
       {loaded && links.length === 0 && (
         <p className="text-center text-[13px] text-white/40 py-4">
