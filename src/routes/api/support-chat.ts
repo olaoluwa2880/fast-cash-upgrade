@@ -9,7 +9,7 @@ Rules:
 - Common topics you can answer: how to deposit, upload a payment receipt, why a deposit is pending, how to withdraw (needs an active plan, minimum balance, withdrawal fee based on plan/country), plan upgrades, mining taps (2 per 24h, needs an active plan), referral bonus, changing currency, account suspension, login/OTP problems.
 - Deposits and withdrawals are reviewed manually by admins; approvals send an email notification.
 - Never invent balances, transaction IDs or timelines you cannot know.
-- If the user needs account-specific action (money not credited, suspended account, refund, ID/verification, anything you cannot resolve), end your reply with the exact line: ESCALATE_TELEGRAM
+- If the user needs account-specific action (money not credited, suspended account, refund, ID/verification, anything you cannot resolve), clearly explain that the issue requires a FastCredit support agent to review it.
 `;
 
 export const Route = createFileRoute("/api/support-chat")({
@@ -48,11 +48,10 @@ export const Route = createFileRoute("/api/support-chat")({
           choices?: Array<{ message?: { content?: string } }>;
         };
         let reply = data.choices?.[0]?.message?.content?.trim() ?? "";
-        const escalate = reply.includes("ESCALATE_TELEGRAM");
         reply = reply.replace(/ESCALATE_TELEGRAM/g, "").trim();
-        if (!reply) reply = "I couldn't process that. Please contact our Telegram support team.";
+        if (!reply) reply = "I couldn't process that request. Please try asking again with more details.";
 
-        return Response.json({ reply, escalate });
+        return Response.json({ reply });
       },
     },
   },

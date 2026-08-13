@@ -25,8 +25,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   // Network-first for navigations (HTML) with offline fallback.
-  // NEVER cache an error response as the app shell — doing that once made the
-  // "This page didn't load" HTML stick around and replay on every launch.
+  // Never cache an error response as the app shell.
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
