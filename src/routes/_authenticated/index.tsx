@@ -11,7 +11,7 @@ import {
   ArrowRight, ShieldCheck, ScrollText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useSiteSettings } from "@/lib/site-settings";
+import { useSiteSettings, openSupport } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
 import { SideMenu, type SideMenuAction } from "@/components/SideMenu";
 import { SupportCenter, type SupportSection } from "@/components/SupportCenter";
