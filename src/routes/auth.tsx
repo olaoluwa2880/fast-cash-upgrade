@@ -183,6 +183,16 @@ function AuthPage() {
       return setError("Could not sign you in. Please try logging in again.");
     }
 
+    const { data: banned } = await supabase
+      .from("user_bans").select("user_id").eq("user_id", signIn.user.id).maybeSingle();
+    if (banned) {
+      await supabase.auth.signOut();
+      setSuspended(true);
+      setStep("login");
+      return setError(SUSPENDED_MSG);
+    }
+
+
     if (mode === "signup") {
       await supabase.from("profiles").upsert({
         id: signIn.user.id,
