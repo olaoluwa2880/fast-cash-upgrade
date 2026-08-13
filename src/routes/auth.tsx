@@ -29,7 +29,7 @@ const GOLD = "#D4AF37";
 const BG = "#0D0D0D";
 
 const SUSPENDED_MSG =
-  "Your account has been suspended for misconduct. Please contact support for assistance.";
+  "Your account has been suspended. Please contact support.";
 
 function AuthPage() {
   const navigate = useNavigate();
