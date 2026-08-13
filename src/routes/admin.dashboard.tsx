@@ -105,6 +105,8 @@ function Dashboard() {
         profile: { email: p.email, full_name: p.full_name },
       }));
     }
+    const { data: banRows } = await supabase.from("user_bans").select("user_id");
+    setBanned(new Set((banRows ?? []).map((b) => b.user_id)));
     setRows(data);
   }, [tab]);
 
