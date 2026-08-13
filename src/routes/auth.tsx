@@ -305,6 +305,7 @@ function AuthPage() {
     return (
       <Shell>
         <BrandMark subtitle="Welcome back to premium banking" />
+        {suspended && <SuspendedBanner />}
         <div
           className="rounded-3xl p-6 backdrop-blur-xl"
           style={{
@@ -423,6 +424,17 @@ const inputStyle: React.CSSProperties = { fontSize: 16, scrollMarginTop: 120, sc
 const primaryBtn =
   "w-full font-semibold py-3 rounded-xl transition-all text-black shadow-lg " +
   "hover:brightness-110 active:scale-[0.98] bg-gradient-to-r from-[#D4AF37] to-[#B8912E] shadow-[#D4AF37]/30";
+
+function SuspendedBanner() {
+  return (
+    <div className="mb-4 rounded-2xl p-4 text-center" style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
+      <p className="text-sm font-bold text-red-300">Account suspended</p>
+      <p className="text-xs text-red-200/80 mt-1">
+        Your FastCredit account has been suspended for misconduct. Please contact support to have it reviewed and unlocked.
+      </p>
+    </div>
+  );
+}
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
