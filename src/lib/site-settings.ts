@@ -61,14 +61,42 @@ export function useSiteSettings(): SiteSettings {
   return state;
 }
 
+export const SUPPORT_KINDS = [
+  "live_chat",
+  "telegram",
+  "whatsapp",
+  "gmail",
+  "email",
+  "phone",
+  "sms",
+  "facebook",
+  "instagram",
+  "twitter",
+  "discord",
+  "website",
+  "other",
+] as const;
+export type SupportKind = (typeof SUPPORT_KINDS)[number];
+
 export function supportHref(row: SupportRow): string {
-  const v = row.value.trim();
-  if (/^https?:\/\//i.test(v) || v.startsWith("mailto:") || v.startsWith("tel:")) return v;
+  const v = (row.value ?? "").trim();
+  if (!v) return "";
+  if (/^(https?:|mailto:|tel:|sms:)/i.test(v)) return v;
+  const digits = v.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  const handle = v.replace(/^@/, "");
   switch (row.kind) {
-    case "telegram": return `https://t.me/${v.replace(/^@/, "")}`;
-    case "whatsapp": return `https://wa.me/${v.replace(/[^\d]/g, "")}`;
-    case "email":    return `mailto:${v}`;
-    case "phone":    return `tel:${v.replace(/\s+/g, "")}`;
-    default:         return v;
+    case "live_chat": return "";
+    case "telegram":  return `https://t.me/${handle}`;
+    case "whatsapp":  return `https://wa.me/${digits}`;
+    case "gmail":
+    case "email":     return `mailto:${v}`;
+    case "phone":     return `tel:${v.replace(/\s+/g, "")}`;
+    case "sms":       return `sms:${v.replace(/\s+/g, "")}`;
+    case "facebook":  return `https://facebook.com/${handle}`;
+    case "instagram": return `https://instagram.com/${handle}`;
+    case "twitter":   return `https://x.com/${handle}`;
+    case "discord":   return handle.startsWith("discord") ? `https://${handle}` : `https://discord.gg/${handle}`;
+    case "website":   return `https://${v.replace(/^\/+/, "")}`;
+    default:          return /\S+@\S+\.\S+/.test(v) ? `mailto:${v}` : `https://${v}`;
   }
 }
