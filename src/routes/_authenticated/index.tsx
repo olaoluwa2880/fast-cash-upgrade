@@ -11,7 +11,7 @@ import {
   ArrowRight, ShieldCheck, ScrollText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useSiteSettings } from "@/lib/site-settings";
+import { useSiteSettings, openSupport } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
 import { SideMenu, type SideMenuAction } from "@/components/SideMenu";
 import { SupportCenter, type SupportSection } from "@/components/SupportCenter";
@@ -2151,6 +2151,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           setOpenMenu(false);
           if (a === "logout") { handleLogout(); return; }
           if (a === "profile" || a === "settings") { setOpenProfile(true); return; }
+          if (a === "telegram") { openSupport("https://t.me/fastcredit21"); return; }
           setSupportSection(a === "support" ? "home" : a);
         }}
       />
