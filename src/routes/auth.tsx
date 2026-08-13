@@ -50,8 +50,10 @@ function AuthPage() {
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("suspended=1")) {
       setSuspended(true);
+      setStep("login");
       setError(SUSPENDED_MSG);
     }
+
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return;
       const { data: ban } = await supabase
