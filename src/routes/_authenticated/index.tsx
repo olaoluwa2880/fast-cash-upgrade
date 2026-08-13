@@ -2151,12 +2151,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
           setOpenMenu(false);
           if (a === "logout") { handleLogout(); return; }
           if (a === "profile" || a === "settings") { setOpenProfile(true); return; }
-          setSupportSection("live");
+          setSupportSection(a === "support" ? "home" : a);
         }}
       />
 
       {supportSection && (
         <SupportCenter
+          section={supportSection}
           onClose={() => setSupportSection(null)}
         />
       )}
