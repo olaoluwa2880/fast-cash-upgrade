@@ -29,7 +29,7 @@ const GOLD = "#D4AF37";
 const BG = "#0D0D0D";
 
 const SUSPENDED_MSG =
-  "Your account has been suspended for misconduct. Please contact support for assistance.";
+  "Your account has been suspended. Please contact support.";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -432,7 +432,7 @@ function SuspendedBanner() {
     <div className="mb-4 rounded-2xl p-4 text-center" style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
       <p className="text-sm font-bold text-red-300">Account suspended</p>
       <p className="text-xs text-red-200/80 mt-1">
-        Your FastCredit account has been suspended for misconduct. Please contact support to have it reviewed and unlocked.
+        Your account has been suspended. Please contact support.
       </p>
     </div>
   );

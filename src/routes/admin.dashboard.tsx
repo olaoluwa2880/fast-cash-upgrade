@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Users, UserCheck, Clock, Wallet, CheckCircle2, XCircle, Ban, Crown, Search, Check, X, ShieldOff,
+  Users, UserCheck, Clock, Wallet, CheckCircle2, XCircle, Ban, Crown, Search, Check, X, ShieldOff, ShieldCheck,
 } from "lucide-react";
 import { AdminLayout, useAdmin } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +55,7 @@ function Dashboard() {
   const [status, setStatus] = useState<StatusFilter>("pending");
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
+  const [banned, setBanned] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -104,6 +105,8 @@ function Dashboard() {
         profile: { email: p.email, full_name: p.full_name },
       }));
     }
+    const { data: banRows } = await supabase.from("user_bans").select("user_id");
+    setBanned(new Set((banRows ?? []).map((b) => b.user_id)));
     setRows(data);
   }, [tab]);
 
@@ -224,14 +227,16 @@ function Dashboard() {
   }
 
 
-  async function banUser(userId: string) {
+  async function setBan(userId: string, ban: boolean) {
+    if (ban && !window.confirm("Ban this user? They will lose access to their account immediately.")) return;
     setBusy(userId);
-    const { data: existing } = await supabase.from("user_bans").select("user_id").eq("user_id", userId).maybeSingle();
-    if (existing) {
-      await supabase.from("user_bans").delete().eq("user_id", userId);
-    } else {
+    if (ban) {
       const { data: u } = await supabase.auth.getUser();
       await supabase.from("user_bans").upsert({ user_id: userId, banned_by: u.user?.id ?? null, reason: "suspended by admin" }, { onConflict: "user_id" });
+      await notify(userId, "Account suspended", "Your account has been suspended. Please contact support.", "error");
+    } else {
+      await supabase.from("user_bans").delete().eq("user_id", userId);
+      await notify(userId, "Account restored", "Your account has been unsuspended. You can sign in again.", "success");
     }
     setBusy(null);
     await Promise.all([load(), refresh()]);
@@ -314,6 +319,9 @@ function Dashboard() {
                   {r.profile?.full_name || r.profile?.email || "Unknown user"}
                 </div>
                 <div className="text-xs text-slate-500 truncate">{r.profile?.email}</div>
+                {banned.has(r.user_id) && (
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-600">Banned</span>
+                )}
                 {r.wallet_address && (
                   <div className="text-xs text-slate-500 mt-1 font-mono truncate">{r.wallet_address}</div>
                 )}
@@ -368,13 +376,23 @@ function Dashboard() {
 
             <div className="flex gap-2 mt-3 sticky bottom-2 z-10">
               {tab === "users" ? (
-                <button
-                  disabled={busy === r.user_id}
-                  onClick={() => banUser(r.user_id)}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-red-500 text-white text-sm font-semibold disabled:opacity-50"
-                >
-                  <ShieldOff className="h-4 w-4" /> Ban user
-                </button>
+                banned.has(r.user_id) ? (
+                  <button
+                    disabled={busy === r.user_id}
+                    onClick={() => setBan(r.user_id, false)}
+                    className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    <ShieldCheck className="h-4 w-4" /> Unban user
+                  </button>
+                ) : (
+                  <button
+                    disabled={busy === r.user_id}
+                    onClick={() => setBan(r.user_id, true)}
+                    className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-red-500 text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    <ShieldOff className="h-4 w-4" /> Ban user
+                  </button>
+                )
               ) : r.status === "pending" ? (
                 <>
                   <button
