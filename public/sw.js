@@ -1,6 +1,6 @@
 // Minimal service worker to enable PWA installability.
 // Network-first for navigation to avoid stale HTML; passthrough otherwise.
-const CACHE = "fastcredit-v1";
+const CACHE = "fastcredit-v3";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -24,19 +24,27 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for navigations (HTML) with offline fallback
+  // Network-first for navigations (HTML) with offline fallback.
+  // NEVER cache an error response as the app shell — doing that once made the
+  // "This page didn't load" HTML stick around and replay on every launch.
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put("/", copy)).catch(() => {});
-          return res;
+        .then(async (res) => {
+          if (res && res.ok && (res.headers.get("content-type") || "").includes("text/html")) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put("/", copy)).catch(() => {});
+            return res;
+          }
+          // Bad/error HTML: prefer the last known-good shell instead of showing it.
+          const cached = await caches.match("/");
+          return cached || res;
         })
         .catch(async () => (await caches.match("/")) || Response.error()),
     );
     return;
   }
+
 
   // Cache-first for static app assets
   event.respondWith(

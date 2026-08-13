@@ -28,6 +28,13 @@ export function registerServiceWorker() {
   }
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        // Force an update check so users stuck on an old worker (which could have
+        // cached an error page as the app shell) pick up the fixed one immediately.
+        reg.update().catch(() => {});
+      })
+      .catch(() => {});
   });
 }
