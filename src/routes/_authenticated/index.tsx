@@ -2143,6 +2143,27 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
 
 
+      <SideMenu
+        open={openMenu}
+        onClose={() => setOpenMenu(false)}
+        name={userProfile.name || userProfile.username || "FastCredit user"}
+        subtitle={userProfile.email || `ID · ${shortId}`}
+        onSelect={(a: SideMenuAction) => {
+          setOpenMenu(false);
+          if (a === "logout") { handleLogout(); return; }
+          if (a === "profile" || a === "settings") { setOpenProfile(true); return; }
+          setSupportSection(a === "support" ? "home" : a);
+        }}
+      />
+
+      {supportSection && (
+        <SupportCenter
+          section={supportSection}
+          onSection={setSupportSection}
+          onClose={() => setSupportSection(null)}
+        />
+      )}
+
       {openCategory && (
         <CategoryModal
           categoryKey={openCategory}
