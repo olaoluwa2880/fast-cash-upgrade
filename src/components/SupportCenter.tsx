@@ -142,24 +142,24 @@ function Faq() {
   return (
     <div className="h-full overflow-y-auto pb-6">
       <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A8A8A]" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search help topics"
-          className="w-full rounded-2xl border border-border bg-card py-3 pl-10 pr-3 text-sm outline-none focus:border-primary/50"
+          className="w-full rounded-2xl border border-[#D4AF37]/25 bg-[#141414] py-3 pl-10 pr-3 text-sm text-[#EDEDED] placeholder:text-[#8A8A8A] outline-none focus:border-[#D4AF37]/60"
         />
       </div>
       <div className="space-y-2">
-        {list.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No results. Try Live Chat.</p>}
+        {list.length === 0 && <p className="py-8 text-center text-sm text-[#8A8A8A]">No results. Try Live Chat.</p>}
         {list.map((f, i) => (
-          <div key={f.q} className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div key={f.q} className="overflow-hidden rounded-2xl border border-white/10 bg-[#141414]">
             <button onClick={() => setOpen(open === i ? null : i)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
-              <HelpCircle className="h-4 w-4 shrink-0 text-primary" />
+              <HelpCircle className="h-4 w-4 shrink-0 text-[#D4AF37]" />
               <span className="flex-1 text-sm font-semibold">{f.q}</span>
-              <ChevronRight className={`h-4 w-4 shrink-0 text-muted-foreground transition ${open === i ? "rotate-90" : ""}`} />
+              <ChevronRight className={`h-4 w-4 shrink-0 text-[#8A8A8A] transition ${open === i ? "rotate-90" : ""}`} />
             </button>
-            {open === i && <p className="px-4 pb-4 text-[13px] leading-relaxed text-muted-foreground">{f.a}</p>}
+            {open === i && <p className="px-4 pb-4 text-[13px] leading-relaxed text-[#8A8A8A]">{f.a}</p>}
           </div>
         ))}
       </div>
@@ -173,19 +173,19 @@ function Contact({ onLive }: { onLive: () => void }) {
 
   return (
     <div className="h-full space-y-2 overflow-y-auto pb-6">
-      <button onClick={onLive} className="flex w-full items-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-4 text-left active:scale-[.99]">
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+      <button onClick={onLive} className="flex w-full items-center gap-3 rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-4 py-4 text-left active:scale-[.99]">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#D4AF37] text-[#0D0D0D]">
           <MessageCircle className="h-4 w-4" />
         </div>
         <div className="min-w-0">
           <p className="text-sm font-bold">Live Chat</p>
-          <p className="text-[11px] text-muted-foreground">Instant answers from our assistant</p>
+          <p className="text-[11px] text-[#8A8A8A]">Instant answers from our assistant</p>
         </div>
       </button>
 
-      {!loaded && <p className="py-6 text-center text-xs text-muted-foreground">Loading contact options...</p>}
+      {!loaded && <p className="py-6 text-center text-xs text-[#8A8A8A]">Loading contact options...</p>}
       {loaded && rows.length === 0 && (
-        <p className="py-6 text-center text-xs text-muted-foreground">No other contact methods available right now.</p>
+        <p className="py-6 text-center text-xs text-[#8A8A8A]">No other contact methods available right now.</p>
       )}
       {rows.map((r: SupportRow) => {
         const Icon = kindIcon(r.kind);
@@ -193,16 +193,16 @@ function Contact({ onLive }: { onLive: () => void }) {
           <button
             key={r.id}
             onClick={() => openSupport(supportHref(r))}
-            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 text-left active:scale-[.99]"
+            className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-[#141414] px-4 py-4 text-left active:scale-[.99]"
           >
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#D4AF37]/15 text-[#D4AF37]">
               <Icon className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold">{r.label}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{r.value}</p>
+              <p className="truncate text-[11px] text-[#8A8A8A]">{r.value}</p>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#8A8A8A]" />
           </button>
         );
       })}
@@ -223,29 +223,29 @@ function Home({ go }: { go: (s: SupportSection) => void }) {
       {telegram && (
         <button
           onClick={() => openSupport(supportHref(telegram))}
-          className="flex w-full items-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-4 text-left active:scale-[.99]"
+          className="flex w-full items-center gap-3 rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 px-4 py-4 text-left active:scale-[.99]"
         >
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#D4AF37] text-[#0D0D0D]">
             <Send className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">{telegram.label || "Telegram Support"}</p>
-            <p className="truncate text-[11px] text-muted-foreground">Chat with an agent on Telegram</p>
+            <p className="truncate text-[11px] text-[#8A8A8A]">Chat with an agent on Telegram</p>
           </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <ChevronRight className="h-4 w-4 shrink-0 text-[#8A8A8A]" />
         </button>
       )}
       {items.map((it) => (
         <button key={it.key} onClick={() => go(it.key)}
-          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 text-left active:scale-[.99]">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+          className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-[#141414] px-4 py-4 text-left active:scale-[.99]">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#D4AF37] text-[#0D0D0D]">
             <it.icon className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">{it.label}</p>
-            <p className="text-[11px] text-muted-foreground">{it.desc}</p>
+            <p className="text-[11px] text-[#8A8A8A]">{it.desc}</p>
           </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <ChevronRight className="h-4 w-4 shrink-0 text-[#8A8A8A]" />
         </button>
       ))}
     </div>
@@ -269,21 +269,21 @@ export function SupportCenter({ section = "home", onClose }: {
   const meta = TITLES[current];
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-background text-foreground">
-      <header className="mx-auto flex w-full max-w-[720px] shrink-0 items-center gap-3 border-b border-border px-4 py-4">
+    <div className="fixed inset-0 z-[70] flex flex-col bg-[#0D0D0D] text-[#EDEDED]">
+      <header className="mx-auto flex w-full max-w-[720px] shrink-0 items-center gap-3 border-b border-[#D4AF37]/20 px-4 py-4">
         <button
           onClick={() => (current === "home" ? onClose() : setCurrent("home"))}
           aria-label="Back"
-          className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card"
+          className="grid h-9 w-9 place-items-center rounded-full border border-[#D4AF37]/30 bg-[#141414]"
         >
-          <ChevronLeft className="h-4 w-4 text-primary" />
+          <ChevronLeft className="h-4 w-4 text-[#D4AF37]" />
         </button>
         <div className="flex-1 text-center">
           <p className="font-black">{meta.title}</p>
-          <p className="text-[11px] text-muted-foreground">{meta.sub}</p>
+          <p className="text-[11px] text-[#8A8A8A]">{meta.sub}</p>
         </div>
-        <button onClick={onClose} aria-label="Close support" className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card">
-          <X className="h-4 w-4" />
+        <button onClick={onClose} aria-label="Close support" className="grid h-9 w-9 place-items-center rounded-full border border-[#D4AF37]/30 bg-[#141414]">
+          <X className="h-4 w-4 text-[#D4AF37]" />
         </button>
       </header>
       <main className="mx-auto min-h-0 w-full max-w-[720px] flex-1 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
