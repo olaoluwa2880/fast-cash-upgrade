@@ -284,34 +284,23 @@ export function SupportCenter({ section, onSection, onClose }: {
     tickets: "My Support Tickets",
   };
 
-  const historyEntry = useRef(false);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
-  // Keep Support on the dashboard URL. The extra same-URL history entry catches
-  // Android/iOS Back so it closes this overlay instead of leaving the account and
-  // requesting a stale/nonexistent Support URL from the server.
+  // Pure in-app overlay: never touch window.history here. Writing our own entries
+  // into TanStack Router's history was what pushed the app into a hard reload and
+  // the "This page didn't load" screen. Back is absorbed without navigating.
   useEffect(() => {
-    const marker = { ...(window.history.state ?? {}), fastcreditSupportOverlay: true };
-    window.history.pushState(marker, "", window.location.href);
-    historyEntry.current = true;
-
-    const handleBack = () => {
-      historyEntry.current = false;
+    const handleBack = (e: PopStateEvent) => {
+      e.stopImmediatePropagation?.();
       closeRef.current();
     };
     window.addEventListener("popstate", handleBack);
     return () => window.removeEventListener("popstate", handleBack);
   }, []);
 
-  const goDashboard = () => {
-    if (historyEntry.current && window.history.state?.fastcreditSupportOverlay) {
-      historyEntry.current = false;
-      window.history.back();
-      return;
-    }
-    onClose();
-  };
+  const goDashboard = () => onClose();
+
 
 
   return (
