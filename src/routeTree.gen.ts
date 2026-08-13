@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as ApiSupportChatRouteImport } from './routes/api/support-chat'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSupportSettingsRouteImport } from './routes/admin.support-settings'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
@@ -47,6 +48,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiSupportChatRoute = ApiSupportChatRouteImport.update({
+  id: '/api/support-chat',
+  path: '/api/support-chat',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/admin/users',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/support-chat': typeof ApiSupportChatRoute
   '/admin/': typeof AdminIndexRoute
   '/legal/$slug': typeof AuthenticatedLegalSlugRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/support-chat': typeof ApiSupportChatRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin': typeof AdminIndexRoute
   '/legal/$slug': typeof AuthenticatedLegalSlugRoute
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/support-settings': typeof AdminSupportSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/support-chat': typeof ApiSupportChatRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_authenticated/legal/$slug': typeof AuthenticatedLegalSlugRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/support-settings'
     | '/admin/users'
+    | '/api/support-chat'
     | '/admin/'
     | '/legal/$slug'
     | '/api/public/firebase-config'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/support-settings'
     | '/admin/users'
+    | '/api/support-chat'
     | '/'
     | '/admin'
     | '/legal/$slug'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/support-settings'
     | '/admin/users'
+    | '/api/support-chat'
     | '/_authenticated/'
     | '/admin/'
     | '/_authenticated/legal/$slug'
@@ -263,6 +275,7 @@ export interface RootRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSupportSettingsRoute: typeof AdminSupportSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  ApiSupportChatRoute: typeof ApiSupportChatRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/support-chat': {
+      id: '/api/support-chat'
+      path: '/api/support-chat'
+      fullPath: '/api/support-chat'
+      preLoaderRoute: typeof ApiSupportChatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
       id: '/admin/users'
@@ -435,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   AdminSupportSettingsRoute: AdminSupportSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
+  ApiSupportChatRoute: ApiSupportChatRoute,
   AdminIndexRoute: AdminIndexRoute,
   ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,

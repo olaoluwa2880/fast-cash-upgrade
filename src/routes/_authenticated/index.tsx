@@ -13,6 +13,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, supportHref } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
+import { SideMenu, type SideMenuAction } from "@/components/SideMenu";
+import { SupportCenter, type SupportSection } from "@/components/SupportCenter";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { COUNTRIES, BANKS_BY_COUNTRY, type Bank } from "@/lib/banks-data";
@@ -291,6 +293,8 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [openProfile, setOpenProfile] = useState(false);
+  const [openMenu, setOpenMenu] = useState(false);
+  const [supportSection, setSupportSection] = useState<SupportSection | null>(null);
   const { push } = usePush();
   const showToast = (msg: string, kind: "info" | "success" | "error" | "wallet" | "reward" | "bonus" = "info") => {
     push({ title: msg, kind });
@@ -929,7 +933,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
     { icon: UserPlus, label: "Referral", onClick: () => setOpenProfile(true) },
     { icon: Users, label: "Community", onClick: () => setOpenCategory("community") },
     { icon: Clock, label: "History", onClick: () => setOpenCategory("history") },
-    { icon: LifeBuoy, label: "Support", onClick: () => setOpenCategory("support") },
+    { icon: LifeBuoy, label: "Support", onClick: () => setSupportSection("home") },
     { icon: ScrollText, label: "Legal", onClick: () => navigate({ to: "/legal" }) },
     { icon: SettingsIcon, label: "Settings", onClick: () => setOpenProfile(true) },
   ];
@@ -990,6 +994,15 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
             >
               <Bell className="h-4 w-4" />
               <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
+            </button>
+            <button
+              onClick={() => setOpenMenu(true)}
+              aria-label="Open menu"
+              className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 backdrop-blur gap-[3px] flex flex-col"
+            >
+              <span className="block h-[2px] w-4 rounded-full bg-[#D4AF37]" />
+              <span className="block h-[2px] w-4 rounded-full bg-[#D4AF37]" />
+              <span className="block h-[2px] w-4 rounded-full bg-[#D4AF37]" />
             </button>
           </div>
         </div>
@@ -2129,6 +2142,27 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
 
 
+
+      <SideMenu
+        open={openMenu}
+        onClose={() => setOpenMenu(false)}
+        name={userProfile.name || userProfile.username || "FastCredit user"}
+        subtitle={userProfile.email || `ID · ${shortId}`}
+        onSelect={(a: SideMenuAction) => {
+          setOpenMenu(false);
+          if (a === "logout") { handleLogout(); return; }
+          if (a === "profile" || a === "settings") { setOpenProfile(true); return; }
+          setSupportSection(a === "support" ? "home" : a);
+        }}
+      />
+
+      {supportSection && (
+        <SupportCenter
+          section={supportSection}
+          onSection={setSupportSection}
+          onClose={() => setSupportSection(null)}
+        />
+      )}
 
       {openCategory && (
         <CategoryModal
