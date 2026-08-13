@@ -28,6 +28,9 @@ type Step = "register" | "creating" | "otp" | "verifying" | "login";
 const GOLD = "#D4AF37";
 const BG = "#0D0D0D";
 
+const SUSPENDED_MSG =
+  "Your account has been suspended for misconduct. Please contact support for assistance.";
+
 function AuthPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("register");
@@ -40,12 +43,14 @@ function AuthPage() {
   const [cooldown, setCooldown] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [mode, setMode] = useState<"signup" | "login">("signup");
+  const [suspended, setSuspended] = useState(false);
   const requestOtpFn = useServerFn(requestOtp);
   const verifyOtpFn = useServerFn(verifyOtp);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("suspended=1")) {
-      setError("Your account has been suspended. Please contact support for assistance.");
+      setSuspended(true);
+      setError(SUSPENDED_MSG);
     }
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return;
@@ -53,7 +58,8 @@ function AuthPage() {
         .from("user_bans").select("user_id").eq("user_id", data.session.user.id).maybeSingle();
       if (ban) {
         await supabase.auth.signOut();
-        setError("Your account has been suspended. Please contact support for assistance.");
+        setSuspended(true);
+      setError(SUSPENDED_MSG);
         return;
       }
       const { data: isAdmin } = await supabase.rpc("has_role", {
@@ -138,7 +144,7 @@ function AuthPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setError(null); setInfo(null);
+    setError(null); setInfo(null); setSuspended(false);
     const email = form.email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Enter a valid email address.");
     if (!form.password) return setError("Enter your password.");
@@ -152,7 +158,7 @@ function AuthPage() {
     const { data: ban } = await supabase
       .from("user_bans").select("user_id").eq("user_id", data.user.id).maybeSingle();
     await supabase.auth.signOut();
-    if (ban) return setError("Your account has been suspended. Please contact support for assistance.");
+    if (ban) { setSuspended(true); return setError(SUSPENDED_MSG); }
 
     setMode("login");
     try {
