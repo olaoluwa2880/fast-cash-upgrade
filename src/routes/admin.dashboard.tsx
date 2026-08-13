@@ -227,14 +227,16 @@ function Dashboard() {
   }
 
 
-  async function banUser(userId: string) {
+  async function setBan(userId: string, ban: boolean) {
+    if (ban && !window.confirm("Ban this user? They will lose access to their account immediately.")) return;
     setBusy(userId);
-    const { data: existing } = await supabase.from("user_bans").select("user_id").eq("user_id", userId).maybeSingle();
-    if (existing) {
-      await supabase.from("user_bans").delete().eq("user_id", userId);
-    } else {
+    if (ban) {
       const { data: u } = await supabase.auth.getUser();
       await supabase.from("user_bans").upsert({ user_id: userId, banned_by: u.user?.id ?? null, reason: "suspended by admin" }, { onConflict: "user_id" });
+      await notify(userId, "Account suspended", "Your account has been suspended. Please contact support.", "error");
+    } else {
+      await supabase.from("user_bans").delete().eq("user_id", userId);
+      await notify(userId, "Account restored", "Your account has been unsuspended. You can sign in again.", "success");
     }
     setBusy(null);
     await Promise.all([load(), refresh()]);
