@@ -3,7 +3,7 @@ import { X, Settings, User, LogOut, MessageCircle } from "lucide-react";
 export type SideMenuAction =
   | "live" | "settings" | "profile" | "logout";
 
-const ITEMS: { key: SideMenuAction; label: string; icon: typeof LifeBuoy; desc: string }[] = [
+const ITEMS: { key: SideMenuAction; label: string; icon: typeof MessageCircle; desc: string }[] = [
   { key: "live", label: "Live Support", icon: MessageCircle, desc: "Chat with our AI assistant" },
   { key: "settings", label: "Settings", icon: Settings, desc: "App preferences" },
   { key: "profile", label: "Profile", icon: User, desc: "Your account details" },
