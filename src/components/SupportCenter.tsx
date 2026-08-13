@@ -19,13 +19,30 @@ const FAQS: { q: string; a: string }[] = [
 ];
 
 function telegramRow(support: SupportRow[]): SupportRow | null {
-  return support.find((s) => s.kind === "telegram") ?? null;
+  const tg = support.find((s) => s.kind === "telegram" && supportHref(s));
+  if (tg) return tg;
+  return support.find((s) => s.kind !== "live_chat" && supportHref(s)) ?? null;
+}
+
+export function kindIcon(kind: string) {
+  switch (kind) {
+    case "telegram": return Send;
+    case "whatsapp": return MessageCircle;
+    case "gmail":
+    case "email": return Mail;
+    case "phone":
+    case "sms": return Phone;
+    case "live_chat": return MessageCircle;
+    default: return ExternalLink;
+  }
 }
 
 export function TelegramButton({ className = "" }: { className?: string }) {
   const { support } = useSiteSettings();
   const row = telegramRow(support);
-  const href = row ? supportHref(row) : "https://t.me/fastcreditglobal";
+  const href = row ? supportHref(row) : "";
+  if (!href) return null;
+  const label = row?.kind === "telegram" ? "Contact Telegram Support" : `Contact ${row?.label ?? "Support"}`;
   return (
     <a
       href={href}
@@ -34,7 +51,7 @@ export function TelegramButton({ className = "" }: { className?: string }) {
       className={`flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#F4CF5B] to-[#D4AF37] px-4 py-3 font-black text-[#1a1405] active:scale-[.98] transition ${className}`}
     >
       <Send className="h-4 w-4" />
-      Contact Telegram Support
+      {label}
     </a>
   );
 }
