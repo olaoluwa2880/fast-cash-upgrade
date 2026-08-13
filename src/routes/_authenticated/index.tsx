@@ -995,6 +995,15 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
               <Bell className="h-4 w-4" />
               <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
             </button>
+            <button
+              onClick={() => setOpenMenu(true)}
+              aria-label="Open menu"
+              className="h-9 w-9 grid place-items-center rounded-full bg-white/[0.06] border border-white/10 backdrop-blur gap-[3px] flex flex-col"
+            >
+              <span className="block h-[2px] w-4 rounded-full bg-[#D4AF37]" />
+              <span className="block h-[2px] w-4 rounded-full bg-[#D4AF37]" />
+              <span className="block h-[2px] w-4 rounded-full bg-[#D4AF37]" />
+            </button>
           </div>
         </div>
 
