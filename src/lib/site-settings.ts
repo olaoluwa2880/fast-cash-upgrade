@@ -124,7 +124,19 @@ export function openSupport(href: string) {
     window.location.href = href;
     return;
   }
-  const win = window.open(href, "_blank", "noopener,noreferrer");
-  if (!win) window.location.href = href; // popup blocked / standalone PWA
+  if (!/^https:\/\//i.test(href)) return;
+
+  // Do not use window.open(..., "noopener") and then inspect its return value:
+  // browsers intentionally return null for noopener, which previously made us
+  // replace the FastCredit dashboard with the external support URL as a false
+  // "popup blocked" fallback. A temporary anchor preserves the account screen
+  // while handing Telegram, WhatsApp and web contacts to the browser/app.
+  const link = document.createElement("a");
+  link.href = href;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer external";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
