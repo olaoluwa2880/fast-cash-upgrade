@@ -285,6 +285,8 @@ export function SupportCenter({ section, onSection, onClose }: {
   };
 
   const historyEntry = useRef(false);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
 
   // Keep Support on the dashboard URL. The extra same-URL history entry catches
   // Android/iOS Back so it closes this overlay instead of leaving the account and
@@ -296,11 +298,11 @@ export function SupportCenter({ section, onSection, onClose }: {
 
     const handleBack = () => {
       historyEntry.current = false;
-      onClose();
+      closeRef.current();
     };
     window.addEventListener("popstate", handleBack);
     return () => window.removeEventListener("popstate", handleBack);
-  }, [onClose]);
+  }, []);
 
   const goDashboard = () => {
     if (historyEntry.current && window.history.state?.fastcreditSupportOverlay) {
