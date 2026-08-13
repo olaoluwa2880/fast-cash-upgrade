@@ -200,6 +200,8 @@ function Contact({ onLive }: { onLive: () => void }) {
 }
 
 function Home({ go }: { go: (s: SupportSection) => void }) {
+  const { support } = useSiteSettings();
+  const telegram = support.find((r) => r.kind === "telegram" && supportHref(r));
   const items: { key: SupportSection; label: string; desc: string; icon: typeof MessageCircle }[] = [
     { key: "live", label: "Live Chat", desc: "Chat with our support assistant", icon: MessageCircle },
     { key: "faq", label: "FAQ", desc: "Answers to common questions", icon: HelpCircle },
@@ -207,6 +209,21 @@ function Home({ go }: { go: (s: SupportSection) => void }) {
   ];
   return (
     <div className="h-full space-y-2 overflow-y-auto pb-6">
+      {telegram && (
+        <button
+          onClick={() => openSupport(supportHref(telegram))}
+          className="flex w-full items-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-4 text-left active:scale-[.99]"
+        >
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <Send className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">{telegram.label || "Telegram Support"}</p>
+            <p className="truncate text-[11px] text-muted-foreground">Chat with an agent on Telegram</p>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </button>
+      )}
       {items.map((it) => (
         <button key={it.key} onClick={() => go(it.key)}
           className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 text-left active:scale-[.99]">
@@ -223,6 +240,7 @@ function Home({ go }: { go: (s: SupportSection) => void }) {
     </div>
   );
 }
+
 
 const TITLES: Record<SupportSection, { title: string; sub: string }> = {
   home: { title: "FastCredit Support", sub: "We're here to help" },
