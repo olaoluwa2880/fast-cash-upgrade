@@ -284,10 +284,32 @@ export function SupportCenter({ section, onSection, onClose }: {
     tickets: "My Support Tickets",
   };
 
-  // No history manipulation: the Support Center is an in-app overlay, so closing
-  // it simply returns to the dashboard without any navigation (which previously
-  // could land on an error page in installed/mobile browsers).
-  const goDashboard = () => onClose();
+  const historyEntry = useRef(false);
+
+  // Keep Support on the dashboard URL. The extra same-URL history entry catches
+  // Android/iOS Back so it closes this overlay instead of leaving the account and
+  // requesting a stale/nonexistent Support URL from the server.
+  useEffect(() => {
+    const marker = { ...(window.history.state ?? {}), fastcreditSupportOverlay: true };
+    window.history.pushState(marker, "", window.location.href);
+    historyEntry.current = true;
+
+    const handleBack = () => {
+      historyEntry.current = false;
+      onClose();
+    };
+    window.addEventListener("popstate", handleBack);
+    return () => window.removeEventListener("popstate", handleBack);
+  }, [onClose]);
+
+  const goDashboard = () => {
+    if (historyEntry.current && window.history.state?.fastcreditSupportOverlay) {
+      historyEntry.current = false;
+      window.history.back();
+      return;
+    }
+    onClose();
+  };
 
 
   return (
