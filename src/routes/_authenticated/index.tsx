@@ -1814,6 +1814,14 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
                   </div>
 
                   <label className="block">
+                    <span className={`text-[11px] font-bold ${softText}`}>Bank name</span>
+                    <input value={wdBank} onChange={e => setWdBank(e.target.value)}
+                      placeholder="e.g. First Bank of Nigeria"
+                      className={`mt-1 w-full rounded-xl border px-3 py-3 text-sm outline-none focus:border-[#D4AF37] ${isDark ? "bg-white/5 border-white/10 text-white" : "bg-white border-black/10"}`} />
+                    <span className={`mt-1 block text-[10px] ${softText}`}>Edit if your bank is not in our list</span>
+                  </label>
+
+                  <label className="block">
                     <span className={`text-[11px] font-bold ${softText}`}>Account number</span>
                     <input value={wdAccountNumber} onChange={e => setWdAccountNumber(e.target.value.replace(/[^0-9]/g, ""))}
                       inputMode="numeric" placeholder="10-digit account number"
@@ -1837,7 +1845,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
 
                   <button
                     onClick={() => setWdStep("review")}
-                    disabled={!wdAccountNumber || !wdAccountName || !wdAmount || parseFloat(wdAmount) <= 0}
+                    disabled={!wdBank || !wdAccountNumber || !wdAccountName || !wdAmount || parseFloat(wdAmount) <= 0}
                     className="mt-2 w-full rounded-full bg-[#D4AF37] disabled:bg-[#D4AF37]/40 text-white py-3.5 font-black text-sm active:scale-95"
                   >
                     Review withdrawal
