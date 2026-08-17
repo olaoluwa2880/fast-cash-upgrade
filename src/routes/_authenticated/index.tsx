@@ -876,8 +876,16 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         currency: localCurrency,
         local_amount: localAmount,
         wallet_address: wdMethod === "crypto" ? wdWalletAddress : null,
+        // Payout details so the admin can see exactly where to send funds.
+        method: wdMethod === "crypto" ? "Crypto" : "Bank transfer",
+        bank_name: wdMethod === "crypto" ? null : (wdBank || null),
+        account_name: wdMethod === "crypto" ? null : (wdAccountName || null),
+        account_number: wdMethod === "crypto" ? null : (wdAccountNumber || null),
+        country: wdMethod === "crypto" ? null : (countryInfo?.name ?? wdCountry ?? null),
+        network: wdMethod === "crypto" ? (wdCrypto ? `${wdCrypto.symbol} · ${wdCrypto.network}` : null) : null,
         status: "pending",
       });
+
       if (insErr) {
         // Roll back the reservation if we couldn't persist the request.
         await supabase.rpc("adjust_wallet_balance", { p_delta: amtUsd });
