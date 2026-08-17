@@ -124,7 +124,7 @@ function Dashboard() {
     return rows.filter((r) => {
       if (tab !== "users" && status !== "all" && r.status !== status) return false;
       if (!s) return true;
-      const hay = `${r.profile?.full_name ?? ""} ${r.profile?.email ?? ""} ${r.wallet_address ?? ""}`.toLowerCase();
+      const hay = `${r.profile?.full_name ?? ""} ${r.profile?.email ?? ""} ${r.wallet_address ?? ""} ${r.account_name ?? ""} ${r.account_number ?? ""} ${r.bank_name ?? ""}`.toLowerCase();
       return hay.includes(s);
     });
   }, [rows, q, status, tab]);
