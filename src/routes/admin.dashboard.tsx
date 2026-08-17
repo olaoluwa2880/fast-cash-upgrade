@@ -20,6 +20,13 @@ type Row = {
   amount?: number | string;
   currency?: string;
   wallet_address?: string | null;
+  bank_name?: string | null;
+  account_name?: string | null;
+  account_number?: string | null;
+  country?: string | null;
+  network?: string | null;
+  local_amount?: number | string | null;
+
   reference?: string | null;
   plan?: string | null;
   status?: "pending" | "approved" | "rejected";
@@ -117,7 +124,7 @@ function Dashboard() {
     return rows.filter((r) => {
       if (tab !== "users" && status !== "all" && r.status !== status) return false;
       if (!s) return true;
-      const hay = `${r.profile?.full_name ?? ""} ${r.profile?.email ?? ""} ${r.wallet_address ?? ""}`.toLowerCase();
+      const hay = `${r.profile?.full_name ?? ""} ${r.profile?.email ?? ""} ${r.wallet_address ?? ""} ${r.account_name ?? ""} ${r.account_number ?? ""} ${r.bank_name ?? ""}`.toLowerCase();
       return hay.includes(s);
     });
   }, [rows, q, status, tab]);
@@ -322,9 +329,44 @@ function Dashboard() {
                 {banned.has(r.user_id) && (
                   <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-600">Banned</span>
                 )}
-                {r.wallet_address && (
+                {tab === "withdrawals" && (r.bank_name || r.account_number || r.wallet_address) && (
+                  <div className="mt-2 rounded-xl bg-slate-50 border border-slate-200 p-2.5 space-y-1">
+                    <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">Payout details</div>
+                    {r.account_name && (
+                      <div className="text-xs text-slate-600">Account name: <span className="font-semibold text-slate-900">{r.account_name}</span></div>
+                    )}
+                    {r.account_number && (
+                      <div className="text-xs text-slate-600 flex items-center gap-2">
+                        <span>Account number:</span>
+                        <span className="font-mono font-semibold text-slate-900">{r.account_number}</span>
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard?.writeText(r.account_number!)}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700"
+                        >Copy</button>
+                      </div>
+                    )}
+                    {r.bank_name && (
+                      <div className="text-xs text-slate-600">Bank: <span className="font-semibold text-slate-900">{r.bank_name}</span></div>
+                    )}
+                    {r.country && (
+                      <div className="text-xs text-slate-600">Country: <span className="font-semibold text-slate-900">{r.country}</span></div>
+                    )}
+                    {r.network && (
+                      <div className="text-xs text-slate-600">Network: <span className="font-semibold text-slate-900">{r.network}</span></div>
+                    )}
+                    {r.wallet_address && (
+                      <div className="text-xs text-slate-600 break-all">Wallet: <span className="font-mono text-slate-900">{r.wallet_address}</span></div>
+                    )}
+                    {r.local_amount != null && (
+                      <div className="text-xs text-slate-600">Payout amount: <span className="font-semibold text-slate-900">{Number(r.local_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {r.currency ?? ""}</span></div>
+                    )}
+                  </div>
+                )}
+                {tab !== "withdrawals" && r.wallet_address && (
                   <div className="text-xs text-slate-500 mt-1 font-mono truncate">{r.wallet_address}</div>
                 )}
+
                 {r.plan && <div className="text-xs text-slate-600 mt-1">Plan: <span className="font-medium">{r.plan}</span></div>}
                 {r.method && <div className="text-xs text-slate-600 mt-1">Method: <span className="font-medium">{r.method}</span></div>}
                 {r.reference && <div className="text-xs text-slate-500 mt-1">Ref: {r.reference}</div>}
