@@ -20,6 +20,13 @@ type Row = {
   amount?: number | string;
   currency?: string;
   wallet_address?: string | null;
+  bank_name?: string | null;
+  account_name?: string | null;
+  account_number?: string | null;
+  country?: string | null;
+  network?: string | null;
+  local_amount?: number | string | null;
+
   reference?: string | null;
   plan?: string | null;
   status?: "pending" | "approved" | "rejected";
