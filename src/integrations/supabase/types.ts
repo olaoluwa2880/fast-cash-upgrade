@@ -544,11 +544,17 @@ export type Database = {
       }
       withdrawals: {
         Row: {
+          account_name: string | null
+          account_number: string | null
           amount: number
+          bank_name: string | null
+          country: string | null
           created_at: string
           currency: string
           id: string
           local_amount: number | null
+          method: string | null
+          network: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["request_status"]
@@ -557,11 +563,17 @@ export type Database = {
           wallet_address: string | null
         }
         Insert: {
+          account_name?: string | null
+          account_number?: string | null
           amount?: number
+          bank_name?: string | null
+          country?: string | null
           created_at?: string
           currency?: string
           id?: string
           local_amount?: number | null
+          method?: string | null
+          network?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -570,11 +582,17 @@ export type Database = {
           wallet_address?: string | null
         }
         Update: {
+          account_name?: string | null
+          account_number?: string | null
           amount?: number
+          bank_name?: string | null
+          country?: string | null
           created_at?: string
           currency?: string
           id?: string
           local_amount?: number | null
+          method?: string | null
+          network?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["request_status"]
