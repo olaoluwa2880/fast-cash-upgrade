@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Users, UserCheck, Clock, Wallet, CheckCircle2, XCircle, Ban, Crown, Search, Check, X, ShieldOff, ShieldCheck,
+  Building2, Bitcoin, Copy,
 } from "lucide-react";
 import { AdminLayout, useAdmin } from "@/components/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -329,37 +330,66 @@ function Dashboard() {
                 {banned.has(r.user_id) && (
                   <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-600">Banned</span>
                 )}
-                {tab === "withdrawals" && (r.bank_name || r.account_number || r.wallet_address) && (
-                  <div className="mt-2 rounded-xl bg-slate-50 border border-slate-200 p-2.5 space-y-1">
-                    <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">Payout details</div>
-                    {r.account_name && (
-                      <div className="text-xs text-slate-600">Account name: <span className="font-semibold text-slate-900">{r.account_name}</span></div>
+                {tab === "withdrawals" && (
+                  <div className="mt-2 rounded-xl bg-slate-50 border border-slate-200 p-2.5 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-wide">Payout details</div>
+                      {r.method && (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          r.method.toLowerCase().includes("crypto")
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}>
+                          {r.method.toLowerCase().includes("crypto") ? <Bitcoin className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                          {r.method}
+                        </span>
+                      )}
+                    </div>
+
+                    {r.method?.toLowerCase().includes("crypto") ? (
+                      <>
+                        {r.network && (
+                          <div className="text-xs text-slate-600">Coin / Network: <span className="font-semibold text-slate-900">{r.network}</span></div>
+                        )}
+                        {r.wallet_address && (
+                          <div className="text-xs text-slate-600 break-all flex items-start gap-2">
+                            <span className="shrink-0">Wallet:</span>
+                            <span className="font-mono text-slate-900 break-all">{r.wallet_address}</span>
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard?.writeText(r.wallet_address!)}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 shrink-0 flex items-center gap-1"
+                            ><Copy className="h-3 w-3" /> Copy</button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {r.bank_name && (
+                          <div className="text-xs text-slate-600">Bank: <span className="font-semibold text-slate-900">{r.bank_name}</span></div>
+                        )}
+                        {r.account_name && (
+                          <div className="text-xs text-slate-600">Account name: <span className="font-semibold text-slate-900">{r.account_name}</span></div>
+                        )}
+                        {r.account_number && (
+                          <div className="text-xs text-slate-600 flex items-center gap-2">
+                            <span>Account number:</span>
+                            <span className="font-mono font-semibold text-slate-900">{r.account_number}</span>
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard?.writeText(r.account_number!)}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 flex items-center gap-1"
+                            ><Copy className="h-3 w-3" /> Copy</button>
+                          </div>
+                        )}
+                        {r.country && (
+                          <div className="text-xs text-slate-600">Country: <span className="font-semibold text-slate-900">{r.country}</span></div>
+                        )}
+                      </>
                     )}
-                    {r.account_number && (
-                      <div className="text-xs text-slate-600 flex items-center gap-2">
-                        <span>Account number:</span>
-                        <span className="font-mono font-semibold text-slate-900">{r.account_number}</span>
-                        <button
-                          type="button"
-                          onClick={() => navigator.clipboard?.writeText(r.account_number!)}
-                          className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700"
-                        >Copy</button>
-                      </div>
-                    )}
-                    {r.bank_name && (
-                      <div className="text-xs text-slate-600">Bank: <span className="font-semibold text-slate-900">{r.bank_name}</span></div>
-                    )}
-                    {r.country && (
-                      <div className="text-xs text-slate-600">Country: <span className="font-semibold text-slate-900">{r.country}</span></div>
-                    )}
-                    {r.network && (
-                      <div className="text-xs text-slate-600">Network: <span className="font-semibold text-slate-900">{r.network}</span></div>
-                    )}
-                    {r.wallet_address && (
-                      <div className="text-xs text-slate-600 break-all">Wallet: <span className="font-mono text-slate-900">{r.wallet_address}</span></div>
-                    )}
+
                     {r.local_amount != null && (
-                      <div className="text-xs text-slate-600">Payout amount: <span className="font-semibold text-slate-900">{Number(r.local_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {r.currency ?? ""}</span></div>
+                      <div className="text-xs text-slate-600 pt-1 border-t border-slate-200">Payout amount: <span className="font-semibold text-slate-900">{Number(r.local_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {r.currency ?? ""}</span></div>
                     )}
                   </div>
                 )}
