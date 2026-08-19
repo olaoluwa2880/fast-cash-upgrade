@@ -388,6 +388,10 @@ function Dashboard() {
                       </>
                     )}
 
+                    {!r.method && !r.bank_name && !r.account_number && !r.wallet_address && (
+                      <div className="text-xs text-slate-500 italic">No account details were captured for this request (submitted before payout details were collected). Ask the user for their bank/wallet details before approving.</div>
+                    )}
+
                     {r.local_amount != null && (
                       <div className="text-xs text-slate-600 pt-1 border-t border-slate-200">Payout amount: <span className="font-semibold text-slate-900">{Number(r.local_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {r.currency ?? ""}</span></div>
                     )}
