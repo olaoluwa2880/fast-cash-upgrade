@@ -324,6 +324,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [wdWalletAddress, setWdWalletAddress] = useState("");
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [congrats, setCongrats] = useState<null | { title: string; body: string }>(null);
+  const [withdrawalNotification, setWithdrawalNotification] = useState<null | {
+    title: string;
+    amount: string;
+    method: string;
+    status: string;
+    detail: string;
+  }>(null);
 
   // Load bank list for the selected country when the bank step is open. Server
   // function tries a live provider first; on any error we fall back to the
