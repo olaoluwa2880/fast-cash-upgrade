@@ -324,6 +324,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const [wdWalletAddress, setWdWalletAddress] = useState("");
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [congrats, setCongrats] = useState<null | { title: string; body: string }>(null);
+  const [withdrawalNotification, setWithdrawalNotification] = useState<null | {
+    title: string;
+    amount: string;
+    method: string;
+    status: string;
+    detail: string;
+  }>(null);
 
   // Load bank list for the selected country when the bank step is open. Server
   // function tries a live provider first; on any error we fall back to the
@@ -905,6 +912,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         usdAmount: amtUsd, destination: method,
       } }).catch(() => {});
 
+      setWithdrawalNotification({
+        title: "Withdrawal submitted",
+        amount: `${feeCurrency.symbol}${localAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        method: wdMethod === "crypto" ? `${wdCrypto?.name ?? "Crypto"} (${wdCrypto?.symbol ?? ""})` : `${wdBank} · ${wdAccountNumber}`,
+        status: "Pending admin review",
+        detail: "Your withdrawal request has been received and is queued for admin approval. You will be notified once it is approved or rejected.",
+      });
       setWdStep("success");
     }, 1200);
   };
@@ -2154,9 +2168,33 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         </div>
       )}
 
-
-
-
+      {withdrawalNotification && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center p-5 bg-[#0D0D0D]/90 backdrop-blur-md">
+          <div className="w-full max-w-[360px] overflow-hidden rounded-3xl border border-[#D4AF37]/30 bg-[#141414] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)]" style={{ animation: "fc-pop .45s ease-out both" }}>
+            <div className="relative bg-gradient-to-r from-[#D4AF37] to-[#8B6914] px-6 py-5 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#0D0D0D] shadow-lg">
+                <ArrowUpRight className="h-7 w-7 text-[#D4AF37]" />
+              </div>
+              <p className="mt-3 text-lg font-black text-[#0D0D0D]">{withdrawalNotification.title}</p>
+            </div>
+            <div className="px-6 py-5 text-center">
+              <p className="text-[32px] font-black leading-none text-[#D4AF37]">{withdrawalNotification.amount}</p>
+              <p className="mt-1 text-xs font-medium text-white/50">{withdrawalNotification.method}</p>
+              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-[11px] font-bold uppercase tracking-wide text-amber-400">{withdrawalNotification.status}</span>
+              </div>
+              <p className="mt-4 text-[13px] leading-relaxed text-white/70">{withdrawalNotification.detail}</p>
+              <button
+                onClick={() => { setWithdrawalNotification(null); closeWithdraw(); }}
+                className="mt-5 w-full rounded-full bg-[#D4AF37] py-3.5 text-sm font-black text-[#0D0D0D] shadow-lg active:scale-95"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SideMenu
         open={openMenu}
