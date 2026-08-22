@@ -912,6 +912,13 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
         usdAmount: amtUsd, destination: method,
       } }).catch(() => {});
 
+      setWithdrawalNotification({
+        title: "Withdrawal submitted",
+        amount: `${feeCurrency.symbol}${localAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        method: wdMethod === "crypto" ? `${wdCrypto?.name ?? "Crypto"} (${wdCrypto?.symbol ?? ""})` : `${wdBank} · ${wdAccountNumber}`,
+        status: "Pending admin review",
+        detail: "Your withdrawal request has been received and is queued for admin approval. You will be notified once it is approved or rejected.",
+      });
       setWdStep("success");
     }, 1200);
   };
