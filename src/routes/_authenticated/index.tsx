@@ -265,6 +265,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const navigate = useNavigate();
   const userEmail = userProfile.email;
   const settings = useSiteSettings();
+  useLiveWithdrawalNotifications();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   // Restore preferred currency from the saved profile whenever it changes.
   useEffect(() => {
