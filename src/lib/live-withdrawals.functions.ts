@@ -20,7 +20,6 @@ export const getRecentWithdrawals = createServerFn({ method: "GET" })
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data }) => {
     const { createClient } = await import("@supabase/supabase-js");
-    const { Database } = await import("@/integrations/supabase/types");
     const supabasePublic = createClient<Database>(
       process.env["SUPABASE_URL"]!,
       process.env["SUPABASE_PUBLISHABLE_KEY"]!,
