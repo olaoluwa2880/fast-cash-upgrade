@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
 
 const Input = z.object({ limit: z.number().int().min(1).max(50).default(20) });
 
