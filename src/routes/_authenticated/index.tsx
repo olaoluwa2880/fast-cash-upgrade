@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings, openSupport } from "@/lib/site-settings";
 import { usePush } from "@/components/PushNotifications";
+import { useLiveWithdrawalNotifications } from "@/hooks/use-live-withdrawals";
 import { SideMenu, type SideMenuAction } from "@/components/SideMenu";
 import { SupportCenter, type SupportSection } from "@/components/SupportCenter";
 import { toast } from "sonner";
@@ -265,6 +266,7 @@ function Dashboard({ userProfile }: { userProfile: UserProfile }) {
   const navigate = useNavigate();
   const userEmail = userProfile.email;
   const settings = useSiteSettings();
+  useLiveWithdrawalNotifications();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
   // Restore preferred currency from the saved profile whenever it changes.
   useEffect(() => {
